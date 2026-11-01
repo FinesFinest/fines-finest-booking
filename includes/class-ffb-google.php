@@ -63,8 +63,13 @@ class FFB_Google {
 			return '';
 		}
 
-		$state = wp_create_nonce( 'ffb_google_oauth' );
-		set_transient( 'ffb_oauth_state', $state, 900 );
+		// Zufaelliger State, 15 Minuten gueltig. Ein noch gueltiger wird weiterverwendet,
+		// damit zwei offene Einstellungsseiten sich nicht gegenseitig ungueltig machen.
+		$state = get_transient( 'ffb_oauth_state' );
+		if ( ! is_string( $state ) || '' === $state ) {
+			$state = wp_generate_password( 32, false );
+			set_transient( 'ffb_oauth_state', $state, 15 * MINUTE_IN_SECONDS );
+		}
 
 		return add_query_arg(
 			array(

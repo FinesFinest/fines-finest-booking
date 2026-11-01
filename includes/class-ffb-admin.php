@@ -71,18 +71,8 @@ class FFB_Admin {
 		}
 
 		// OAuth-Rueckkehr von Google.
-		if ( isset( $_GET['page'], $_GET['code'], $_GET['state'] ) && 'ffb-settings' === $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$state = sanitize_text_field( wp_unslash( $_GET['state'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
-			if ( $state === get_transient( 'ffb_oauth_state' ) ) {
-				delete_transient( 'ffb_oauth_state' );
-				$result = FFB_Google::exchange_code( sanitize_text_field( wp_unslash( $_GET['code'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
-				$notice = is_wp_error( $result ) ? 'google_error' : 'google_ok';
-				if ( is_wp_error( $result ) ) {
-					set_transient( 'ffb_admin_error', $result->get_error_message(), 60 );
-				}
-				wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=' . $notice ) );
-				exit;
-			}
+		if ( isset( $_GET['page'] ) && 'ffb-settings' === $_GET['page'] && ( isset( $_GET['code'] ) || isset( $_GET['error'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			self::handle_google_return();
 		}
 
 		if ( isset( $_POST['ffb_action'] ) ) {
@@ -153,6 +143,49 @@ class FFB_Admin {
 				exit;
 			}
 		}
+	}
+
+	/**
+	 * Verarbeitet die Rueckkehr von Googles Anmeldeseite.
+	 *
+	 * Jeder Ausgang endet mit einer Meldung. Vorher liefen ein abgelaufener State
+	 * und ein Abbruch bei Google stumm auf die Einstellungsseite zurueck.
+	 */
+	protected static function handle_google_return() {
+		// phpcs:disable WordPress.Security.NonceVerification -- Der OAuth-State uebernimmt hier die Rolle des Nonce.
+		if ( isset( $_GET['error'] ) ) {
+			$grund = sanitize_text_field( wp_unslash( $_GET['error'] ) );
+			self::google_return_error( 'Google hat die Anmeldung abgebrochen (' . $grund . '). Es wurde nichts geaendert. Klick noch einmal auf "Mit Google verbinden" und erlaube den Zugriff auf den Kalender.' );
+		}
+
+		$state    = isset( $_GET['state'] ) ? sanitize_text_field( wp_unslash( $_GET['state'] ) ) : '';
+		$expected = (string) get_transient( 'ffb_oauth_state' );
+
+		if ( '' === $state || '' === $expected || ! hash_equals( $expected, $state ) ) {
+			self::google_return_error( 'Die Anmeldung bei Google ist abgelaufen oder kam nicht von dieser Seite. Klick noch einmal auf "Mit Google verbinden".' );
+		}
+
+		delete_transient( 'ffb_oauth_state' );
+		$result = FFB_Google::exchange_code( sanitize_text_field( wp_unslash( $_GET['code'] ?? '' ) ) );
+		// phpcs:enable
+
+		if ( is_wp_error( $result ) ) {
+			self::google_return_error( $result->get_error_message() );
+		}
+
+		wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=google_ok' ) );
+		exit;
+	}
+
+	/**
+	 * Bricht die Google-Rueckkehr mit einer Meldung ab.
+	 *
+	 * @param string $message Meldung fuer den Hinweis.
+	 */
+	protected static function google_return_error( $message ) {
+		set_transient( 'ffb_admin_error', $message, 60 );
+		wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=google_error' ) );
+		exit;
 	}
 
 	/**
