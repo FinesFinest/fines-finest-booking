@@ -17,22 +17,31 @@ class FFB_Bookings {
 	/**
 	 * Bestaetigte Buchungen in einem Zeitraum.
 	 *
-	 * @param DateTimeInterface $from Start (UTC).
-	 * @param DateTimeInterface $to   Ende (UTC).
+	 * @param DateTimeInterface $from          Start (UTC).
+	 * @param DateTimeInterface $to            Ende (UTC).
+	 * @param int               $event_type_id Nur dieser Termintyp; 0 fuer alle.
 	 * @return array
 	 */
-	public static function in_range( $from, $to ) {
+	public static function in_range( $from, $to, $event_type_id = 0 ) {
 		global $wpdb;
 		$table = FFB_Install::table_bookings();
 
-		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB
-			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE status = 'confirmed' AND end_utc > %s AND start_utc < %s ORDER BY start_utc ASC",
+		if ( $event_type_id > 0 ) {
+			$sql = $wpdb->prepare(
+				"SELECT * FROM {$table} WHERE status = 'confirmed' AND event_type_id = %d AND end_utc > %s AND start_utc < %s ORDER BY start_utc ASC", // phpcs:ignore WordPress.DB
+				(int) $event_type_id,
 				$from->format( 'Y-m-d H:i:s' ),
 				$to->format( 'Y-m-d H:i:s' )
-			),
-			ARRAY_A
-		);
+			);
+		} else {
+			$sql = $wpdb->prepare(
+				"SELECT * FROM {$table} WHERE status = 'confirmed' AND end_utc > %s AND start_utc < %s ORDER BY start_utc ASC", // phpcs:ignore WordPress.DB
+				$from->format( 'Y-m-d H:i:s' ),
+				$to->format( 'Y-m-d H:i:s' )
+			);
+		}
+
+		$rows = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB
 
 		return (array) $rows;
 	}

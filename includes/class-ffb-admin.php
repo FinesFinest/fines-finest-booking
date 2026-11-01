@@ -941,7 +941,7 @@ class FFB_Admin {
 							<label>Vorlaufzeit <input name="ffb[min_notice]" type="number" min="0" value="<?php echo (int) $ffb_nwert; ?>" class="small-text"></label>
 							<?php self::render_unit_select( 'min_notice_unit', $ffb_neinheit ); ?><br>
 							<label>Buchbar bis <input name="ffb[max_days]" type="number" min="1" value="<?php echo (int) $event['max_days']; ?>" class="small-text"> Tage im Voraus</label><br>
-							<label>Maximal <input name="ffb[daily_limit]" type="number" min="0" value="<?php echo (int) $event['daily_limit']; ?>" class="small-text"> Termine pro Tag (0 = kein Limit)</label>
+							<label>Maximal <input name="ffb[daily_limit]" type="number" min="0" value="<?php echo (int) $event['daily_limit']; ?>" class="small-text"> Termine dieses Typs pro Tag (0 = kein Limit)</label>
 						</td>
 					</tr>
 					<tr>

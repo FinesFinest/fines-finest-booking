@@ -67,7 +67,7 @@ class FFB_Availability {
 		$global          = self::global_limits();
 		$notice          = max( (int) $event['min_notice'], $global['min_notice'] );
 		$earliest        = $now->modify( '+' . $notice . ' minutes' );
-		$daily_count     = self::count_per_day( $range_from, $range_to, $tz );
+		$daily_count     = self::count_per_day( $range_from, $range_to, $tz, (int) $event['id'] );
 
 		$result = array();
 		$cursor = $start_day;
@@ -296,17 +296,21 @@ class FFB_Availability {
 	}
 
 	/**
-	 * Zaehlt bestaetigte Buchungen pro Kalendertag.
+	 * Zaehlt bestaetigte Buchungen eines Termintyps pro Kalendertag.
 	 *
-	 * @param DateTimeInterface $from Start (UTC).
-	 * @param DateTimeInterface $to   Ende (UTC).
-	 * @param DateTimeZone      $tz   Website-Zeitzone.
+	 * Das Tageslimit wird pro Termintyp eingestellt, also zaehlen hier auch nur
+	 * Buchungen dieses Typs. Buchungen anderer Typen blocken ueber die belegten Zeiten.
+	 *
+	 * @param DateTimeInterface $from          Start (UTC).
+	 * @param DateTimeInterface $to            Ende (UTC).
+	 * @param DateTimeZone      $tz            Website-Zeitzone.
+	 * @param int               $event_type_id Termintyp.
 	 * @return array
 	 */
-	protected static function count_per_day( $from, $to, $tz ) {
+	protected static function count_per_day( $from, $to, $tz, $event_type_id ) {
 		$counts = array();
 
-		foreach ( FFB_Bookings::in_range( $from, $to ) as $booking ) {
+		foreach ( FFB_Bookings::in_range( $from, $to, (int) $event_type_id ) as $booking ) {
 			$local = ( new DateTimeImmutable( $booking['start_utc'], new DateTimeZone( 'UTC' ) ) )->setTimezone( $tz );
 			$key   = $local->format( 'Y-m-d' );
 
