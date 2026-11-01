@@ -14,12 +14,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FFB_Google {
 
-	const OPTION      = 'ffb_google_tokens';
-	const AUTH_URL    = 'https://accounts.google.com/o/oauth2/v2/auth';
-	const TOKEN_URL   = 'https://oauth2.googleapis.com/token';
-	const REVOKE_URL  = 'https://oauth2.googleapis.com/revoke';
-	const API_BASE    = 'https://www.googleapis.com/calendar/v3';
-	const SCOPE       = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly';
+	const OPTION     = 'ffb_google_tokens';
+	const AUTH_URL   = 'https://accounts.google.com/o/oauth2/v2/auth';
+	const TOKEN_URL  = 'https://oauth2.googleapis.com/token';
+	const REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
+	const API_BASE   = 'https://www.googleapis.com/calendar/v3';
+	const SCOPE      = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly';
 
 	/**
 	 * Redirect-URI fuer die Google-Cloud-Konsole.
@@ -113,7 +113,7 @@ class FFB_Google {
 		}
 
 		if ( empty( $body['refresh_token'] ) ) {
-			return new WP_Error( 'ffb_no_refresh', 'Google hat kein Refresh-Token geschickt. Trenne die App unter myaccount.google.com/permissions und verbinde sie neu.' );
+			return new WP_Error( 'ffb_no_refresh', __( 'Google did not send a refresh token. Remove the app at myaccount.google.com/permissions and connect it again.', 'fines-finest-booking' ) );
 		}
 
 		$tokens = array(
@@ -165,7 +165,7 @@ class FFB_Google {
 		$tokens = get_option( self::OPTION, array() );
 
 		if ( empty( $tokens['refresh_token'] ) ) {
-			return new WP_Error( 'ffb_not_connected', 'Google-Kalender ist nicht verbunden.' );
+			return new WP_Error( 'ffb_not_connected', __( 'Google Calendar is not connected.', 'fines-finest-booking' ) );
 		}
 
 		if ( ! empty( $tokens['access_token'] ) && ! empty( $tokens['expires_at'] ) && $tokens['expires_at'] > time() ) {
@@ -191,7 +191,7 @@ class FFB_Google {
 		}
 
 		if ( empty( $body['access_token'] ) ) {
-			return new WP_Error( 'ffb_refresh_failed', 'Das Google-Token konnte nicht erneuert werden.' );
+			return new WP_Error( 'ffb_refresh_failed', __( 'The Google token could not be renewed.', 'fines-finest-booking' ) );
 		}
 
 		$tokens['access_token'] = $body['access_token'];
@@ -258,7 +258,15 @@ class FFB_Google {
 
 		$message = isset( $data['error']['message'] ) ? $data['error']['message'] : ( isset( $data['error_description'] ) ? $data['error_description'] : $raw );
 
-		return new WP_Error( 'ffb_google_http_' . $code, 'Google-API (' . $code . '): ' . $message );
+		return new WP_Error(
+			'ffb_google_http_' . $code,
+			sprintf(
+				/* translators: 1: HTTP status code, 2: error message from Google */
+				__( 'Google API (%1$d): %2$s', 'fines-finest-booking' ),
+				$code,
+				$message
+			)
+		);
 	}
 
 	/**
@@ -289,11 +297,11 @@ class FFB_Google {
 	 * Google-Konto taucht hier nur auf, wenn er mit diesem Konto geteilt wurde.
 	 *
 	 * @param bool $force Cache uebergehen.
-	 * @return array|WP_Error Liste aus id => array( name, schreiben ).
+	 * @return array|WP_Error Liste aus id => array( name, schreiben, primaer ).
 	 */
 	public static function get_calendars( $force = false ) {
 		if ( ! self::is_connected() ) {
-			return new WP_Error( 'ffb_not_connected', 'Google-Kalender ist nicht verbunden.' );
+			return new WP_Error( 'ffb_not_connected', __( 'Google Calendar is not connected.', 'fines-finest-booking' ) );
 		}
 
 		$cache_key = 'ffb_calendar_list_' . (int) get_option( 'ffb_busy_cache_version', 1 );
@@ -305,7 +313,15 @@ class FFB_Google {
 			}
 		}
 
-		$result = self::request( 'GET', '/users/me/calendarList', null, array( 'maxResults' => 250, 'minAccessRole' => 'freeBusyReader' ) );
+		$result = self::request(
+			'GET',
+			'/users/me/calendarList',
+			null,
+			array(
+				'maxResults'    => 250,
+				'minAccessRole' => 'freeBusyReader',
+			)
+		);
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
@@ -390,7 +406,13 @@ class FFB_Google {
 		);
 
 		if ( is_wp_error( $result ) ) {
-			self::log( 'freeBusy: ' . $result->get_error_message() . ' Solange werden keine Termine angeboten.' );
+			self::log(
+				sprintf(
+					/* translators: %s: error message */
+					__( 'freeBusy: %s No slots are offered until this is resolved.', 'fines-finest-booking' ),
+					$result->get_error_message()
+				)
+			);
 			return $result;
 		}
 
@@ -402,16 +424,38 @@ class FFB_Google {
 				if ( ! empty( $calendar['errors'] ) ) {
 					$gruende = array();
 					foreach ( (array) $calendar['errors'] as $fehler ) {
-						$gruende[] = isset( $fehler['reason'] ) ? $fehler['reason'] : 'unbekannt';
+						$gruende[] = isset( $fehler['reason'] ) ? $fehler['reason'] : __( 'unknown', 'fines-finest-booking' );
 					}
+					$gruende = implode( ', ', $gruende );
 
 					// Ohne den Zielkalender ist unbekannt, was belegt ist: lieber keine Termine anbieten.
 					if ( (string) $kalender_id === $ziel ) {
-						self::log( 'Zielkalender "' . $kalender_id . '" konnte nicht gelesen werden (' . implode( ', ', $gruende ) . '). Solange werden keine Termine angeboten.' );
-						return new WP_Error( 'ffb_calendar_unreadable', 'Der Zielkalender konnte nicht gelesen werden (' . implode( ', ', $gruende ) . ').' );
+						self::log(
+							sprintf(
+								/* translators: 1: calendar ID, 2: reasons reported by Google */
+								__( 'Target calendar "%1$s" could not be read (%2$s). No slots are offered until this is resolved.', 'fines-finest-booking' ),
+								$kalender_id,
+								$gruende
+							)
+						);
+						return new WP_Error(
+							'ffb_calendar_unreadable',
+							sprintf(
+								/* translators: %s: reasons reported by Google */
+								__( 'The target calendar could not be read (%s).', 'fines-finest-booking' ),
+								$gruende
+							)
+						);
 					}
 
-					self::log( 'Kalender "' . $kalender_id . '" wurde nicht geprueft (' . implode( ', ', $gruende ) . '). Er blockt also keine Termine.' );
+					self::log(
+						sprintf(
+							/* translators: 1: calendar ID, 2: reasons reported by Google */
+							__( 'Calendar "%1$s" was not checked (%2$s). It does not block any slots.', 'fines-finest-booking' ),
+							$kalender_id,
+							$gruende
+						)
+					);
 					continue;
 				}
 
@@ -442,7 +486,7 @@ class FFB_Google {
 	 */
 	public static function create_event( $booking, $event ) {
 		if ( ! self::is_connected() ) {
-			return new WP_Error( 'ffb_not_connected', 'Google-Kalender ist nicht verbunden.' );
+			return new WP_Error( 'ffb_not_connected', __( 'Google Calendar is not connected.', 'fines-finest-booking' ) );
 		}
 
 		$calendar_id = ffb_get_setting( 'google_calendar_id', 'primary' );
@@ -450,19 +494,23 @@ class FFB_Google {
 
 		$lines = array();
 		if ( ! empty( $booking['email'] ) ) {
-			$lines[] = 'E-Mail: ' . $booking['email'];
+			/* translators: %s: email address */
+			$lines[] = sprintf( __( 'Email: %s', 'fines-finest-booking' ), $booking['email'] );
 		}
 		if ( ! empty( $booking['phone'] ) ) {
-			$lines[] = 'Telefon: ' . $booking['phone'];
+			/* translators: %s: phone number */
+			$lines[] = sprintf( __( 'Phone: %s', 'fines-finest-booking' ), $booking['phone'] );
 		}
 		foreach ( (array) $booking['answers'] as $label => $value ) {
 			$lines[] = $label . ': ' . $value;
 		}
 		if ( ! empty( $booking['source'] ) ) {
-			$lines[] = 'Gebucht auf: ' . $booking['source'];
+			/* translators: %s: page or source the booking was made on */
+			$lines[] = sprintf( __( 'Booked on: %s', 'fines-finest-booking' ), $booking['source'] );
 		}
 		$lines[] = '';
-		$lines[] = 'Gebucht ueber ' . home_url();
+		/* translators: %s: website address */
+		$lines[] = sprintf( __( 'Booked via %s', 'fines-finest-booking' ), home_url() );
 
 		$payload = array(
 			'summary'     => self::build_summary( $booking, $event ),
@@ -503,7 +551,8 @@ class FFB_Google {
 			);
 			$query['conferenceDataVersion'] = 1;
 		} elseif ( 'phone' === $event['location'] ) {
-			$payload['location'] = $booking['phone'] ? 'Telefon: ' . $booking['phone'] : 'Telefon';
+			/* translators: %s: phone number */
+			$payload['location'] = $booking['phone'] ? sprintf( __( 'Phone: %s', 'fines-finest-booking' ), $booking['phone'] ) : __( 'Phone', 'fines-finest-booking' );
 		} elseif ( $event['location_note'] ) {
 			$payload['location'] = $event['location_note'];
 		}
@@ -545,7 +594,8 @@ class FFB_Google {
 	public static function build_summary( $booking, $event ) {
 		$vorlage = isset( $event['calendar_title'] ) ? trim( (string) $event['calendar_title'] ) : '';
 		if ( '' === $vorlage ) {
-			$vorlage = '{termintyp} mit {name}';
+			/* translators: default calendar title; keep the placeholders {termintyp} and {name} as they are */
+			$vorlage = __( '{termintyp} with {name}', 'fines-finest-booking' );
 		}
 
 		$start = new DateTimeImmutable( $booking['start_utc'], new DateTimeZone( 'UTC' ) );
@@ -555,7 +605,8 @@ class FFB_Google {
 			'{name}'      => $booking['name'],
 			'{termintyp}' => $event['title'],
 			'{quelle}'    => isset( $booking['source'] ) ? $booking['source'] : '',
-			'{datum}'     => $start->format( 'd.m.Y' ),
+			/* translators: PHP date format for the {datum} placeholder in calendar titles, see https://www.php.net/manual/datetime.format.php */
+			'{datum}'     => $start->format( __( 'Y-m-d', 'fines-finest-booking' ) ),
 			'{uhrzeit}'   => $start->format( 'H:i' ),
 			'{email}'     => $booking['email'],
 		);

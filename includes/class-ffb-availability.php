@@ -20,7 +20,7 @@ class FFB_Availability {
 	 * @param array  $event Termintyp.
 	 * @param string $from  Startdatum Y-m-d in Website-Zeitzone.
 	 * @param int    $days  Anzahl Tage.
-	 * @return array
+	 * @return array|WP_Error Fehler, wenn belegte Zeiten nicht ermittelt werden konnten.
 	 */
 	public static function get_slots( $event, $from = '', $days = 14 ) {
 		$tz  = ffb_timezone();
@@ -64,10 +64,10 @@ class FFB_Availability {
 		}
 
 		// Globale Grenzen gelten fuer alle Termintypen und koennen nur weiter einschraenken.
-		$global          = self::global_limits();
-		$notice          = max( (int) $event['min_notice'], $global['min_notice'] );
-		$earliest        = $now->modify( '+' . $notice . ' minutes' );
-		$daily_count     = self::count_per_day( $range_from, $range_to, $tz, (int) $event['id'] );
+		$global      = self::global_limits();
+		$notice      = max( (int) $event['min_notice'], $global['min_notice'] );
+		$earliest    = $now->modify( '+' . $notice . ' minutes' );
+		$daily_count = self::count_per_day( $range_from, $range_to, $tz, (int) $event['id'] );
 
 		$result = array();
 		$cursor = $start_day;
@@ -345,6 +345,6 @@ class FFB_Availability {
 			}
 		}
 
-		return new WP_Error( 'ffb_slot_gone', 'Dieser Termin ist nicht mehr verfuegbar. Bitte waehle einen anderen.' );
+		return new WP_Error( 'ffb_slot_gone', __( 'This slot is no longer available. Please pick another one.', 'fines-finest-booking' ) );
 	}
 }

@@ -107,7 +107,7 @@ class FFB_Bookings {
 
 		if ( $conflict > 0 ) {
 			self::release_lock();
-			return new WP_Error( 'ffb_taken', 'Dieser Termin ist inzwischen vergeben. Bitte waehle einen anderen.' );
+			return new WP_Error( 'ffb_taken', __( 'This slot has just been taken. Please pick another one.', 'fines-finest-booking' ) );
 		}
 
 		$token = bin2hex( random_bytes( 24 ) );
@@ -138,7 +138,7 @@ class FFB_Bookings {
 		self::release_lock();
 
 		if ( ! $inserted ) {
-			return new WP_Error( 'ffb_db', 'Die Buchung konnte nicht gespeichert werden.' );
+			return new WP_Error( 'ffb_db', __( 'The booking could not be saved.', 'fines-finest-booking' ) );
 		}
 
 		return (int) $wpdb->insert_id;
@@ -173,7 +173,13 @@ class FFB_Bookings {
 
 		if ( null === $result ) {
 			// Die Datenbank liefert keine Sperre. Buchen geht weiter, aber nicht still.
-			FFB_Google::log( 'Buchungssperre nicht verfuegbar' . ( $wpdb->last_error ? ' (' . $wpdb->last_error . ')' : '' ) . '. Die Buchung wurde ohne Sperre angelegt.' );
+			FFB_Google::log(
+				sprintf(
+					/* translators: %s: database error message in parentheses, may be empty */
+					__( 'Booking lock unavailable%s. The booking was saved without a lock.', 'fines-finest-booking' ),
+					$wpdb->last_error ? ' (' . $wpdb->last_error . ')' : ''
+				)
+			);
 			return true;
 		}
 
@@ -181,7 +187,7 @@ class FFB_Bookings {
 			return true;
 		}
 
-		return new WP_Error( 'ffb_locked', 'Der Termin wird gerade von jemand anderem gebucht. Bitte versuch es gleich noch einmal.' );
+		return new WP_Error( 'ffb_locked', __( 'Someone else is booking this slot right now. Please try again in a moment.', 'fines-finest-booking' ) );
 	}
 
 	/**
@@ -218,7 +224,7 @@ class FFB_Bookings {
 	 * Storniert eine Buchung inklusive Google-Termin.
 	 *
 	 * @param int  $id            Buchungs-ID.
-	 * @param bool $notify_client Kundin benachrichtigen.
+	 * @param bool $notify_client Kund*in benachrichtigen.
 	 * @return bool
 	 */
 	public static function cancel( $id, $notify_client = true ) {

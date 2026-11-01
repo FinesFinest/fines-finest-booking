@@ -59,26 +59,29 @@ class FFB_Mailer {
 	}
 
 	/**
-	 * Formatiert einen UTC-Zeitpunkt in lesbarer deutscher Form.
+	 * Formatiert einen UTC-Zeitpunkt lesbar in der Sprache und Zeitzone der Website.
 	 *
 	 * @param string $utc UTC-Zeit.
 	 * @return string
 	 */
 	public static function format_datetime( $utc ) {
-		$date = new DateTimeImmutable( $utc, new DateTimeZone( 'UTC' ) );
-		$date = $date->setTimezone( ffb_timezone() );
+		$timestamp = strtotime( $utc . ' UTC' );
 
-		$days   = array( 'Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag' );
-		$months = array( '', 'Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember' );
+		/* translators: PHP date format for a full date with weekday and time, e.g. "Tuesday, March 3, 2026, 3:00 pm". See https://www.php.net/manual/datetime.format.php */
+		return wp_date( __( 'l, F j, Y, g:i a', 'fines-finest-booking' ), $timestamp, ffb_timezone() );
+	}
 
-		return sprintf(
-			'%s, %d. %s %s, %s Uhr',
-			$days[ (int) $date->format( 'w' ) ],
-			(int) $date->format( 'j' ),
-			$months[ (int) $date->format( 'n' ) ],
-			$date->format( 'Y' ),
-			$date->format( 'H:i' )
-		);
+	/**
+	 * Nur die Uhrzeit, in der Sprache und Zeitzone der Website.
+	 *
+	 * @param string $utc UTC-Zeit.
+	 * @return string
+	 */
+	public static function time_only( $utc ) {
+		$timestamp = strtotime( $utc . ' UTC' );
+
+		/* translators: PHP date format for a time of day, e.g. "3:00 pm". See https://www.php.net/manual/datetime.format.php */
+		return wp_date( __( 'g:i a', 'fines-finest-booking' ), $timestamp, ffb_timezone() );
 	}
 
 	/**
@@ -99,7 +102,7 @@ class FFB_Mailer {
 		ob_start();
 		?>
 <!DOCTYPE html>
-<html lang="de">
+<html lang="<?php echo esc_attr( get_bloginfo( 'language' ) ); ?>">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:<?php echo esc_attr( $bg ); ?>;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:<?php echo esc_attr( $bg ); ?>;padding:32px 16px;">
@@ -160,6 +163,17 @@ class FFB_Mailer {
 	}
 
 	/**
+	 * Textlink in der Zweitfarbe.
+	 *
+	 * @param string $url   Ziel.
+	 * @param string $label Beschriftung.
+	 * @return string
+	 */
+	protected static function link( $url, $label ) {
+		return '<a href="' . esc_url( $url ) . '" style="color:' . esc_attr( ffb_get_setting( 'color_secondary' ) ) . ';">' . esc_html( $label ) . '</a>';
+	}
+
+	/**
 	 * Storno-Link einer Buchung.
 	 *
 	 * @param array $booking Buchung.
@@ -200,20 +214,23 @@ class FFB_Mailer {
 		if ( ! empty( $booking['meet_url'] ) ) {
 			$location = $booking['meet_url'];
 		} elseif ( 'phone' === $event['location'] ) {
-			$location = 'Telefon';
+			$location = __( 'Phone', 'fines-finest-booking' );
 		} elseif ( $event['location_note'] ) {
 			$location = $event['location_note'];
 		}
 
 		$description = wp_strip_all_tags( (string) $event['description'] );
 		if ( ! empty( $booking['meet_url'] ) ) {
-			$description .= "\\n\\nVideocall: " . $booking['meet_url'];
+			/* translators: %s: video call link */
+			$description .= "\n\n" . sprintf( __( 'Video call: %s', 'fines-finest-booking' ), $booking['meet_url'] );
 		}
+
+		$from_name = ffb_get_setting( 'from_name', get_bloginfo( 'name' ) );
 
 		$lines = array(
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
-			'PRODID:-//Fines Finest Booking//DE',
+			'PRODID:-//Fines Finest Booking//EN',
 			'CALSCALE:GREGORIAN',
 			'METHOD:' . $method,
 			'BEGIN:VEVENT',
@@ -221,10 +238,11 @@ class FFB_Mailer {
 			'DTSTAMP:' . gmdate( 'Ymd\THis\Z' ),
 			'DTSTART:' . gmdate( 'Ymd\THis\Z', strtotime( $booking['start_utc'] . ' UTC' ) ),
 			'DTEND:' . gmdate( 'Ymd\THis\Z', strtotime( $booking['end_utc'] . ' UTC' ) ),
-			'SUMMARY:' . self::ics_escape( $event['title'] . ' mit ' . ffb_get_setting( 'from_name', get_bloginfo( 'name' ) ) ),
+			/* translators: 1: appointment type, 2: name of the host */
+			'SUMMARY:' . self::ics_escape( sprintf( __( '%1$s with %2$s', 'fines-finest-booking' ), $event['title'], $from_name ) ),
 			'DESCRIPTION:' . self::ics_escape( $description ),
 			'LOCATION:' . self::ics_escape( $location ),
-			'ORGANIZER;CN=' . self::ics_escape( ffb_get_setting( 'from_name', get_bloginfo( 'name' ) ) ) . ':mailto:' . ffb_from_email(),
+			'ORGANIZER;CN=' . self::ics_escape( $from_name ) . ':mailto:' . ffb_from_email(),
 			'STATUS:' . ( 'CANCEL' === $method ? 'CANCELLED' : 'CONFIRMED' ),
 			'SEQUENCE:' . ( 'CANCEL' === $method ? '1' : '0' ),
 			'END:VEVENT',
@@ -265,46 +283,57 @@ class FFB_Mailer {
 	}
 
 	/**
-	 * Bestaetigung an die Interessentin.
+	 * Bestaetigung an die Person, die gebucht hat.
 	 *
 	 * @param array $booking Buchung.
 	 * @param array $event   Termintyp.
 	 */
 	public static function send_confirmation( $booking, $event ) {
-		$when = self::format_datetime( $booking['start_utc'] );
+		$when     = self::format_datetime( $booking['start_utc'] );
+		$duration = (int) $event['duration'];
 
 		$rows = array(
-			'Termin' => $event['title'],
-			'Wann'   => $when . ' (' . ffb_timezone()->getName() . ')',
-			'Dauer'  => (int) $event['duration'] . ' Minuten',
+			__( 'Appointment', 'fines-finest-booking' ) => $event['title'],
+			__( 'When', 'fines-finest-booking' )        => $when . ' (' . ffb_timezone()->getName() . ')',
+			/* translators: %d: duration in minutes */
+			__( 'Duration', 'fines-finest-booking' )    => sprintf( _n( '%d minute', '%d minutes', $duration, 'fines-finest-booking' ), $duration ),
 		);
 
 		if ( ! empty( $booking['meet_url'] ) ) {
-			$rows['Wo'] = '<a href="' . esc_url( $booking['meet_url'] ) . '" style="color:' . esc_attr( ffb_get_setting( 'color_secondary' ) ) . ';">Google Meet</a>';
+			$rows[ __( 'Where', 'fines-finest-booking' ) ] = self::link( $booking['meet_url'], 'Google Meet' );
 		} elseif ( 'phone' === $event['location'] ) {
-			$rows['Wo'] = 'Ich rufe dich an' . ( $booking['phone'] ? ': ' . $booking['phone'] : '' );
+			$rows[ __( 'Where', 'fines-finest-booking' ) ] = $booking['phone']
+				/* translators: %s: phone number */
+				? sprintf( __( 'I will call you: %s', 'fines-finest-booking' ), $booking['phone'] )
+				: __( 'I will call you', 'fines-finest-booking' );
 		} elseif ( $event['location_note'] ) {
-			$rows['Wo'] = $event['location_note'];
+			$rows[ __( 'Where', 'fines-finest-booking' ) ] = $event['location_note'];
 		}
 
-		$content  = '<p>Hallo ' . esc_html( self::first_name( $booking['name'] ) ) . ',</p>';
-		$content .= '<p>dein Termin steht. Hier die Eckdaten:</p>';
+		/* translators: %s: first name */
+		$content  = '<p>' . esc_html( sprintf( __( 'Hello %s,', 'fines-finest-booking' ), self::first_name( $booking['name'] ) ) ) . '</p>';
+		$content .= '<p>' . esc_html__( 'Your appointment is booked. Here are the details:', 'fines-finest-booking' ) . '</p>';
 		$content .= self::detail_block( $rows );
 
 		if ( ! empty( $booking['meet_url'] ) ) {
-			$content .= self::button( $booking['meet_url'], 'Zum Videocall' );
+			$content .= self::button( $booking['meet_url'], __( 'Join video call', 'fines-finest-booking' ) );
 		}
 
-		$content .= '<p>Den Termin findest du auch im Anhang zum Eintragen in deinen Kalender.</p>';
-		$content .= '<p>Wenn es doch nicht passt, sag rechtzeitig ab: <a href="' . esc_url( self::cancel_url( $booking ) ) . '" style="color:' . esc_attr( ffb_get_setting( 'color_secondary' ) ) . ';">Termin absagen</a></p>';
-		$content .= '<p>Bis dann.</p>';
+		$content .= '<p>' . esc_html__( 'The appointment is attached as a calendar file so you can add it to your calendar.', 'fines-finest-booking' ) . '</p>';
+		$content .= '<p>' . sprintf(
+			/* translators: %s: link with the text "Cancel appointment" */
+			esc_html__( 'If it no longer fits, please cancel in time: %s', 'fines-finest-booking' ),
+			self::link( self::cancel_url( $booking ), __( 'Cancel appointment', 'fines-finest-booking' ) )
+		) . '</p>';
+		$content .= '<p>' . esc_html__( 'See you then.', 'fines-finest-booking' ) . '</p>';
 
 		$ics = self::build_ics( $booking, $event, 'REQUEST' );
 
 		wp_mail(
 			$booking['email'],
-			'Termin bestaetigt: ' . $event['title'] . ' am ' . $when,
-			self::wrap( 'Termin bestaetigt', $content ),
+			/* translators: 1: appointment type, 2: date and time */
+			sprintf( __( 'Appointment confirmed: %1$s on %2$s', 'fines-finest-booking' ), $event['title'], $when ),
+			self::wrap( __( 'Appointment confirmed', 'fines-finest-booking' ), $content ),
 			self::headers(),
 			$ics ? array( $ics ) : array()
 		);
@@ -313,7 +342,7 @@ class FFB_Mailer {
 	}
 
 	/**
-	 * Benachrichtigung an die Betreiberin.
+	 * Benachrichtigung an die Person, die die Website betreibt.
 	 *
 	 * @param array $booking Buchung.
 	 * @param array $event   Termintyp.
@@ -327,12 +356,12 @@ class FFB_Mailer {
 		$when = self::format_datetime( $booking['start_utc'] );
 
 		$rows = array(
-			'Termin'  => $event['title'],
-			'Wann'    => $when,
-			'Name'    => $booking['name'],
-			'E-Mail'  => '<a href="mailto:' . esc_attr( $booking['email'] ) . '" style="color:' . esc_attr( ffb_get_setting( 'color_secondary' ) ) . ';">' . esc_html( $booking['email'] ) . '</a>',
-			'Telefon' => $booking['phone'],
-			'Quelle'  => isset( $booking['source'] ) ? $booking['source'] : '',
+			__( 'Appointment', 'fines-finest-booking' ) => $event['title'],
+			__( 'When', 'fines-finest-booking' )        => $when,
+			__( 'Name', 'fines-finest-booking' )        => $booking['name'],
+			__( 'Email', 'fines-finest-booking' )       => self::link( 'mailto:' . $booking['email'], $booking['email'] ),
+			__( 'Phone', 'fines-finest-booking' )       => $booking['phone'],
+			__( 'Source', 'fines-finest-booking' )      => isset( $booking['source'] ) ? $booking['source'] : '',
 		);
 
 		foreach ( (array) $booking['answers'] as $label => $value ) {
@@ -340,14 +369,20 @@ class FFB_Mailer {
 		}
 
 		if ( ! empty( $booking['meet_url'] ) ) {
-			$rows['Meet'] = '<a href="' . esc_url( $booking['meet_url'] ) . '" style="color:' . esc_attr( ffb_get_setting( 'color_secondary' ) ) . ';">' . esc_html( $booking['meet_url'] ) . '</a>';
+			$rows['Google Meet'] = self::link( $booking['meet_url'], $booking['meet_url'] );
 		}
 
-		$content  = '<p>Neue Buchung ueber die Website.</p>';
+		$content  = '<p>' . esc_html__( 'New booking through the website.', 'fines-finest-booking' ) . '</p>';
 		$content .= self::detail_block( $rows );
-		$content .= self::button( admin_url( 'admin.php?page=ffb-bookings' ), 'Buchungen ansehen' );
+		$content .= self::button( admin_url( 'admin.php?page=ffb-bookings' ), __( 'View bookings', 'fines-finest-booking' ) );
 
-		wp_mail( $to, 'Neue Buchung: ' . $booking['name'] . ' am ' . $when, self::wrap( 'Neue Buchung', $content ), self::headers() );
+		wp_mail(
+			$to,
+			/* translators: 1: name of the person who booked, 2: date and time */
+			sprintf( __( 'New booking: %1$s on %2$s', 'fines-finest-booking' ), $booking['name'], $when ),
+			self::wrap( __( 'New booking', 'fines-finest-booking' ), $content ),
+			self::headers()
+		);
 	}
 
 	/**
@@ -359,38 +394,46 @@ class FFB_Mailer {
 	public static function send_reminder( $booking, $event ) {
 		$when = self::format_datetime( $booking['start_utc'] );
 		$time = self::time_only( $booking['start_utc'] );
-		$tag  = self::relative_day( $booking['start_utc'] );
+		$day  = self::relative_day( $booking['start_utc'] );
 
-		if ( 'heute' === $tag ) {
-			$satz    = 'kurze Erinnerung: Unser Termin ist heute.';
-			$titel   = 'Heute ist es soweit';
-			$betreff = 'Erinnerung: ' . $event['title'] . ' heute um ' . $time . ' Uhr';
-		} elseif ( 'morgen' === $tag ) {
-			$satz    = 'kurze Erinnerung: Unser Termin ist morgen.';
-			$titel   = 'Morgen ist es soweit';
-			$betreff = 'Erinnerung: ' . $event['title'] . ' morgen um ' . $time . ' Uhr';
+		if ( 'today' === $day ) {
+			$sentence = __( 'A quick reminder: our appointment is today.', 'fines-finest-booking' );
+			$title    = __( 'Today is the day', 'fines-finest-booking' );
+			/* translators: 1: appointment type, 2: time of day */
+			$subject = sprintf( __( 'Reminder: %1$s today at %2$s', 'fines-finest-booking' ), $event['title'], $time );
+		} elseif ( 'tomorrow' === $day ) {
+			$sentence = __( 'A quick reminder: our appointment is tomorrow.', 'fines-finest-booking' );
+			$title    = __( 'Tomorrow is the day', 'fines-finest-booking' );
+			/* translators: 1: appointment type, 2: time of day */
+			$subject = sprintf( __( 'Reminder: %1$s tomorrow at %2$s', 'fines-finest-booking' ), $event['title'], $time );
 		} else {
-			$satz    = 'kurze Erinnerung an unseren Termin.';
-			$titel   = 'Bald ist es soweit';
-			$betreff = 'Erinnerung: ' . $event['title'] . ' am ' . $when;
+			$sentence = __( 'A quick reminder of our appointment.', 'fines-finest-booking' );
+			$title    = __( 'Your appointment is coming up', 'fines-finest-booking' );
+			/* translators: 1: appointment type, 2: date and time */
+			$subject = sprintf( __( 'Reminder: %1$s on %2$s', 'fines-finest-booking' ), $event['title'], $when );
 		}
 
-		$content  = '<p>Hallo ' . esc_html( self::first_name( $booking['name'] ) ) . ',</p>';
-		$content .= '<p>' . esc_html( $satz ) . '</p>';
+		/* translators: %s: first name */
+		$content  = '<p>' . esc_html( sprintf( __( 'Hello %s,', 'fines-finest-booking' ), self::first_name( $booking['name'] ) ) ) . '</p>';
+		$content .= '<p>' . esc_html( $sentence ) . '</p>';
 		$content .= self::detail_block(
 			array(
-				'Termin' => $event['title'],
-				'Wann'   => $when . ' (' . ffb_timezone()->getName() . ')',
+				__( 'Appointment', 'fines-finest-booking' ) => $event['title'],
+				__( 'When', 'fines-finest-booking' )        => $when . ' (' . ffb_timezone()->getName() . ')',
 			)
 		);
 
 		if ( ! empty( $booking['meet_url'] ) ) {
-			$content .= self::button( $booking['meet_url'], 'Zum Videocall' );
+			$content .= self::button( $booking['meet_url'], __( 'Join video call', 'fines-finest-booking' ) );
 		}
 
-		$content .= '<p>Passt es doch nicht? <a href="' . esc_url( self::cancel_url( $booking ) ) . '" style="color:' . esc_attr( ffb_get_setting( 'color_secondary' ) ) . ';">Hier absagen</a></p>';
+		$content .= '<p>' . sprintf(
+			/* translators: %s: link with the text "Cancel here" */
+			esc_html__( 'Does it no longer fit? %s', 'fines-finest-booking' ),
+			self::link( self::cancel_url( $booking ), __( 'Cancel here', 'fines-finest-booking' ) )
+		) . '</p>';
 
-		wp_mail( $booking['email'], $betreff, self::wrap( $titel, $content ), self::headers() );
+		wp_mail( $booking['email'], $subject, self::wrap( $title, $content ), self::headers() );
 	}
 
 	/**
@@ -398,7 +441,7 @@ class FFB_Mailer {
 	 *
 	 * @param string   $utc UTC-Zeit.
 	 * @param int|null $now Jetzt als Zeitstempel, nur fuer Tests.
-	 * @return string 'heute', 'morgen' oder leer.
+	 * @return string 'today', 'tomorrow' oder leer.
 	 */
 	public static function relative_day( $utc, $now = null ) {
 		$tz    = ffb_timezone();
@@ -406,10 +449,10 @@ class FFB_Mailer {
 		$today = null === $now ? new DateTimeImmutable( 'now', $tz ) : ( new DateTimeImmutable( '@' . (int) $now ) )->setTimezone( $tz );
 
 		if ( $day === $today->format( 'Y-m-d' ) ) {
-			return 'heute';
+			return 'today';
 		}
 		if ( $day === $today->modify( '+1 day' )->format( 'Y-m-d' ) ) {
-			return 'morgen';
+			return 'tomorrow';
 		}
 
 		return '';
@@ -422,41 +465,49 @@ class FFB_Mailer {
 	 */
 	public static function send_cancellation( $booking ) {
 		$event = FFB_Event_Types::get( $booking['event_type_id'] );
-		$title = $event ? $event['title'] : 'Termin';
+		$title = $event ? $event['title'] : __( 'Appointment', 'fines-finest-booking' );
 		$when  = self::format_datetime( $booking['start_utc'] );
 
-		$content  = '<p>Hallo ' . esc_html( self::first_name( $booking['name'] ) ) . ',</p>';
-		$content .= '<p>dein Termin am ' . esc_html( $when ) . ' ist abgesagt. Der Slot ist wieder frei.</p>';
-		$content .= '<p>Wenn du einen neuen Termin willst, buch dir einfach einen.</p>';
+		/* translators: %s: first name */
+		$content  = '<p>' . esc_html( sprintf( __( 'Hello %s,', 'fines-finest-booking' ), self::first_name( $booking['name'] ) ) ) . '</p>';
+		/* translators: %s: date and time */
+		$content .= '<p>' . esc_html( sprintf( __( 'Your appointment on %s is cancelled. The slot is available again.', 'fines-finest-booking' ), $when ) ) . '</p>';
+		$content .= '<p>' . esc_html__( 'If you would like a new appointment, just book one.', 'fines-finest-booking' ) . '</p>';
 
 		$page = ffb_get_setting( 'booking_page_url' );
 		if ( $page ) {
-			$content .= self::button( $page, 'Neuen Termin buchen' );
+			$content .= self::button( $page, __( 'Book a new appointment', 'fines-finest-booking' ) );
 		}
 
-		wp_mail( $booking['email'], 'Termin abgesagt: ' . $title, self::wrap( 'Termin abgesagt', $content ), self::headers() );
+		wp_mail(
+			$booking['email'],
+			/* translators: %s: appointment type */
+			sprintf( __( 'Appointment cancelled: %s', 'fines-finest-booking' ), $title ),
+			self::wrap( __( 'Appointment cancelled', 'fines-finest-booking' ), $content ),
+			self::headers()
+		);
 
 		$to = ffb_get_setting( 'notify_email', get_option( 'admin_email' ) );
 		if ( is_email( $to ) ) {
 			wp_mail(
 				$to,
-				'Absage: ' . $booking['name'] . ' am ' . $when,
-				self::wrap( 'Termin abgesagt', '<p>' . esc_html( $booking['name'] ) . ' (' . esc_html( $booking['email'] ) . ') hat den Termin am ' . esc_html( $when ) . ' abgesagt.</p>' ),
+				/* translators: 1: name of the person who booked, 2: date and time */
+				sprintf( __( 'Cancellation: %1$s on %2$s', 'fines-finest-booking' ), $booking['name'], $when ),
+				self::wrap(
+					__( 'Appointment cancelled', 'fines-finest-booking' ),
+					'<p>' . esc_html(
+						sprintf(
+							/* translators: 1: name, 2: email address, 3: date and time */
+							__( '%1$s (%2$s) has cancelled the appointment on %3$s.', 'fines-finest-booking' ),
+							$booking['name'],
+							$booking['email'],
+							$when
+						)
+					) . '</p>'
+				),
 				self::headers()
 			);
 		}
-	}
-
-	/**
-	 * Nur die Uhrzeit.
-	 *
-	 * @param string $utc UTC-Zeit.
-	 * @return string
-	 */
-	protected static function time_only( $utc ) {
-		$date = new DateTimeImmutable( $utc, new DateTimeZone( 'UTC' ) );
-
-		return $date->setTimezone( ffb_timezone() )->format( 'H:i' );
 	}
 
 	/**

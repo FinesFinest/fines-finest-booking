@@ -165,17 +165,19 @@ class FFB_Install {
 		$questions = array(
 			array(
 				'key'      => 'anliegen',
-				'label'    => 'Worum geht es?',
+				'label'    => __( 'What would you like to talk about?', 'fines-finest-booking' ),
 				'type'     => 'textarea',
 				'required' => 0,
 			),
 		);
 
+		$title = __( 'Intro call', 'fines-finest-booking' );
+
 		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$table,
 			array(
-				'slug'          => 'erstgespraech',
-				'title'         => 'Erstgespraech',
+				'slug'          => sanitize_title( $title ),
+				'title'         => $title,
 				'description'   => '',
 				'duration'      => 30,
 				'slot_step'     => 30,

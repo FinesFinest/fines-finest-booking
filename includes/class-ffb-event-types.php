@@ -177,7 +177,7 @@ class FFB_Event_Types {
 
 		$title = isset( $data['title'] ) ? sanitize_text_field( $data['title'] ) : '';
 		if ( '' === $title ) {
-			return new WP_Error( 'ffb_no_title', 'Der Termintyp braucht einen Titel.' );
+			return new WP_Error( 'ffb_no_title', __( 'The appointment type needs a title.', 'fines-finest-booking' ) );
 		}
 
 		$slug = isset( $data['slug'] ) && $data['slug'] ? sanitize_title( $data['slug'] ) : sanitize_title( $title );
@@ -189,24 +189,24 @@ class FFB_Event_Types {
 		}
 
 		$fields = array(
-			'slug'          => $slug,
-			'title'         => $title,
-			'description'   => isset( $data['description'] ) ? wp_kses_post( $data['description'] ) : '',
-			'duration'      => max( 5, (int) ( $data['duration'] ?? 30 ) ),
-			'slot_step'     => max( 5, (int) ( $data['slot_step'] ?? 30 ) ),
-			'buffer_before' => max( 0, (int) ( $data['buffer_before'] ?? 0 ) ),
-			'buffer_after'  => max( 0, (int) ( $data['buffer_after'] ?? 0 ) ),
-			'min_notice'    => max( 0, (int) ( $data['min_notice'] ?? 720 ) ),
-			'max_days'      => max( 1, (int) ( $data['max_days'] ?? 45 ) ),
-			'daily_limit'   => max( 0, (int) ( $data['daily_limit'] ?? 0 ) ),
-			'location'      => $location,
-			'location_note' => isset( $data['location_note'] ) ? sanitize_text_field( $data['location_note'] ) : '',
+			'slug'           => $slug,
+			'title'          => $title,
+			'description'    => isset( $data['description'] ) ? wp_kses_post( $data['description'] ) : '',
+			'duration'       => max( 5, (int) ( $data['duration'] ?? 30 ) ),
+			'slot_step'      => max( 5, (int) ( $data['slot_step'] ?? 30 ) ),
+			'buffer_before'  => max( 0, (int) ( $data['buffer_before'] ?? 0 ) ),
+			'buffer_after'   => max( 0, (int) ( $data['buffer_after'] ?? 0 ) ),
+			'min_notice'     => max( 0, (int) ( $data['min_notice'] ?? 720 ) ),
+			'max_days'       => max( 1, (int) ( $data['max_days'] ?? 45 ) ),
+			'daily_limit'    => max( 0, (int) ( $data['daily_limit'] ?? 0 ) ),
+			'location'       => $location,
+			'location_note'  => isset( $data['location_note'] ) ? sanitize_text_field( $data['location_note'] ) : '',
 			'calendar_title' => isset( $data['calendar_title'] ) ? sanitize_text_field( $data['calendar_title'] ) : '',
-			'availability'  => wp_json_encode( self::normalize_availability( $data['availability'] ?? array() ) ),
-			'blackouts'     => wp_json_encode( self::clean_blackouts( $data['blackouts'] ?? array() ) ),
-			'questions'     => wp_json_encode( self::normalize_questions( $data['questions'] ?? array() ) ),
-			'active'        => empty( $data['active'] ) ? 0 : 1,
-			'sort_order'    => (int) ( $data['sort_order'] ?? 0 ),
+			'availability'   => wp_json_encode( self::normalize_availability( $data['availability'] ?? array() ) ),
+			'blackouts'      => wp_json_encode( self::clean_blackouts( $data['blackouts'] ?? array() ) ),
+			'questions'      => wp_json_encode( self::normalize_questions( $data['questions'] ?? array() ) ),
+			'active'         => empty( $data['active'] ) ? 0 : 1,
+			'sort_order'     => (int) ( $data['sort_order'] ?? 0 ),
 		);
 
 		$formats = array( '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d' );
@@ -236,7 +236,7 @@ class FFB_Event_Types {
 		$table = FFB_Install::table_event_types();
 
 		if ( '' === $slug ) {
-			$slug = 'termin';
+			$slug = 'appointment';
 		}
 
 		$candidate = $slug;

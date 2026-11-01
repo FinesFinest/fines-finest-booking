@@ -1,5 +1,8 @@
+/* global FFB_ADMIN */
 ( function () {
 	'use strict';
+
+	var texte = window.FFB_ADMIN || {};
 
 	document.addEventListener( 'click', function ( event ) {
 		// Hilfetexte auf- und zuklappen.
@@ -28,7 +31,7 @@
 		var text = quelle.textContent.trim();
 		var fertig = function () {
 			var alt = copy.textContent;
-			copy.textContent = 'Kopiert';
+			copy.textContent = texte.copied || 'Copied';
 			window.setTimeout( function () {
 				copy.textContent = alt;
 			}, 1500 );

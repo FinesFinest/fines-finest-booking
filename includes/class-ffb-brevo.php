@@ -34,7 +34,7 @@ class FFB_Brevo {
 	 */
 	public static function upsert_contact( $booking, $event ) {
 		if ( ! self::is_configured() ) {
-			return new WP_Error( 'ffb_brevo_off', 'Brevo ist nicht eingerichtet.' );
+			return new WP_Error( 'ffb_brevo_off', __( 'Brevo is not set up.', 'fines-finest-booking' ) );
 		}
 
 		$name  = trim( (string) $booking['name'] );
@@ -47,15 +47,21 @@ class FFB_Brevo {
 			'NACHNAME'      => $last,
 			'FFB_TERMINTYP' => $event['title'],
 			'FFB_TERMIN_AM' => $booking['start_local_date'],
-			'FFB_QUELLE'    => ! empty( $booking['source'] ) ? $booking['source'] : 'Website-Buchung',
+			'FFB_QUELLE'    => ! empty( $booking['source'] ) ? $booking['source'] : __( 'Website booking', 'fines-finest-booking' ),
 		);
 
-		$nr = isset( $booking['id'] ) ? '#' . (int) $booking['id'] : '';
+		$nr = isset( $booking['id'] ) ? (int) $booking['id'] : 0;
 
 		if ( ! empty( $booking['phone'] ) ) {
 			$sms = self::normalize_phone( $booking['phone'] );
 			if ( '' === $sms ) {
-				FFB_Google::log( 'Brevo, Buchung ' . $nr . ': Die Telefonnummer liess sich nicht ins internationale Format bringen und wurde nicht uebergeben.' );
+				FFB_Google::log(
+					sprintf(
+						/* translators: %d: booking ID */
+						__( 'Brevo, booking #%d: the phone number could not be converted to international format and was not passed on.', 'fines-finest-booking' ),
+						$nr
+					)
+				);
 			} else {
 				$attributes['SMS'] = $sms;
 			}
@@ -65,7 +71,14 @@ class FFB_Brevo {
 
 		// Brevo lehnt die Nummer ab, etwa weil sie schon bei einem anderen Kontakt steht: noch einmal ohne Nummer.
 		if ( is_wp_error( $result ) && isset( $attributes['SMS'] ) && 400 === (int) $result->get_error_data() ) {
-			FFB_Google::log( 'Brevo, Buchung ' . $nr . ': Telefonnummer abgelehnt (' . $result->get_error_message() . '). Zweiter Versuch ohne Nummer.' );
+			FFB_Google::log(
+				sprintf(
+					/* translators: 1: booking ID, 2: error message from Brevo */
+					__( 'Brevo, booking #%1$d: phone number rejected (%2$s). Second attempt without the number.', 'fines-finest-booking' ),
+					$nr,
+					$result->get_error_message()
+				)
+			);
 			unset( $attributes['SMS'] );
 			$result = self::send_contact( $booking['email'], $attributes );
 		}
@@ -206,7 +219,7 @@ class FFB_Brevo {
 	 */
 	public static function get_lists( $force = false ) {
 		if ( ! self::is_configured() ) {
-			return new WP_Error( 'ffb_brevo_off', 'Kein API-Key hinterlegt.' );
+			return new WP_Error( 'ffb_brevo_off', __( 'No API key saved.', 'fines-finest-booking' ) );
 		}
 
 		$cache_key = 'ffb_brevo_lists_' . substr( md5( (string) ffb_get_setting( 'brevo_api_key' ) ), 0, 12 );
@@ -237,7 +250,8 @@ class FFB_Brevo {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( $code < 200 || $code >= 300 ) {
-			$message = isset( $body['message'] ) ? $body['message'] : 'Brevo antwortet mit Status ' . $code . '.';
+			/* translators: %d: HTTP status code */
+			$message = isset( $body['message'] ) ? $body['message'] : sprintf( __( 'Brevo responded with status %d.', 'fines-finest-booking' ), $code );
 			return new WP_Error( 'ffb_brevo_http_' . $code, $message );
 		}
 
@@ -260,7 +274,7 @@ class FFB_Brevo {
 	 */
 	public static function test() {
 		if ( ! self::is_configured() ) {
-			return new WP_Error( 'ffb_brevo_off', 'Kein API-Key hinterlegt.' );
+			return new WP_Error( 'ffb_brevo_off', __( 'No API key saved.', 'fines-finest-booking' ) );
 		}
 
 		$response = wp_remote_get(
@@ -283,6 +297,7 @@ class FFB_Brevo {
 			return true;
 		}
 
-		return new WP_Error( 'ffb_brevo_http_' . $code, 'Brevo antwortet mit Status ' . $code . '.' );
+		/* translators: %d: HTTP status code */
+		return new WP_Error( 'ffb_brevo_http_' . $code, sprintf( __( 'Brevo responded with status %d.', 'fines-finest-booking' ), $code ) );
 	}
 }

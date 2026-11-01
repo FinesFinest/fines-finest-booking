@@ -3,18 +3,39 @@
 	'use strict';
 
 	var config = window.FFB_CONFIG || {};
+	var i18n = config.i18n || {};
 	var session = null;
 	var sessionPromise = null;
 
-	var MONTHS = [ 'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember' ];
-	var DAYS_SHORT = [ 'So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa' ];
-	var DAYS_LONG = [ 'Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag' ];
+	// Monats- und Wochentagsnamen kommen uebersetzt aus WordPress. Die Listen hier sind nur der Rueckfall.
+	var MONTHS = config.months || [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
+	var MONTHS_SHORT = config.monthsShort || [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
+	var DAYS_SHORT = config.weekdaysShort || [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ];
+	var DAYS_LONG = config.weekdays || [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ];
+
+	/**
+	 * Uebersetzten Text holen, mit englischem Rueckfall.
+	 */
+	function t( key, fallback ) {
+		return i18n[ key ] || fallback;
+	}
+
+	/**
+	 * Platzhalter wie %s, %d, %1$s oder %2$d ersetzen.
+	 */
+	function format( template, args ) {
+		var next = 0;
+		return String( template ).replace( /%(\d+\$)?[sd]/g, function ( match, position ) {
+			var index = position ? parseInt( position, 10 ) - 1 : next++;
+			return undefined === args[ index ] ? '' : String( args[ index ] );
+		} );
+	}
 
 	function api( path, options ) {
 		return fetch( config.root + path, options ).then( function ( response ) {
 			return response.json().then( function ( body ) {
 				if ( ! response.ok ) {
-					var error = new Error( ( body && body.message ) || 'Da ist etwas schiefgelaufen.' );
+					var error = new Error( ( body && body.message ) || t( 'genericError', 'Something went wrong.' ) );
 					error.code = body && body.code;
 					throw error;
 				}
@@ -54,7 +75,7 @@
 
 	function longDate( value ) {
 		var date = parseDate( value );
-		return DAYS_LONG[ date.getDay() ] + ', ' + date.getDate() + '. ' + MONTHS[ date.getMonth() ];
+		return format( t( 'longDate', '%1$s, %3$s %2$d' ), [ DAYS_LONG[ date.getDay() ], date.getDate(), MONTHS[ date.getMonth() ] ] );
 	}
 
 	function Widget( root ) {
@@ -79,7 +100,7 @@
 
 		this.root.hidden = false;
 		this.root.innerHTML = '';
-		this.root.appendChild( el( 'div', 'ffb-loading', 'Termine werden geladen …' ) );
+		this.root.appendChild( el( 'div', 'ffb-loading', t( 'loading', 'Loading appointments …' ) ) );
 
 		getSession().catch( function () {} );
 
@@ -106,11 +127,11 @@
 		head.appendChild( el( 'h3', 'ffb-head__title', data.event.title ) );
 
 		var meta = el( 'p', 'ffb-head__meta' );
-		meta.appendChild( el( 'span', 'ffb-chip', data.event.duration + ' Minuten' ) );
+		meta.appendChild( el( 'span', 'ffb-chip', format( t( 'minutes', '%d minutes' ), [ data.event.duration ] ) ) );
 		if ( 'meet' === data.event.location ) {
-			meta.appendChild( el( 'span', 'ffb-chip', 'Google Meet' ) );
+			meta.appendChild( el( 'span', 'ffb-chip', t( 'meet', 'Google Meet' ) ) );
 		} else if ( 'phone' === data.event.location ) {
-			meta.appendChild( el( 'span', 'ffb-chip', 'Telefon' ) );
+			meta.appendChild( el( 'span', 'ffb-chip', t( 'phone', 'Phone' ) ) );
 		}
 		meta.appendChild( el( 'span', 'ffb-chip', data.timezone.replace( '_', ' ' ) ) );
 		head.appendChild( meta );
@@ -124,7 +145,7 @@
 		this.root.appendChild( head );
 
 		if ( ! data.days.length ) {
-			this.root.appendChild( el( 'div', 'ffb-message', 'Aktuell ist kein Termin frei. Schreib mir eine Mail, dann finden wir einen.' ) );
+			this.root.appendChild( el( 'div', 'ffb-message', t( 'noSlots', 'No appointments are available right now. Send me an email and we will find one.' ) ) );
 			return;
 		}
 
@@ -133,6 +154,7 @@
 		var dayList = el( 'div', 'ffb-days' );
 		data.days.forEach( function ( day ) {
 			var date = parseDate( day.date );
+			var count = day.slots.length;
 			var button = el( 'button', 'ffb-day' );
 			button.type = 'button';
 			button.setAttribute( 'data-date', day.date );
@@ -142,8 +164,8 @@
 			}
 			button.appendChild( el( 'span', 'ffb-day__weekday', DAYS_SHORT[ date.getDay() ] ) );
 			button.appendChild( el( 'span', 'ffb-day__num', String( date.getDate() ) ) );
-			button.appendChild( el( 'span', 'ffb-day__month', MONTHS[ date.getMonth() ].substring( 0, 3 ) ) );
-			button.appendChild( el( 'span', 'ffb-day__count', day.slots.length + ( 1 === day.slots.length ? ' Termin' : ' Termine' ) ) );
+			button.appendChild( el( 'span', 'ffb-day__month', MONTHS_SHORT[ date.getMonth() ] ) );
+			button.appendChild( el( 'span', 'ffb-day__count', format( 1 === count ? t( 'slotOne', '%d slot' ) : t( 'slotMany', '%d slots' ), [ count ] ) ) );
 			button.addEventListener( 'click', function () {
 				self.selectedDate = day.date;
 				self.selectedSlot = null;
@@ -202,13 +224,13 @@
 		form.noValidate = true;
 
 		var summary = el( 'div', 'ffb-summary' );
-		summary.appendChild( el( 'span', 'ffb-summary__label', 'Dein Termin' ) );
-		summary.appendChild( el( 'strong', 'ffb-summary__value', longDate( this.selectedDate ) + ', ' + this.selectedSlot.label + ' Uhr' ) );
+		summary.appendChild( el( 'span', 'ffb-summary__label', t( 'yourAppointment', 'Your appointment' ) ) );
+		summary.appendChild( el( 'strong', 'ffb-summary__value', format( t( 'summary', '%1$s, %2$s' ), [ longDate( this.selectedDate ), this.selectedSlot.label ] ) ) );
 		form.appendChild( summary );
 
-		form.appendChild( field( 'text', 'name', 'Name', true ) );
-		form.appendChild( field( 'email', 'email', 'E-Mail', true ) );
-		form.appendChild( field( 'tel', 'phone', 'Telefon (optional)', false ) );
+		form.appendChild( field( 'text', 'name', t( 'name', 'Name' ), true ) );
+		form.appendChild( field( 'email', 'email', t( 'email', 'Email' ), true ) );
+		form.appendChild( field( 'tel', 'phone', t( 'phoneOptional', 'Phone (optional)' ), false ) );
 
 		data.event.questions.forEach( function ( question ) {
 			form.appendChild( field( question.type, 'answers[' + question.key + ']', question.label, !! question.required ) );
@@ -232,10 +254,10 @@
 		consentRow.appendChild( consentBox );
 
 		var consentText = el( 'span' );
-		consentText.textContent = config.consentText || 'Ich bin mit der Verarbeitung meiner Daten einverstanden.';
+		consentText.textContent = config.consentText || t( 'consentFallback', 'I agree to the processing of my data.' );
 		if ( config.privacyUrl ) {
 			consentText.appendChild( document.createTextNode( ' ' ) );
-			var link = el( 'a', null, 'Datenschutzerklärung' );
+			var link = el( 'a', null, t( 'privacyPolicy', 'Privacy policy' ) );
 			link.href = config.privacyUrl;
 			link.target = '_blank';
 			link.rel = 'noopener';
@@ -244,7 +266,7 @@
 		consentRow.appendChild( consentText );
 		form.appendChild( consentRow );
 
-		var submit = el( 'button', 'ffb-btn ffb-btn--primary', 'Termin verbindlich buchen' );
+		var submit = el( 'button', 'ffb-btn ffb-btn--primary', t( 'submit', 'Book appointment' ) );
 		submit.type = 'submit';
 		form.appendChild( submit );
 
@@ -325,18 +347,18 @@
 		payload.answers = answers;
 
 		if ( missing ) {
-			showMessage( message, 'Bitte fülle die Pflichtfelder aus.', true );
+			showMessage( message, t( 'fillRequired', 'Please fill in the required fields.' ), true );
 			missing.focus();
 			return;
 		}
 
 		if ( ! payload.consent ) {
-			showMessage( message, 'Ohne dein Einverständnis zur Datenverarbeitung kann ich den Termin nicht anlegen.', true );
+			showMessage( message, t( 'consentRequired', 'Without your consent to data processing I cannot set up the appointment.' ), true );
 			return;
 		}
 
 		submit.disabled = true;
-		submit.textContent = 'Wird gebucht …';
+		submit.textContent = t( 'booking', 'Booking …' );
 		message.hidden = true;
 
 		getSession()
@@ -356,7 +378,7 @@
 			} )
 			.catch( function ( error ) {
 				submit.disabled = false;
-				submit.textContent = 'Termin verbindlich buchen';
+				submit.textContent = t( 'submit', 'Book appointment' );
 				showMessage( message, error.message, true );
 
 				if ( 'ffb_slot_gone' === error.code || 'ffb_taken' === error.code ) {
@@ -371,18 +393,19 @@
 		this.root.innerHTML = '';
 
 		var box = el( 'div', 'ffb-success' );
-		box.appendChild( el( 'h3', 'ffb-success__title', 'Termin steht.' ) );
-		box.appendChild( el( 'p', 'ffb-success__when', result.when + ' Uhr' ) );
-		box.appendChild( el( 'p', null, 'Ich habe dir eine Bestätigung an ' + result.email + ' geschickt, mit Kalendereintrag zum Anklicken.' ) );
+		box.appendChild( el( 'h3', 'ffb-success__title', t( 'successTitle', 'Your appointment is booked.' ) ) );
+		// "when" kommt fertig formatiert vom Server, inklusive Uhrzeit.
+		box.appendChild( el( 'p', 'ffb-success__when', result.when ) );
+		box.appendChild( el( 'p', null, format( t( 'successMail', 'I have sent a confirmation to %s, with a calendar file to add the appointment.' ), [ result.email ] ) ) );
 
 		if ( result.meet_url ) {
-			var link = el( 'a', 'ffb-btn ffb-btn--primary', 'Zum Videocall' );
+			var link = el( 'a', 'ffb-btn ffb-btn--primary', t( 'toVideoCall', 'Join video call' ) );
 			link.href = result.meet_url;
 			link.target = '_blank';
 			link.rel = 'noopener';
 			box.appendChild( link );
 		} else if ( 'phone' === result.location ) {
-			box.appendChild( el( 'p', null, 'Ich rufe dich zur vereinbarten Zeit an.' ) );
+			box.appendChild( el( 'p', null, t( 'willCall', 'I will call you at the agreed time.' ) ) );
 		}
 
 		this.root.appendChild( box );
@@ -403,11 +426,13 @@
 			return;
 		}
 
+		var label = button.textContent;
+
 		getSession().catch( function () {} );
 
 		button.addEventListener( 'click', function () {
 			button.disabled = true;
-			button.textContent = 'Wird abgesagt …';
+			button.textContent = t( 'cancelling', 'Cancelling …' );
 
 			getSession()
 				.then( function ( data ) {
@@ -428,7 +453,7 @@
 				} )
 				.catch( function ( error ) {
 					button.disabled = false;
-					button.textContent = 'Ja, Termin absagen';
+					button.textContent = label || t( 'cancelConfirm', 'Yes, cancel appointment' );
 					showMessage( message, error.message, true );
 				} );
 		} );

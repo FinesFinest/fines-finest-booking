@@ -103,7 +103,13 @@ class FFB_Cron {
 
 			if ( ! $event ) {
 				// Nicht still ueberspringen: einmal melden und die Buchung als erledigt markieren.
-				FFB_Google::log( 'Erinnerung fuer Buchung #' . (int) $booking['id'] . ' nicht verschickt: Der Termintyp existiert nicht mehr.' );
+				FFB_Google::log(
+					sprintf(
+						/* translators: %d: booking ID */
+						__( 'Reminder for booking #%d not sent: the appointment type no longer exists.', 'fines-finest-booking' ),
+						(int) $booking['id']
+					)
+				);
 				self::mark_reminder_sent( (int) $booking['id'] );
 				continue;
 			}

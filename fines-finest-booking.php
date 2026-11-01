@@ -2,14 +2,15 @@
 /**
  * Plugin Name:       Fines Finest Booking
  * Plugin URI:        https://fines-finest.com
- * Description:       Terminbuchung im eigenen Corporate Design, mit Google-Kalender-Sync, Google Meet, Bestaetigungsmails und Brevo-Anbindung. Alle Daten bleiben in der eigenen WordPress-Datenbank.
+ * Description:       Appointment booking in your own design, with Google Calendar sync, Google Meet, confirmation emails and Brevo. All data stays in your own WordPress database.
  * Version:           1.1.2
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Fines Finest
  * Author URI:        https://fines-finest.com
  * License:           GPL-2.0-or-later
- * Text Domain:       ff-booking
+ * Text Domain:       fines-finest-booking
+ * Domain Path:       /languages
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -57,49 +58,79 @@ function ffb_init() {
 add_action( 'plugins_loaded', 'ffb_init' );
 
 /**
+ * Laedt die Uebersetzungen aus dem Ordner languages.
+ *
+ * Nicht frueher als init: Seit WordPress 6.7 gilt frueheres Laden als Fehler.
+ * Darum darf vor init auch kein Text uebersetzt werden.
+ */
+function ffb_load_textdomain() {
+	load_plugin_textdomain( 'fines-finest-booking', false, dirname( plugin_basename( FFB_FILE ) ) . '/languages' );
+}
+add_action( 'init', 'ffb_load_textdomain' );
+
+/**
+ * Deutsche Varianten ohne eigene Sprachdatei (de_AT, de_CH, de_DE_formal) nutzen die deutsche Uebersetzung.
+ *
+ * @param string $locale Ermittelte Sprache.
+ * @param string $domain Textdomain.
+ * @return string
+ */
+function ffb_plugin_locale( $locale, $domain ) {
+	if ( 'fines-finest-booking' !== $domain || 'de_DE' === $locale || 0 !== strpos( (string) $locale, 'de_' ) ) {
+		return $locale;
+	}
+	if ( file_exists( FFB_DIR . 'languages/fines-finest-booking-' . $locale . '.mo' ) ) {
+		return $locale;
+	}
+
+	return 'de_DE';
+}
+add_filter( 'plugin_locale', 'ffb_plugin_locale', 10, 2 );
+
+/**
  * Standardwerte der Plugin-Einstellungen.
  *
  * @return array
  */
 function ffb_default_settings() {
 	return array(
-		'google_client_id'     => '',
-		'google_client_secret' => '',
-		'google_calendar_id'   => 'primary',
+		'google_client_id'      => '',
+		'google_client_secret'  => '',
+		'google_calendar_id'    => 'primary',
 		'google_busy_calendars' => '',
-		'brevo_api_key'        => '',
-		'brevo_list_id'        => '',
-		'hours_enforce'        => 0,
-		'hours_1'              => '',
-		'hours_2'              => '',
-		'hours_3'              => '',
-		'hours_4'              => '',
-		'hours_5'              => '',
-		'hours_6'              => '',
-		'hours_7'              => '',
-		'global_min_notice'    => 0,
-		'global_blackouts'     => '',
-		'notify_email'         => get_option( 'admin_email' ),
-		'from_name'            => get_bloginfo( 'name' ),
-		'from_email'           => '',
-		'booking_page_url'     => '',
-		'privacy_url'          => get_privacy_policy_url(),
-		'consent_text'         => 'Ich habe die Datenschutzerklaerung gelesen und bin mit der Verarbeitung meiner Daten zur Terminabwicklung einverstanden.',
-		'retention_days'       => 730,
-		'rate_limit'           => 5,
-		'color_accent'         => '#2563eb',
-		'color_accent_soft'    => '#3b82f6',
-		'color_secondary'      => '#0e7490',
-		'color_success'        => '#15803d',
-		'color_bg'             => '#ffffff',
-		'color_bg_deep'        => '#f6f7f8',
-		'color_surface'        => '#f1f2f4',
-		'color_text'           => '#1a1d21',
-		'color_muted'          => '#5a6068',
-		'font_display'         => 'inherit',
-		'font_body'            => 'inherit',
-		'load_css'             => 1,
-		'delete_on_uninstall'  => 0,
+		'brevo_api_key'         => '',
+		'brevo_list_id'         => '',
+		'hours_enforce'         => 0,
+		'hours_1'               => '',
+		'hours_2'               => '',
+		'hours_3'               => '',
+		'hours_4'               => '',
+		'hours_5'               => '',
+		'hours_6'               => '',
+		'hours_7'               => '',
+		'global_min_notice'     => 0,
+		'global_blackouts'      => '',
+		'notify_email'          => get_option( 'admin_email' ),
+		'from_name'             => get_bloginfo( 'name' ),
+		'from_email'            => '',
+		'booking_page_url'      => '',
+		'privacy_url'           => get_privacy_policy_url(),
+		'consent_text'          => __( 'I have read the privacy policy and agree to the processing of my data to arrange the appointment.', 'fines-finest-booking' ),
+		'retention_days'        => 730,
+		'rate_limit'            => 5,
+		'color_accent'          => '#2563eb',
+		'color_accent_soft'     => '#3b82f6',
+		'color_secondary'       => '#0e7490',
+		'color_success'         => '#15803d',
+		'color_bg'              => '#ffffff',
+		'color_bg_deep'         => '#f6f7f8',
+		'color_surface'         => '#f1f2f4',
+		'color_text'            => '#1a1d21',
+		'color_muted'           => '#5a6068',
+		'font_display'          => 'inherit',
+		'font_body'             => 'inherit',
+		'load_css'              => 1,
+		'delete_on_uninstall'   => 0,
 	);
 }
 

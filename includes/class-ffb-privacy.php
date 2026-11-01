@@ -30,8 +30,8 @@ class FFB_Privacy {
 	 * @return array
 	 */
 	public static function register_exporter( $exporters ) {
-		$exporters['ff-booking'] = array(
-			'exporter_friendly_name' => 'Terminbuchungen',
+		$exporters['fines-finest-booking'] = array(
+			'exporter_friendly_name' => __( 'Appointment bookings', 'fines-finest-booking' ),
 			'callback'               => array( __CLASS__, 'export' ),
 		);
 
@@ -45,8 +45,8 @@ class FFB_Privacy {
 	 * @return array
 	 */
 	public static function register_eraser( $erasers ) {
-		$erasers['ff-booking'] = array(
-			'eraser_friendly_name' => 'Terminbuchungen',
+		$erasers['fines-finest-booking'] = array(
+			'eraser_friendly_name' => __( 'Appointment bookings', 'fines-finest-booking' ),
 			'callback'             => array( __CLASS__, 'erase' ),
 		);
 
@@ -73,31 +73,31 @@ class FFB_Privacy {
 
 			$data = array(
 				array(
-					'name'  => 'Termin',
+					'name'  => __( 'Appointment', 'fines-finest-booking' ),
 					'value' => $event ? $event['title'] : '-',
 				),
 				array(
-					'name'  => 'Zeitpunkt',
+					'name'  => __( 'Date and time', 'fines-finest-booking' ),
 					'value' => FFB_Mailer::format_datetime( $row['start_utc'] ),
 				),
 				array(
-					'name'  => 'Name',
+					'name'  => __( 'Name', 'fines-finest-booking' ),
 					'value' => $row['name'],
 				),
 				array(
-					'name'  => 'E-Mail',
+					'name'  => __( 'Email', 'fines-finest-booking' ),
 					'value' => $row['email'],
 				),
 				array(
-					'name'  => 'Telefon',
+					'name'  => __( 'Phone', 'fines-finest-booking' ),
 					'value' => $row['phone'],
 				),
 				array(
-					'name'  => 'Status',
+					'name'  => __( 'Status', 'fines-finest-booking' ),
 					'value' => $row['status'],
 				),
 				array(
-					'name'  => 'Einwilligung erteilt am',
+					'name'  => __( 'Consent given on', 'fines-finest-booking' ),
 					'value' => (string) $row['consent_at'],
 				),
 			);
@@ -111,7 +111,7 @@ class FFB_Privacy {
 
 			$items[] = array(
 				'group_id'    => 'ffb-bookings',
-				'group_label' => 'Terminbuchungen',
+				'group_label' => __( 'Appointment bookings', 'fines-finest-booking' ),
 				'item_id'     => 'ffb-booking-' . $row['id'],
 				'data'        => $data,
 			);
@@ -160,11 +160,19 @@ class FFB_Privacy {
 			return;
 		}
 
-		$content  = '<h3>Terminbuchung</h3>';
-		$content .= '<p>Wenn du ueber diese Website einen Termin buchst, speichere ich deinen Namen, deine E-Mail-Adresse, optional deine Telefonnummer, deine Antworten auf die Fragen im Buchungsformular sowie Datum und Uhrzeit des Termins. Diese Daten liegen in der Datenbank dieser Website.</p>';
-		$content .= '<p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Durchfuehrung vorvertraglicher Massnahmen) sowie deine Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO.</p>';
-		$content .= '<p>Der Termin wird zusaetzlich in meinen Google-Kalender eingetragen. Dabei werden dein Name, deine E-Mail-Adresse und deine Angaben aus dem Formular an Google uebermittelt. Anbieter ist Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Findet der Termin per Google Meet statt, wird ausserdem ein Videokonferenz-Link erzeugt.</p>';
-		$content .= '<p>Buchungsdaten werden nach ' . (int) ffb_get_setting( 'retention_days', 730 ) . ' Tagen automatisch geloescht. Du kannst jederzeit Auskunft oder Loeschung verlangen.</p>';
+		$days = (int) ffb_get_setting( 'retention_days', 730 );
+
+		$content  = '<h3>' . esc_html__( 'Appointment booking', 'fines-finest-booking' ) . '</h3>';
+		$content .= '<p>' . esc_html__( 'When you book an appointment through this website, I store your name, your email address, optionally your phone number, your answers to the questions in the booking form, and the date and time of the appointment. This data is kept in the database of this website.', 'fines-finest-booking' ) . '</p>';
+		$content .= '<p>' . esc_html__( 'The legal basis is Art. 6 (1) (b) GDPR (steps prior to entering into a contract) and your consent under Art. 6 (1) (a) GDPR.', 'fines-finest-booking' ) . '</p>';
+		$content .= '<p>' . esc_html__( 'The appointment is also added to my Google Calendar. Your name, your email address and your answers from the form are transmitted to Google for this. The provider is Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. If the appointment takes place via Google Meet, a video call link is created as well.', 'fines-finest-booking' ) . '</p>';
+		$content .= '<p>' . esc_html(
+			sprintf(
+				/* translators: %d: number of days */
+				_n( 'Booking data is deleted automatically after %d day. You can request access to or deletion of your data at any time.', 'Booking data is deleted automatically after %d days. You can request access to or deletion of your data at any time.', $days, 'fines-finest-booking' ),
+				$days
+			)
+		) . '</p>';
 
 		wp_add_privacy_policy_content( 'Fines Finest Booking', wp_kses_post( $content ) );
 	}
