@@ -43,19 +43,46 @@ class FFB_Brevo {
 		$last  = $parts ? implode( ' ', $parts ) : '';
 
 		$attributes = array(
-			'VORNAME'         => $first,
-			'NACHNAME'        => $last,
-			'FFB_TERMINTYP'   => $event['title'],
-			'FFB_TERMIN_AM'   => $booking['start_local_date'],
-			'FFB_QUELLE'      => ! empty( $booking['source'] ) ? $booking['source'] : 'Website-Buchung',
+			'VORNAME'       => $first,
+			'NACHNAME'      => $last,
+			'FFB_TERMINTYP' => $event['title'],
+			'FFB_TERMIN_AM' => $booking['start_local_date'],
+			'FFB_QUELLE'    => ! empty( $booking['source'] ) ? $booking['source'] : 'Website-Buchung',
 		);
 
+		$nr = isset( $booking['id'] ) ? '#' . (int) $booking['id'] : '';
+
 		if ( ! empty( $booking['phone'] ) ) {
-			$attributes['SMS'] = $booking['phone'];
+			$sms = self::normalize_phone( $booking['phone'] );
+			if ( '' === $sms ) {
+				FFB_Google::log( 'Brevo, Buchung ' . $nr . ': Die Telefonnummer liess sich nicht ins internationale Format bringen und wurde nicht uebergeben.' );
+			} else {
+				$attributes['SMS'] = $sms;
+			}
 		}
 
+		$result = self::send_contact( $booking['email'], $attributes );
+
+		// Brevo lehnt die Nummer ab, etwa weil sie schon bei einem anderen Kontakt steht: noch einmal ohne Nummer.
+		if ( is_wp_error( $result ) && isset( $attributes['SMS'] ) && 400 === (int) $result->get_error_data() ) {
+			FFB_Google::log( 'Brevo, Buchung ' . $nr . ': Telefonnummer abgelehnt (' . $result->get_error_message() . '). Zweiter Versuch ohne Nummer.' );
+			unset( $attributes['SMS'] );
+			$result = self::send_contact( $booking['email'], $attributes );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Schickt einen Kontakt an Brevo.
+	 *
+	 * @param string $email      Mailadresse.
+	 * @param array  $attributes Attribute.
+	 * @return true|WP_Error Bei einer Ablehnung steht der HTTP-Status in den Fehlerdaten.
+	 */
+	protected static function send_contact( $email, $attributes ) {
 		$payload = array(
-			'email'         => $booking['email'],
+			'email'         => $email,
 			'attributes'    => $attributes,
 			'updateEnabled' => true,
 		);
@@ -94,7 +121,80 @@ class FFB_Brevo {
 
 		FFB_Google::log( 'Brevo (' . $code . '): ' . $message );
 
-		return new WP_Error( 'ffb_brevo_http_' . $code, $message );
+		return new WP_Error( 'ffb_brevo_http_' . $code, $message, $code );
+	}
+
+	/**
+	 * Bringt eine Telefonnummer in das Format, das Brevo fuer das SMS-Attribut
+	 * verlangt: Laendervorwahl und Nummer, nur Ziffern, ohne Plus oder 00.
+	 *
+	 * "0171 1234567" wird auf einer deutschen Website zu "491711234567",
+	 * "+41 79 123 45 67" zu "41791234567". Was sich nicht eindeutig umwandeln
+	 * laesst, ergibt einen leeren String.
+	 *
+	 * @param string $raw Eingabe aus dem Formular.
+	 * @return string
+	 */
+	public static function normalize_phone( $raw ) {
+		$raw = trim( (string) $raw );
+		if ( '' === $raw ) {
+			return '';
+		}
+
+		// "(0)" nach der Vorwahl ist eine Schreibkonvention, keine Ziffer.
+		$raw    = preg_replace( '/\(\s*0\s*\)/', '', $raw );
+		$digits = preg_replace( '/\D+/', '', $raw );
+
+		if ( 0 === strpos( $raw, '+' ) || 0 === strpos( $digits, '00' ) ) {
+			$digits = preg_replace( '/^00/', '', $digits );
+		} elseif ( 0 === strpos( $digits, '0' ) ) {
+			$country = self::country_code();
+			if ( '' === $country ) {
+				return '';
+			}
+			$digits = $country . substr( $digits, 1 );
+		}
+
+		// E.164 erlaubt hoechstens 15 Ziffern, unter 8 ist es keine vollstaendige Nummer.
+		$length = strlen( $digits );
+		if ( $length < 8 || $length > 15 ) {
+			return '';
+		}
+
+		return $digits;
+	}
+
+	/**
+	 * Laendervorwahl fuer Nummern ohne Vorwahl, abgeleitet aus der Sprache der Website.
+	 *
+	 * @return string Nur Ziffern, etwa "49". Leer, wenn die Sprache keine Zuordnung hat.
+	 */
+	protected static function country_code() {
+		$map = array(
+			'de_DE'          => '49',
+			'de_DE_formal'   => '49',
+			'de_AT'          => '43',
+			'de_CH'          => '41',
+			'de_CH_informal' => '41',
+			'en_GB'          => '44',
+			'fr_FR'          => '33',
+			'it_IT'          => '39',
+			'es_ES'          => '34',
+			'nl_NL'          => '31',
+		);
+
+		$locale = get_locale();
+		$code   = isset( $map[ $locale ] ) ? $map[ $locale ] : '';
+
+		/**
+		 * Laendervorwahl fuer Telefonnummern, die ohne Vorwahl eingegeben wurden.
+		 *
+		 * @param string $code   Vorwahl aus der Sprache der Website, nur Ziffern, etwa "49".
+		 * @param string $locale Sprache der Website.
+		 */
+		$code = apply_filters( 'ffb_phone_country_code', $code, $locale );
+
+		return preg_replace( '/\D+/', '', (string) $code );
 	}
 
 	/**
