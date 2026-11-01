@@ -1,0 +1,28 @@
+# Build-Artefakte
+*.zip
+build/
+dist/
+
+# Abhängigkeiten
+node_modules/
+vendor/
+
+# Editor und System
+.vscode/
+.idea/
+*.sublime-*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs und Temporäres
+*.log
+*.bak
+*.tmp
+*~
+
+# Lokale Konfiguration, niemals committen
+.env
+.env.*
+*-credentials.json
+secrets.*

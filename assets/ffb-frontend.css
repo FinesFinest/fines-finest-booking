@@ -1,0 +1,493 @@
+/* ============================================================
+   Fines Finest Booking - Frontend
+   Farben und Schriften kommen als CSS-Variablen aus den
+   Plugin-Einstellungen. Die Werte hier sind nur der Rueckfall,
+   falls die Einstellungen nicht geladen werden.
+============================================================ */
+
+.ffb {
+	--ffb-accent: #2563eb;
+	--ffb-accent-soft: #3b82f6;
+	--ffb-secondary: #0e7490;
+	--ffb-success: #15803d;
+	--ffb-bg: #ffffff;
+	--ffb-bg-deep: #f6f7f8;
+	--ffb-surface: #f1f2f4;
+	--ffb-text: #1a1d21;
+	--ffb-muted: #5a6068;
+	--ffb-font-display: inherit;
+	--ffb-font-body: inherit;
+	--ffb-radius: 6px;
+	--ffb-border: 1px solid rgba(255, 255, 255, 0.08);
+
+	font-family: var(--ffb-font-body);
+	color: var(--ffb-text);
+	line-height: 1.6;
+	max-width: 780px;
+	margin: 0 auto;
+}
+
+.ffb *,
+.ffb *::before,
+.ffb *::after {
+	box-sizing: border-box;
+}
+
+.ffb-widget {
+	background: var(--ffb-bg);
+	border: var(--ffb-border);
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.ffb-loading {
+	padding: 3rem 1.5rem;
+	text-align: center;
+	color: var(--ffb-muted);
+	font-size: 0.95rem;
+}
+
+/* ---------- Kopf ---------- */
+.ffb-head {
+	padding: 1.75rem 1.75rem 1.25rem;
+	border-bottom: var(--ffb-border);
+}
+
+.ffb-head__title {
+	font-family: var(--ffb-font-display);
+	font-size: 1.9rem;
+	letter-spacing: 0.03em;
+	line-height: 1.1;
+	margin: 0 0 0.75rem;
+	color: var(--ffb-text);
+}
+
+.ffb-head__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin: 0;
+}
+
+.ffb-chip {
+	display: inline-block;
+	padding: 0.25rem 0.7rem;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 100px;
+	font-size: 0.72rem;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--ffb-muted);
+}
+
+.ffb-head__desc {
+	margin-top: 1rem;
+	color: var(--ffb-muted);
+	font-size: 0.95rem;
+}
+
+.ffb-head__desc p {
+	margin: 0 0 0.6rem;
+}
+
+/* ---------- Tage ---------- */
+.ffb-picker {
+	padding: 1.5rem 1.75rem;
+}
+
+.ffb-days {
+	display: flex;
+	gap: 0.6rem;
+	overflow-x: auto;
+	padding-bottom: 0.75rem;
+	scrollbar-width: thin;
+}
+
+.ffb-days::-webkit-scrollbar {
+	height: 4px;
+}
+
+.ffb-days::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.15);
+	border-radius: 4px;
+}
+
+.ffb-day {
+	flex: 0 0 auto;
+	min-width: 78px;
+	padding: 0.7rem 0.5rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.1rem;
+	background: var(--ffb-surface);
+	border: 1.5px solid transparent;
+	border-radius: var(--ffb-radius);
+	color: var(--ffb-muted);
+	font-family: var(--ffb-font-body);
+	cursor: pointer;
+	transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.ffb-day:hover {
+	border-color: rgba(255, 255, 255, 0.2);
+	color: var(--ffb-text);
+	transform: translateY(-2px);
+}
+
+.ffb-day.is-active {
+	border-color: var(--ffb-accent);
+	color: var(--ffb-text);
+}
+
+.ffb-day__weekday {
+	font-size: 0.7rem;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+}
+
+.ffb-day__num {
+	font-family: var(--ffb-font-display);
+	font-size: 1.6rem;
+	line-height: 1.05;
+	color: var(--ffb-text);
+}
+
+.ffb-day__month {
+	font-size: 0.7rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+}
+
+.ffb-day__count {
+	margin-top: 0.25rem;
+	font-size: 0.65rem;
+	color: var(--ffb-secondary);
+}
+
+/* ---------- Slots ---------- */
+.ffb-slots {
+	margin-top: 1.5rem;
+}
+
+.ffb-slots__label {
+	margin: 0 0 0.75rem;
+	font-size: 0.75rem;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: var(--ffb-muted);
+}
+
+.ffb-slots__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+	gap: 0.6rem;
+}
+
+.ffb-slot {
+	padding: 0.75rem 0.5rem;
+	background: transparent;
+	border: 1.5px solid rgba(255, 255, 255, 0.14);
+	border-radius: var(--ffb-radius);
+	color: var(--ffb-text);
+	font-family: var(--ffb-font-body);
+	font-size: 0.95rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.ffb-slot:hover {
+	border-color: var(--ffb-secondary);
+	color: var(--ffb-secondary);
+	background: rgba(0, 0, 0, 0.03);
+}
+
+.ffb-slot.is-active {
+	background: var(--ffb-accent);
+	border-color: var(--ffb-accent);
+	color: #fff;
+}
+
+/* ---------- Formular ---------- */
+.ffb-form {
+	padding: 1.75rem;
+	border-top: var(--ffb-border);
+	background: var(--ffb-bg-deep);
+}
+
+.ffb-summary {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+	padding: 0.9rem 1.1rem;
+	margin-bottom: 1.5rem;
+	border-left: 3px solid var(--ffb-secondary);
+	background: rgba(0, 0, 0, 0.03);
+	border-radius: 0 var(--ffb-radius) var(--ffb-radius) 0;
+}
+
+.ffb-summary__label {
+	font-size: 0.7rem;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: var(--ffb-muted);
+}
+
+.ffb-summary__value {
+	font-size: 1.05rem;
+	color: var(--ffb-text);
+}
+
+.ffb-field {
+	margin-bottom: 1.1rem;
+}
+
+.ffb-field__label {
+	display: block;
+	margin-bottom: 0.4rem;
+	font-size: 0.75rem;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+	color: var(--ffb-muted);
+}
+
+.ffb-field__input {
+	width: 100%;
+	padding: 0.85rem 1rem;
+	background: var(--ffb-bg);
+	border: 1.5px solid rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+	color: var(--ffb-text);
+	font-family: var(--ffb-font-body);
+	font-size: 0.95rem;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ffb-field__input:focus {
+	outline: none;
+	border-color: var(--ffb-accent);
+	box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+}
+
+.ffb-field__input.has-error {
+	border-color: #ff5757;
+}
+
+textarea.ffb-field__input {
+	resize: vertical;
+	min-height: 110px;
+}
+
+.ffb-trap {
+	position: absolute;
+	left: -9999px;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}
+
+.ffb-consent {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.7rem;
+	margin: 1.2rem 0 1.5rem;
+	font-size: 0.85rem;
+	color: var(--ffb-muted);
+	cursor: pointer;
+}
+
+.ffb-consent input[type="checkbox"] {
+	flex-shrink: 0;
+	width: 18px;
+	height: 18px;
+	margin-top: 2px;
+	accent-color: var(--ffb-accent);
+	cursor: pointer;
+}
+
+.ffb-consent a {
+	color: var(--ffb-secondary);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+/* ---------- Buttons ---------- */
+.ffb-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem 2rem;
+	border: none;
+	border-radius: 4px;
+	font-family: var(--ffb-font-body);
+	font-size: 0.95rem;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	text-decoration: none;
+	cursor: pointer;
+	transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ffb-btn--primary {
+	background: var(--ffb-accent);
+	color: #fff;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+}
+
+.ffb-btn--primary:hover:not(:disabled) {
+	background: var(--ffb-accent-soft);
+	transform: translateY(-2px);
+	box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+}
+
+.ffb-btn:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+/* ---------- Meldungen ---------- */
+.ffb-message {
+	margin-top: 1rem;
+	padding: 0.9rem 1.1rem;
+	border-radius: 4px;
+	font-size: 0.9rem;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	color: var(--ffb-muted);
+}
+
+.ffb-message--error {
+	background: rgba(255, 87, 87, 0.08);
+	border-color: rgba(255, 87, 87, 0.5);
+	color: #ff8f8f;
+}
+
+.ffb-message--ok {
+	background: rgba(0, 0, 0, 0.03);
+	border-color: var(--ffb-success);
+	color: var(--ffb-success);
+}
+
+.ffb-note {
+	padding: 1.25rem;
+	border: var(--ffb-border);
+	border-radius: var(--ffb-radius);
+	background: var(--ffb-bg);
+	color: var(--ffb-muted);
+	font-size: 0.92rem;
+}
+
+/* ---------- Erfolg ---------- */
+.ffb-success {
+	padding: 2.5rem 1.75rem;
+	text-align: center;
+}
+
+.ffb-success__title {
+	font-family: var(--ffb-font-display);
+	font-size: 2rem;
+	letter-spacing: 0.03em;
+	margin: 0 0 0.5rem;
+	color: var(--ffb-success);
+}
+
+.ffb-success__when {
+	font-size: 1.1rem;
+	margin: 0 0 1rem;
+	color: var(--ffb-text);
+}
+
+.ffb-success p {
+	color: var(--ffb-muted);
+	margin: 0 0 1.25rem;
+}
+
+/* ---------- Auswahl mehrerer Termintypen ---------- */
+.ffb-chooser__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 1rem;
+	margin-bottom: 1.5rem;
+}
+
+.ffb-chooser__card {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	padding: 1.4rem;
+	text-align: left;
+	background: var(--ffb-surface);
+	border: 1.5px solid rgba(255, 255, 255, 0.08);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.25s ease;
+	font-family: var(--ffb-font-body);
+}
+
+.ffb-chooser__card:hover,
+.ffb-chooser__card.is-active {
+	border-color: var(--ffb-accent);
+	transform: translateY(-3px);
+}
+
+.ffb-chooser__title {
+	font-family: var(--ffb-font-display);
+	font-size: 1.3rem;
+	letter-spacing: 0.03em;
+	color: var(--ffb-text);
+}
+
+.ffb-chooser__meta {
+	font-size: 0.72rem;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+	color: var(--ffb-secondary);
+}
+
+.ffb-chooser__desc {
+	font-size: 0.88rem;
+	color: var(--ffb-muted);
+}
+
+/* ---------- Storno ---------- */
+.ffb-cancel {
+	padding: 2rem 1.75rem;
+	background: var(--ffb-bg);
+	border: var(--ffb-border);
+	border-radius: 8px;
+}
+
+.ffb-cancel__title {
+	font-family: var(--ffb-font-display);
+	font-size: 1.8rem;
+	letter-spacing: 0.03em;
+	margin: 0 0 0.75rem;
+}
+
+.ffb-cancel__meta {
+	color: var(--ffb-muted);
+	margin-bottom: 1.5rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 560px) {
+	.ffb-head,
+	.ffb-picker,
+	.ffb-form {
+		padding-left: 1.1rem;
+		padding-right: 1.1rem;
+	}
+
+	.ffb-head__title {
+		font-size: 1.6rem;
+	}
+
+	.ffb-slots__grid {
+		grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+	}
+
+	.ffb-btn {
+		width: 100%;
+	}
+}

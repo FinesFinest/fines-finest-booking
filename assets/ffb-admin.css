@@ -1,0 +1,133 @@
+.ffb-admin .ffb-dot {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	margin-right: 6px;
+	border-radius: 50%;
+	background: #c3c4c7;
+	vertical-align: middle;
+}
+
+.ffb-admin .ffb-dot--on {
+	background: #00a32a;
+	box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.15);
+}
+
+.ffb-admin .ffb-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 100px;
+	background: #f0f0f1;
+	color: #646970;
+	font-size: 11px;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+}
+
+.ffb-admin h2 {
+	margin-top: 2.5em;
+	padding-bottom: 0.4em;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.ffb-admin code {
+	font-size: 12px;
+}
+
+.ffb-admin .form-table td p.description {
+	max-width: 46em;
+}
+
+/* ---------- Einrichtungsstand ---------- */
+.ffb-admin .ffb-status {
+	margin: 1.5em 0 2em;
+	padding: 1.25em 1.5em;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #2271b1;
+	border-radius: 2px;
+}
+
+.ffb-admin .ffb-status h2 {
+	margin: 0 0 .75em;
+	padding: 0;
+	border: 0;
+	font-size: 15px;
+}
+
+.ffb-admin .ffb-status ul { margin: 0; }
+
+.ffb-admin .ffb-status li {
+	display: flex;
+	align-items: baseline;
+	gap: .6em;
+	flex-wrap: wrap;
+	margin: 0 0 .5em;
+	padding: 0;
+}
+
+.ffb-admin .ffb-status__dot {
+	flex: 0 0 auto;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: #d63638;
+}
+
+.ffb-admin .ffb-status .is-ok .ffb-status__dot { background: #00a32a; }
+
+.ffb-admin .ffb-status__text { color: #50575e; }
+
+.ffb-admin .ffb-status .is-offen .ffb-status__text { color: #8a6d00; }
+
+.ffb-admin .ffb-status__tz,
+.ffb-admin .ffb-status__warn {
+	margin: 1em 0 0;
+	padding-top: .75em;
+	border-top: 1px solid #f0f0f1;
+	color: #50575e;
+}
+
+.ffb-admin .ffb-status__warn { color: #b32d2e; }
+
+/* ---------- Aufklappbare Hilfe ---------- */
+.ffb-admin .ffb-hint-toggle {
+	width: 20px;
+	height: 20px;
+	margin-left: .5em;
+	padding: 0;
+	line-height: 18px;
+	text-align: center;
+	font-size: 12px;
+	font-weight: 700;
+	color: #2271b1;
+	background: #fff;
+	border: 1px solid #2271b1;
+	border-radius: 50%;
+	cursor: pointer;
+	vertical-align: middle;
+}
+
+.ffb-admin .ffb-hint-toggle:hover,
+.ffb-admin .ffb-hint-toggle[aria-expanded="true"] {
+	color: #fff;
+	background: #2271b1;
+}
+
+.ffb-admin .ffb-hint {
+	max-width: 46em;
+	margin: .75em 0 0;
+	padding: 1em 1.25em;
+	background: #f6f7f7;
+	border-left: 3px solid #2271b1;
+	font-size: 13px;
+	font-weight: 400;
+	line-height: 1.6;
+}
+
+.ffb-admin .ffb-hint p:first-child { margin-top: 0; }
+.ffb-admin .ffb-hint p:last-child { margin-bottom: 0; }
+.ffb-admin .ffb-hint ol { margin: .5em 0 .75em 1.5em; }
+.ffb-admin .ffb-hint li { margin-bottom: .4em; }
+
+.ffb-admin .ffb-copy { margin-left: .5em; }
