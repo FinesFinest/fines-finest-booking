@@ -137,8 +137,6 @@ class FFB_Cron {
 
 		update_option( self::LAST_RUN_OPTION, time(), false );
 
-		$table = FFB_Install::table_bookings();
-
 		/*
 		 * Untere Grenze ist bewusst "jetzt" und nicht "in 24 Stunden": WP-Cron laeuft nur,
 		 * wenn die Seite Besuch bekommt, und faellt dadurch regelmaessig aus dem Takt.
@@ -149,9 +147,9 @@ class FFB_Cron {
 		$from = ffb_now_utc();
 		$to   = ffb_now_utc()->modify( '+' . self::REMINDER_WINDOW_HOURS . ' hours' );
 
-		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE status = 'confirmed' AND reminder_sent = 0 AND start_utc > %s AND start_utc < %s",
+				"SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE status = 'confirmed' AND reminder_sent = 0 AND start_utc > %s AND start_utc < %s",
 				$from->format( 'Y-m-d H:i:s' ),
 				$to->format( 'Y-m-d H:i:s' )
 			),
@@ -206,9 +204,8 @@ class FFB_Cron {
 
 		if ( $days > 0 ) {
 			$cutoff = ffb_now_utc()->modify( '-' . $days . ' days' )->format( 'Y-m-d H:i:s' );
-			$table  = FFB_Install::table_bookings();
 
-			$wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE start_utc < %s", $cutoff ) ); // phpcs:ignore WordPress.DB
+			$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}ffb_bookings WHERE start_utc < %s", $cutoff ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 		}
 
 		// Reste der Buchungssperre ueber Optionen, die bis Version 1.1.1 genutzt wurde.

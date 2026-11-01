@@ -107,14 +107,14 @@ class FFB_Admin {
 
 			if ( 'cancel_booking' === $do ) {
 				check_admin_referer( 'ffb_cancel_booking' );
-				FFB_Bookings::cancel( (int) ( $_GET['id'] ?? 0 ), true );
+				FFB_Bookings::cancel( isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0, true );
 				wp_safe_redirect( admin_url( 'admin.php?page=ffb-bookings&ffb_notice=cancelled' ) );
 				exit;
 			}
 
 			if ( 'delete_event_type' === $do ) {
 				check_admin_referer( 'ffb_delete_event_type' );
-				$id    = (int) ( $_GET['id'] ?? 0 );
+				$id    = isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0;
 				$offen = FFB_Bookings::count_upcoming( $id );
 
 				// Mit kuenftigen Terminen nicht loeschen: Die Buchungen verloeren sonst still ihre Erinnerung.
@@ -231,7 +231,7 @@ class FFB_Admin {
 	 * Einstellungen speichern.
 	 */
 	protected static function save_settings() {
-		$input = isset( $_POST['ffb'] ) ? wp_unslash( $_POST['ffb'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$input = isset( $_POST['ffb'] ) ? wp_unslash( $_POST['ffb'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput, WordPress.Security.NonceVerification.Missing -- Nonce prueft handle_actions(), die Werte werden unten einzeln bereinigt.
 
 		// Geschaeftszeiten kommen als Von-Bis-Auswahl und werden hier zur gespeicherten Textform.
 		foreach ( array_keys( self::weekdays() ) as $ffb_tag ) {
@@ -291,8 +291,8 @@ class FFB_Admin {
 	 * Termintyp speichern.
 	 */
 	protected static function save_event_type() {
-		$input = isset( $_POST['ffb'] ) ? wp_unslash( $_POST['ffb'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
-		$id    = isset( $_POST['ffb_id'] ) ? (int) $_POST['ffb_id'] : 0;
+		$input = isset( $_POST['ffb'] ) ? wp_unslash( $_POST['ffb'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput, WordPress.Security.NonceVerification.Missing -- Nonce prueft handle_actions(), die Werte werden unten einzeln bereinigt.
+		$id    = isset( $_POST['ffb_id'] ) ? (int) $_POST['ffb_id'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce prueft handle_actions().
 
 		$availability = array();
 		foreach ( array_keys( self::weekdays() ) as $day ) {
@@ -774,6 +774,7 @@ class FFB_Admin {
 				<?php endif; ?>
 			</p>
 
+			<?php if ( class_exists( 'FFB_Updater' ) ) : // Fehlt in der Fassung fuer das WordPress-Verzeichnis. ?>
 			<?php
 			$release = FFB_Updater::latest_release();
 			$auto    = FFB_Updater::auto_update_active() ? __( 'enabled', 'fines-finest-booking' ) : __( 'disabled', 'fines-finest-booking' );
@@ -803,6 +804,7 @@ class FFB_Admin {
 			}
 			?>
 			</p>
+			<?php endif; ?>
 
 			<?php
 			$fehlende = FFB_Google::is_connected() ? FFB_Google::unreachable_busy_calendars() : array();

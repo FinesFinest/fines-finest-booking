@@ -36,7 +36,11 @@ require_once FFB_DIR . 'includes/class-ffb-shortcode.php';
 require_once FFB_DIR . 'includes/class-ffb-cron.php';
 require_once FFB_DIR . 'includes/class-ffb-privacy.php';
 require_once FFB_DIR . 'includes/class-ffb-admin.php';
-require_once FFB_DIR . 'includes/class-ffb-updater.php';
+
+// Der GitHub-Updater fehlt in der Fassung fuer das WordPress-Verzeichnis, dort liefert wordpress.org die Updates.
+if ( file_exists( FFB_DIR . 'includes/class-ffb-updater.php' ) ) {
+	require_once FFB_DIR . 'includes/class-ffb-updater.php';
+}
 
 register_activation_hook( __FILE__, array( 'FFB_Install', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'FFB_Install', 'deactivate' ) );
@@ -50,7 +54,10 @@ function ffb_init() {
 	FFB_Shortcode::init();
 	FFB_Cron::init();
 	FFB_Privacy::init();
-	FFB_Updater::init();
+
+	if ( class_exists( 'FFB_Updater' ) ) {
+		FFB_Updater::init();
+	}
 
 	add_action( 'phpmailer_init', array( 'FFB_Mailer', 'add_plain_text' ) );
 
@@ -65,6 +72,10 @@ add_action( 'plugins_loaded', 'ffb_init' );
  *
  * Nicht frueher als init: Seit WordPress 6.7 gilt frueheres Laden als Fehler.
  * Darum darf vor init auch kein Text uebersetzt werden.
+ *
+ * Plugin Check raet von load_plugin_textdomain() ab, weil wordpress.org eigene
+ * Sprachpakete ausliefert. Die gibt es fuer dieses Plugin nicht: Die deutsche
+ * Uebersetzung liegt im Ordner languages bei und wird nur so geladen.
  */
 function ffb_load_textdomain() {
 	load_plugin_textdomain( 'fines-finest-booking', false, dirname( plugin_basename( FFB_FILE ) ) . '/languages' );

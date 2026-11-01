@@ -1,7 +1,7 @@
 name: Pruefen
 
-# Bei jedem Push und Pull Request: Syntax fuer die unterstuetzten PHP-Versionen
-# und die Tests der Slot-Berechnung.
+# Bei jedem Push und Pull Request: Syntax fuer die unterstuetzten PHP-Versionen,
+# die Tests der Slot-Berechnung und der Plugin Check von wordpress.org.
 
 on:
   push:
@@ -41,3 +41,20 @@ jobs:
           tools: phpunit:11
       - name: Tests
         run: phpunit --testdox
+
+  plugin-check:
+    name: Plugin Check (Fassung fuer wordpress.org)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fassung ohne GitHub-Updater bauen
+        run: |
+          # Wie im Release-Workflow: ohne Updater und ohne Update-URI, so wie das Plugin bei wordpress.org laege.
+          rm -rf build/wporg && mkdir -p build/wporg
+          git archive --format=tar --prefix=fines-finest-booking/ HEAD | tar -x -C build/wporg
+          rm build/wporg/fines-finest-booking/includes/class-ffb-updater.php
+          sed -i '/^ \* Update URI:/d' build/wporg/fines-finest-booking/fines-finest-booking.php
+      - uses: wordpress/plugin-check-action@v1
+        with:
+          build-dir: build/wporg/fines-finest-booking
+          ignore-warnings: true

@@ -50,6 +50,21 @@ jobs:
           git archive --format=zip --prefix=fines-finest-booking/ -o build/fines-finest-booking.zip "$GITHUB_REF_NAME"
           unzip -l build/fines-finest-booking.zip | head -15
 
+      - name: ZIP fuer das WordPress-Verzeichnis bauen
+        run: |
+          # Gleicher Stand ohne GitHub-Updater und ohne Update-URI: wordpress.org erlaubt beides nicht
+          # und liefert Updates selbst aus. Dieses ZIP ist nur fuer die Einreichung dort gedacht.
+          rm -rf build/wporg && mkdir -p build/wporg
+          git archive --format=tar --prefix=fines-finest-booking/ "$GITHUB_REF_NAME" | tar -x -C build/wporg
+          rm build/wporg/fines-finest-booking/includes/class-ffb-updater.php
+          sed -i '/^ \* Update URI:/d' build/wporg/fines-finest-booking/fines-finest-booking.php
+          if grep -q 'Update URI' build/wporg/fines-finest-booking/fines-finest-booking.php; then
+            echo "Update-URI steht noch im Plugin-Kopf. Abbruch."
+            exit 1
+          fi
+          (cd build/wporg && zip -qr ../fines-finest-booking-wporg.zip fines-finest-booking)
+          unzip -l build/fines-finest-booking-wporg.zip | head -15
+
       - name: Changelog aus readme.txt auslesen
         run: |
           V="${GITHUB_REF_NAME#v}"
@@ -65,6 +80,6 @@ jobs:
         run: |
           # Wird ein Tag neu gesetzt, ersetzt das neue Release das alte statt zu scheitern.
           gh release delete "$GITHUB_REF_NAME" --yes 2>/dev/null || true
-          gh release create "$GITHUB_REF_NAME" build/fines-finest-booking.zip \
+          gh release create "$GITHUB_REF_NAME" build/fines-finest-booking.zip build/fines-finest-booking-wporg.zip \
             --title "Version ${GITHUB_REF_NAME#v}" \
             --notes-file release-notes.md

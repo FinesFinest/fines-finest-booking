@@ -24,24 +24,27 @@ class FFB_Bookings {
 	 */
 	public static function in_range( $from, $to, $event_type_id = 0 ) {
 		global $wpdb;
-		$table = FFB_Install::table_bookings();
 
 		if ( $event_type_id > 0 ) {
-			$sql = $wpdb->prepare(
-				"SELECT * FROM {$table} WHERE status = 'confirmed' AND event_type_id = %d AND end_utc > %s AND start_utc < %s ORDER BY start_utc ASC", // phpcs:ignore WordPress.DB
-				(int) $event_type_id,
-				$from->format( 'Y-m-d H:i:s' ),
-				$to->format( 'Y-m-d H:i:s' )
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE status = 'confirmed' AND event_type_id = %d AND end_utc > %s AND start_utc < %s ORDER BY start_utc ASC",
+					(int) $event_type_id,
+					$from->format( 'Y-m-d H:i:s' ),
+					$to->format( 'Y-m-d H:i:s' )
+				),
+				ARRAY_A
 			);
 		} else {
-			$sql = $wpdb->prepare(
-				"SELECT * FROM {$table} WHERE status = 'confirmed' AND end_utc > %s AND start_utc < %s ORDER BY start_utc ASC", // phpcs:ignore WordPress.DB
-				$from->format( 'Y-m-d H:i:s' ),
-				$to->format( 'Y-m-d H:i:s' )
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE status = 'confirmed' AND end_utc > %s AND start_utc < %s ORDER BY start_utc ASC",
+					$from->format( 'Y-m-d H:i:s' ),
+					$to->format( 'Y-m-d H:i:s' )
+				),
+				ARRAY_A
 			);
 		}
-
-		$rows = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB
 
 		return (array) $rows;
 	}
@@ -54,9 +57,8 @@ class FFB_Bookings {
 	 */
 	public static function get( $id ) {
 		global $wpdb;
-		$table = FFB_Install::table_bookings();
 
-		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", (int) $id ), ARRAY_A ); // phpcs:ignore WordPress.DB
+		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE id = %d", (int) $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 	}
 
 	/**
@@ -67,14 +69,13 @@ class FFB_Bookings {
 	 */
 	public static function get_by_token( $token ) {
 		global $wpdb;
-		$table = FFB_Install::table_bookings();
 		$token = preg_replace( '/[^a-f0-9]/i', '', (string) $token );
 
 		if ( strlen( $token ) < 20 ) {
 			return null;
 		}
 
-		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE token = %s", $token ), ARRAY_A ); // phpcs:ignore WordPress.DB
+		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE token = %s", $token ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 	}
 
 	/**
@@ -97,9 +98,9 @@ class FFB_Bookings {
 
 		$end = $start->modify( '+' . (int) $event['duration'] . ' minutes' );
 
-		$conflict = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB
+		$conflict = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle, unter der Buchungssperre.
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table} WHERE status = 'confirmed' AND start_utc < %s AND end_utc > %s",
+				"SELECT COUNT(*) FROM {$wpdb->prefix}ffb_bookings WHERE status = 'confirmed' AND start_utc < %s AND end_utc > %s",
 				$end->format( 'Y-m-d H:i:s' ),
 				$start->format( 'Y-m-d H:i:s' )
 			)
@@ -262,11 +263,10 @@ class FFB_Bookings {
 	 */
 	public static function count_upcoming( $event_type_id ) {
 		global $wpdb;
-		$table = FFB_Install::table_bookings();
 
-		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table} WHERE status = 'confirmed' AND event_type_id = %d AND start_utc > %s",
+				"SELECT COUNT(*) FROM {$wpdb->prefix}ffb_bookings WHERE status = 'confirmed' AND event_type_id = %d AND start_utc > %s",
 				(int) $event_type_id,
 				ffb_now_utc()->format( 'Y-m-d H:i:s' )
 			)
@@ -283,24 +283,24 @@ class FFB_Bookings {
 	 */
 	public static function query( $scope = 'upcoming', $per_page = 30, $page = 1 ) {
 		global $wpdb;
-		$table    = FFB_Install::table_bookings();
 		$now      = ffb_now_utc()->format( 'Y-m-d H:i:s' );
 		$per_page = max( 1, min( 200, (int) $per_page ) );
 		$offset   = max( 0, ( (int) $page - 1 ) * $per_page );
 
+		// Drei feste Abfragen statt eines zusammengesetzten WHERE: so bleibt jede komplett in prepare().
 		if ( 'past' === $scope ) {
-			$where = $wpdb->prepare( "status = 'confirmed' AND start_utc < %s", $now );
-			$order = 'start_utc DESC';
+			$sql   = $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE status = 'confirmed' AND start_utc < %s ORDER BY start_utc DESC LIMIT %d OFFSET %d", $now, $per_page, $offset );
+			$count = $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}ffb_bookings WHERE status = 'confirmed' AND start_utc < %s", $now );
 		} elseif ( 'cancelled' === $scope ) {
-			$where = "status = 'cancelled'";
-			$order = 'start_utc DESC';
+			$sql   = $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE status = %s ORDER BY start_utc DESC LIMIT %d OFFSET %d", 'cancelled', $per_page, $offset );
+			$count = $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}ffb_bookings WHERE status = %s", 'cancelled' );
 		} else {
-			$where = $wpdb->prepare( "status = 'confirmed' AND start_utc >= %s", $now );
-			$order = 'start_utc ASC';
+			$sql   = $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE status = 'confirmed' AND start_utc >= %s ORDER BY start_utc ASC LIMIT %d OFFSET %d", $now, $per_page, $offset );
+			$count = $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}ffb_bookings WHERE status = 'confirmed' AND start_utc >= %s", $now );
 		}
 
-		$rows  = $wpdb->get_results( "SELECT * FROM {$table} WHERE {$where} ORDER BY {$order} LIMIT {$per_page} OFFSET {$offset}", ARRAY_A ); // phpcs:ignore WordPress.DB
-		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE {$where}" ); // phpcs:ignore WordPress.DB
+		$rows  = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB -- eigene Tabelle, Abfrage oben mit prepare() gebaut.
+		$total = (int) $wpdb->get_var( $count ); // phpcs:ignore WordPress.DB -- eigene Tabelle, Abfrage oben mit prepare() gebaut.
 
 		return array(
 			'rows'  => (array) $rows,

@@ -145,8 +145,7 @@ class FFB_Install {
 	public static function seed_defaults() {
 		global $wpdb;
 
-		$table = self::table_event_types();
-		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ffb_event_types" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle, laeuft nur bei der Aktivierung.
 
 		if ( $count > 0 ) {
 			return;
@@ -174,7 +173,7 @@ class FFB_Install {
 		$title = __( 'Intro call', 'fines-finest-booking' );
 
 		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$table,
+			self::table_event_types(),
 			array(
 				'slug'          => sanitize_title( $title ),
 				'title'         => $title,

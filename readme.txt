@@ -1,109 +1,136 @@
 === Fines Finest Booking ===
 Contributors: finesfinest
-Tags: booking, appointments, google calendar, termine, dsgvo
+Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
-Tested up to: 6.8
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 1.2.0
 License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Terminbuchung im eigenen Design, mit Google-Kalender-Sync, Google Meet, Bestaetigungsmails und Brevo-Anbindung.
+Appointment booking in your own design: Google Calendar sync, Google Meet, confirmation emails and Brevo. All data stays in your own database.
 
-== Beschreibung ==
+== Description ==
 
-Ein schlankes Buchungsplugin fuer Solo-Selbstaendige. Beliebig viele Termintypen, Zwei-Wege-Abgleich mit Google Kalender, automatisch erzeugter Google-Meet-Link, Bestaetigungs- und Erinnerungsmail mit Kalenderdatei im Anhang, Absagelink fuer die Kundin, optionale Uebergabe der Kontakte an Brevo.
+A lean booking plugin for solo professionals. Any number of appointment types, two-way sync with Google Calendar, an automatically created Google Meet link, confirmation and reminder emails with a calendar file attached, a cancellation link for the client, and optional hand-over of contacts to Brevo.
 
-Alle Buchungsdaten liegen in der Datenbank der eigenen Website. Kein externer Anbieter im Frontend, kein Consent-Banner noetig, kein iframe.
+All booking data lives in your own WordPress database. No third-party widget in the frontend, no consent banner needed, no iframe.
 
-= Funktionen =
+= Features =
 
-* Mehrere Termintypen mit eigener Dauer, eigenen Zeitfenstern und eigenen Zusatzfragen
-* Puffer vor und nach dem Termin, Vorlaufzeit, Buchungshorizont, Tageslimit
-* Verfuegbarkeit wird gegen beliebig viele Google-Kalender geprueft
-* Google Meet, Telefon oder Vor-Ort als Terminort
-* Bestaetigungs- und Erinnerungsmail im eigenen Corporate Design, ICS-Datei im Anhang
-* Absagelink in jeder Mail, Slot wird sofort wieder frei
-* Brevo: jede Buchung landet als Kontakt in einer Liste
-* DSGVO: Einwilligung mit Zeitstempel, automatische Loeschfrist, Anbindung an die WordPress-Datenschutz-Werkzeuge
+* Several appointment types, each with its own duration, time windows and extra questions
+* Buffer before and after the appointment, minimum notice, booking horizon, daily limit
+* Availability is checked against any number of Google calendars
+* Google Meet, phone or on site as the meeting place
+* Confirmation and reminder emails in your own corporate design, ICS file attached
+* Cancellation link in every email, the slot is released at once
+* Brevo: every booking becomes a contact in a list of your choice
+* GDPR: consent with timestamp, automatic deletion period, integration with the WordPress privacy tools
 
 = Shortcodes =
 
-`[ff_booking event="erstanalyse"]` bindet einen bestimmten Termintyp ein.
-`[ff_booking]` zeigt eine Auswahl, wenn mehrere Termintypen aktiv sind.
+`[ff_booking event="intro-call"]` embeds one appointment type.
+`[ff_booking]` shows a choice when several appointment types are active.
+
+= External services =
+
+The plugin can talk to two external services. Nothing is sent until you connect them in the settings.
+
+* **Google Calendar API** (Google LLC): reads busy times from the calendars you select, creates and deletes calendar events for bookings and creates Google Meet links. Sent per booking: date and time, the client's name and email address, the appointment type and the answers to extra questions as the event description. [Terms](https://developers.google.com/terms), [Privacy](https://policies.google.com/privacy).
+* **Brevo API** (Brevo SAS): used only if you enter an API key. After each booking the client's name, email address and, if given, phone number are added to the list you select. [Terms](https://www.brevo.com/legal/termsofuse/), [Privacy](https://www.brevo.com/legal/privacypolicy/).
 
 == Installation ==
 
-1. ZIP unter Plugins, Installieren, Plugin hochladen einspielen und aktivieren.
-2. Unter Buchungen, Einstellungen die Google-Zugangsdaten eintragen und verbinden.
-3. Unter Buchungen, Termintypen die Zeiten pflegen.
-4. Shortcode auf einer Seite einbauen.
+1. Install the plugin from the directory or upload the ZIP under Plugins, Add New Plugin, Upload Plugin. Activate it.
+2. Under Bookings, Settings enter your Google credentials and connect the account.
+3. Under Bookings, Appointment types set up your times.
+4. Put the shortcode on a page and enter that page's address in the settings.
 
-Die ausfuehrliche Anleitung steht in der Datei INSTALL.md.
+A detailed setup guide in German, including the Google Cloud project, ships in the file docs/INSTALL.md. The same steps are shown in the help sections of the settings page.
+
+== Frequently Asked Questions ==
+
+= Does the plugin work without Google? =
+
+Yes. Without a Google connection the plugin checks only its own bookings when it calculates free slots. Google adds the comparison with your calendars, the calendar entries and the Meet links.
+
+= Where is the data stored? =
+
+In two tables of your own WordPress database. Nothing is stored with the plugin author. Uninstalling deletes the tables and settings only if you tick that option in the settings first.
+
+= What happens when a client cancels? =
+
+The booking is marked as cancelled, the slot is free again, the Google Calendar event is deleted and a cancellation email goes out.
+
+= Why do cancellation links still work after I renamed the booking page? =
+
+The plugin answers every link with the cancellation parameter itself. If the booking page is missing, renamed or password protected, it shows its own lean cancellation page.
 
 == Changelog ==
 
 = 1.2.1 =
-* Die Slot-Berechnung rechnet in Wanduhr-Minuten des Tages statt mit PHP-Zeitschritten. In der doppelten Stunde beim Sommerzeitende wird jede Uhrzeit genau einmal angeboten, unabhaengig von der PHP-Version.
-* Automatische Tests fuer die Slot-Berechnung (Zeitfenster, Geschaeftszeiten, Puffer, Vorlaufzeit, Tageslimit, Sperrtage, Horizont, beide Sommerzeitwechsel), das Erinnerungsfenster und die Telefonnummern-Normalisierung. GitHub prueft sie bei jedem Stand und vor jedem Release.
-* Absage-Links laufen nie mehr ins Leere. Wird die Buchungsseite umbenannt oder geloescht, ist keine eingetragen oder passt der Link zu keinem Termin, zeigt das Plugin seine eigene schlanke Absage-Seite mit klarer Meldung. Auf der eingetragenen Buchungsseite bleibt die Absage im Design der Website.
-* Neu im Einrichtungsstand: eine fuenfte Zeile zur Erinnerungsaufgabe mit letztem und naechstem Lauf. Sie warnt, wenn die Aufgabe nicht eingeplant oder laenger als eine Stunde ueberfaellig ist, und erklaert bei abgeschaltetem WP-Cron den noetigen Cronjob beim Hoster. Knopf "Jetzt ausfuehren" stoesst den Lauf von Hand an.
+* The slot calculation steps through the wall-clock minutes of a day instead of PHP time intervals. In the repeated hour at the end of daylight saving time every time is offered exactly once, on every PHP version.
+* Automated tests for the slot calculation (time windows, business hours, buffers, minimum notice, daily limit, blocked days, horizon, both daylight saving changes), the reminder window and the phone number normalisation. GitHub runs them for every commit and before every release.
+* Cancellation links never dead-end. If the booking page is renamed or deleted, if none is set, or if the link matches no appointment, the plugin shows its own lean cancellation page with a clear message. On the booking page itself the cancellation stays in the design of your site.
+* New in the setup status: a fifth row for the reminder task with last and next run. It warns when the task is not scheduled or more than an hour overdue, and explains the required server cron job when WP-Cron is disabled. A "Run now" button triggers the run by hand.
+* Ready for the WordPress plugin directory: readme in English, Plugin Check without errors, setup guide moved to docs/INSTALL.md. Every release now also builds a ZIP without the GitHub updater for the directory.
 
 = 1.2.0 =
-* Das Plugin ist uebersetzbar. Quellsprache ist Englisch, die deutsche Fassung liegt als Sprachpaket bei, jetzt mit Umlauten in allen Texten und Mails.
-* Die Textdomain heisst fines-finest-booking statt ff-booking, wie es das WordPress-Verzeichnis verlangt.
-* Datum und Uhrzeit in Mails und Backend folgen der Sprache der Website.
-* Block-Themes: Das Buchungsfeld bekam seine Konfiguration nicht, weil solche Themes den Inhalt vor dem Kopfbereich rendern. Die Skripte werden jetzt frueh registriert.
-* Die Erfolgsmeldung nach der Buchung zeigte "Uhr" doppelt.
-* Der Hinweis nach der Aktivierung sagte faelschlich, ohne Google sei nichts buchbar.
-* Der gespeicherte Standard-Einwilligungstext ohne Umlaute wird einmalig durch die neue Fassung ersetzt. Eigene Formulierungen bleiben unveraendert.
+* The plugin is translatable. The source language is English, the German translation ships as a language pack, now with umlauts in all texts and emails.
+* The text domain is fines-finest-booking instead of ff-booking, as required by the WordPress directory.
+* Dates and times in emails and in the backend follow the language of the site.
+* Block themes: the booking widget did not receive its configuration because such themes render the content before the head section. Scripts are now registered early.
+* The success message after booking showed "Uhr" twice.
+* The notice after activation wrongly said that nothing could be booked without Google.
+* The stored default consent text without umlauts is replaced once by the new version. Custom wording stays untouched.
 
 = 1.1.2 =
-* Die Sperre gegen Doppelbuchungen nutzt eine Datenbanksperre. Die bisherige Sperre ueber eine Option war nicht atomar, zwei gleichzeitige Buchungen konnten beide durchgehen.
-* Wer weniger als 25 Stunden vor dem Termin bucht, bekommt keine zusaetzliche Erinnerungsmail mehr. Bisher kam sie direkt nach der Bestaetigung und sprach von "morgen".
-* Die Erinnerungsmail sagt "heute", wenn der Termin am selben Tag ist, zum Beispiel wenn der Cron spaet dran war.
-* Ein Termintyp mit kuenftigen Terminen laesst sich nicht mehr loeschen. Vorher verloren diese Termine still ihre Erinnerung.
-* Brevo: Telefonnummern werden ins internationale Format gebracht. Lehnt Brevo die Nummer trotzdem ab, wird der Kontakt ohne Nummer angelegt statt gar nicht.
-* Die Google-Verbindung meldet sich, wenn die Anmeldung abgelaufen ist oder bei Google abgebrochen wurde, statt stumm zur Einstellungsseite zurueckzukehren.
+* The protection against double bookings uses a database lock. The previous lock via an option was not atomic, two simultaneous bookings could both go through.
+* Who books less than 25 hours before the appointment no longer gets an extra reminder email. It used to arrive right after the confirmation and spoke of "tomorrow".
+* The reminder email says "today" when the appointment is on the same day, for example when the cron ran late.
+* An appointment type with upcoming appointments can no longer be deleted. Those appointments used to lose their reminder silently.
+* Brevo: phone numbers are converted to the international format. If Brevo still rejects the number, the contact is created without it instead of not at all.
+* The Google connection reports when the login has expired or was aborted at Google, instead of returning silently to the settings page.
 
 = 1.1.1 =
-* Der mitgelieferte Beispiel-Termintyp ist neutral: "Erstgespraech", ohne vorgegebenen Beschreibungstext und ohne Tageslimit.
-* Die Standardfarben sind neutral statt in einem bestimmten Corporate Design. Schriften stehen auf "inherit" und uebernehmen damit die der Website.
-* Die Einrichtungsanleitung ist von konkreten Beispieladressen befreit und um die neuen Funktionen ergaenzt.
-* Betrifft nur Neuinstallationen. Bestehende Einstellungen, Farben und Termintypen bleiben unveraendert.
+* The bundled sample appointment type is neutral, without preset description and without daily limit.
+* The default colours are neutral instead of a specific corporate design. Fonts are set to "inherit" and take over those of the website.
+* The setup guide no longer contains specific sample addresses and covers the new functions.
+* Affects new installations only. Existing settings, colours and appointment types stay unchanged.
 
 = 1.1.0 =
-* Neu: Einrichtungsstand oben auf der Einstellungsseite. Vier Punkte mit Ampel, jeder mit Link zur naechsten Handlung: Google verbunden, Termintyp aktiv, Buchungsseite bekannt, Mailversand getestet.
-* Neu: Knopf "Testmail senden". Der Mailversand laesst sich pruefen, ohne eine echte Buchung anzulegen.
-* Neu: Aufklappbare Hilfetexte hinter den Abschnitten, darin die komplette Anleitung fuer das Google-Cloud-Projekt. Zum Anklicken statt beim Darueberfahren, damit es auch auf dem Handy und mit Screenreadern funktioniert.
-* Neu: Die Weiterleitungs-URI laesst sich mit einem Klick kopieren.
-* Neu: Die Zeitzone der Website wird angezeigt. Steht dort ein fester Zeitversatz statt einer Stadt, warnt das Plugin wegen der Sommerzeit.
-* Hinweis direkt nach dem Aktivieren, dass zuerst Google verbunden werden muss.
+* New: setup status at the top of the settings page. Four items with traffic lights, each linking to the next action: Google connected, appointment type active, booking page known, email sending tested.
+* New: "Send test email" button. Email sending can be checked without creating a real booking.
+* New: expandable help texts behind the sections, including the complete guide for the Google Cloud project. Click to open instead of hover, so it works on phones and with screen readers.
+* New: the redirect URI can be copied with one click.
+* New: the site's time zone is shown. If it is a fixed offset instead of a city, the plugin warns because of daylight saving time.
+* Notice right after activation that Google must be connected first.
 
 = 1.0.5 =
-* Zeitfenster werden ausgewaehlt statt getippt: zwei Von-Bis-Paare pro Wochentag, in Viertelstundenschritten. Gilt fuer die Geschaeftszeiten und fuer jeden Termintyp.
-* Unvollstaendige oder verdrehte Paare werden verworfen und sperren den Tag, statt ihn versehentlich zu oeffnen. Ein Tippfehler kann damit keine Nachtbuchung mehr ermoeglichen.
-* Vorlaufzeiten lassen sich in Minuten, Stunden oder Tagen angeben. Gespeichert wird weiterhin in Minuten.
+* Time windows are selected instead of typed: two from-to pairs per weekday, in quarter-hour steps. Applies to the business hours and to every appointment type.
+* Incomplete or reversed pairs are discarded and block the day instead of opening it by accident. A typo can no longer allow a night booking.
+* Minimum notice can be given in minutes, hours or days. It is still stored in minutes.
 
 = 1.0.4 =
-* Zielkalender wird ausgewaehlt statt eingetippt. Angeboten werden nur Kalender, in die das verbundene Konto schreiben darf.
-* Weitere zu pruefende Kalender werden angekreuzt statt eingetippt. Es erscheinen nur Kalender, die das verbundene Konto wirklich sehen darf.
-* Ein eingetragener Kalender, den Google fuer dieses Konto nicht liefert, wird jetzt deutlich als wirkungslos markiert statt still ignoriert.
-* Google meldet Zugriffsprobleme pro Kalender und nicht als HTTP-Fehler. Diese Meldungen landen jetzt im Fehlerprotokoll.
+* The target calendar is selected instead of typed. Only calendars the connected account may write to are offered.
+* Additional calendars to check are ticked instead of typed. Only calendars the connected account can actually see appear.
+* A configured calendar that Google does not deliver for this account is now clearly marked as ineffective instead of being ignored silently.
+* Google reports access problems per calendar, not as HTTP errors. These messages now end up in the error log.
 
 = 1.0.3 =
-* Neu: Grenzen fuer alle Termintypen in den Einstellungen. Geschaeftszeiten pro Wochentag, Mindest-Vorlaufzeit und Sperrtage gelten uebergreifend und koennen von keinem Termintyp ausgehebelt werden.
-* Die globalen Zeiten werden mit den Zeiten des Termintyps geschnitten, schraenken also nur weiter ein. Ein leerer Wochentag sperrt diesen Tag komplett.
-* Die laengere der beiden Vorlaufzeiten gewinnt, global oder pro Termintyp.
+* New: limits for all appointment types in the settings. Business hours per weekday, minimum notice and blocked days apply globally and cannot be overridden by any appointment type.
+* The global times are intersected with the times of the appointment type, so they only restrict further. An empty weekday blocks that day completely.
+* The longer of the two minimum notices wins, global or per appointment type.
 
 = 1.0.2 =
-* Brevo: Die Liste wird jetzt ausgewaehlt statt per ID eingetippt, sobald der API-Key gespeichert ist. Fehlt die Liste, sagt das Plugin es deutlich, statt still nichts zu tun.
-* Neu: Herkunft einer Buchung. Das Plugin merkt sich die Seite, auf der gebucht wurde; im Shortcode laesst sich das mit quelle="..." ueberschreiben. Sichtbar im Backend, in der Benachrichtigungsmail, im Kalendereintrag und als Attribut FFB_QUELLE in Brevo.
-* Neu: Der Titel des Kalendereintrags ist pro Termintyp frei einstellbar, mit Platzhaltern {name}, {termintyp}, {quelle}, {datum}, {uhrzeit}, {email}.
-* Mails bekommen zusaetzlich eine Nur-Text-Fassung. Reines HTML kostet bei Spamfiltern Punkte.
+* Brevo: the list is now selected instead of typed as an ID once the API key is saved. If the list is missing, the plugin says so clearly instead of doing nothing silently.
+* New: origin of a booking. The plugin remembers the page where the booking was made; in the shortcode this can be overridden with quelle="...". Visible in the backend, in the notification email, in the calendar entry and as the attribute FFB_QUELLE in Brevo.
+* New: the title of the calendar entry can be set per appointment type, with the placeholders {name}, {termintyp}, {quelle}, {datum}, {uhrzeit} and {email}.
+* Emails get an additional plain-text version. Pure HTML costs points with spam filters.
 
 = 1.0.1 =
-* Termintyp-Formular: Abbrechen-Button neben Speichern, fuehrt zurueck zur Liste.
-* Absage-Links funktionieren jetzt auch, wenn die Buchungsseite ihren Inhalt nicht ausliefert (zum Beispiel bei Passwortschutz). In dem Fall liefert das Plugin eine eigene schlanke Absage-Seite aus.
+* Appointment type form: Cancel button next to Save, leads back to the list.
+* Cancellation links also work when the booking page does not deliver its content, for example when it is password protected. In that case the plugin serves its own lean cancellation page.
 
 = 1.0.0 =
-* Erste Fassung.
+* First version.

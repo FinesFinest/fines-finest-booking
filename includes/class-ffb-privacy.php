@@ -63,8 +63,7 @@ class FFB_Privacy {
 	public static function export( $email, $page = 1 ) {
 		global $wpdb;
 
-		$table = FFB_Install::table_bookings();
-		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE email = %s", $email ), ARRAY_A ); // phpcs:ignore WordPress.DB
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE email = %s", $email ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 
 		$items = array();
 
@@ -134,7 +133,7 @@ class FFB_Privacy {
 		global $wpdb;
 
 		$table = FFB_Install::table_bookings();
-		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT id, google_event_id FROM {$table} WHERE email = %s", $email ), ARRAY_A ); // phpcs:ignore WordPress.DB
+		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT id, google_event_id FROM {$wpdb->prefix}ffb_bookings WHERE email = %s", $email ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 
 		foreach ( (array) $rows as $row ) {
 			if ( ! empty( $row['google_event_id'] ) ) {

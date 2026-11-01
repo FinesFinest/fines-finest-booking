@@ -133,7 +133,11 @@ class FFB_Shortcode {
 	echo esc_html( sprintf( __( 'Cancel appointment - %s', 'fines-finest-booking' ), get_bloginfo( 'name' ) ) );
 	?>
 	</title>
-	<link rel="stylesheet" href="<?php echo esc_url( FFB_URL . 'assets/ffb-frontend.css?ver=' . FFB_VERSION ); ?>">
+	<?php
+	// Stylesheet und Skript laufen ueber die WordPress-Warteschlange, wie auf der Buchungsseite.
+	self::enqueue();
+	wp_print_styles( array( 'ffb-frontend' ) );
+	?>
 	<style>
 		body { margin: 0; padding: 3rem 1.25rem; background: <?php echo esc_attr( ffb_get_setting( 'color_bg_deep' ) ); ?>; }
 		.ffb { max-width: 560px; }
@@ -141,8 +145,7 @@ class FFB_Shortcode {
 </head>
 <body>
 	<?php echo self::render_cancel( $token ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-	<script>window.FFB_CONFIG = <?php echo wp_json_encode( self::frontend_config() ); ?>;</script>
-	<script src="<?php echo esc_url( FFB_URL . 'assets/ffb-frontend.js?ver=' . FFB_VERSION ); ?>"></script>
+	<?php wp_print_scripts( array( 'ffb-frontend' ) ); ?>
 </body>
 </html>
 		<?php

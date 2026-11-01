@@ -22,12 +22,11 @@ class FFB_Event_Types {
 	 */
 	public static function all( $only_active = false ) {
 		global $wpdb;
-		$table = FFB_Install::table_event_types();
 
 		if ( $only_active ) {
-			$rows = $wpdb->get_results( "SELECT * FROM {$table} WHERE active = 1 ORDER BY sort_order ASC, id ASC", ARRAY_A ); // phpcs:ignore WordPress.DB
+			$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}ffb_event_types WHERE active = 1 ORDER BY sort_order ASC, id ASC", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 		} else {
-			$rows = $wpdb->get_results( "SELECT * FROM {$table} ORDER BY sort_order ASC, id ASC", ARRAY_A ); // phpcs:ignore WordPress.DB
+			$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}ffb_event_types ORDER BY sort_order ASC, id ASC", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 		}
 
 		return array_map( array( __CLASS__, 'hydrate' ), (array) $rows );
@@ -41,8 +40,7 @@ class FFB_Event_Types {
 	 */
 	public static function get( $id ) {
 		global $wpdb;
-		$table = FFB_Install::table_event_types();
-		$row   = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", (int) $id ), ARRAY_A ); // phpcs:ignore WordPress.DB
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_event_types WHERE id = %d", (int) $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 
 		return $row ? self::hydrate( $row ) : null;
 	}
@@ -55,8 +53,7 @@ class FFB_Event_Types {
 	 */
 	public static function get_by_slug( $slug ) {
 		global $wpdb;
-		$table = FFB_Install::table_event_types();
-		$row   = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE slug = %s", sanitize_title( $slug ) ), ARRAY_A ); // phpcs:ignore WordPress.DB
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_event_types WHERE slug = %s", sanitize_title( $slug ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 
 		return $row ? self::hydrate( $row ) : null;
 	}
@@ -233,8 +230,6 @@ class FFB_Event_Types {
 	 */
 	protected static function unique_slug( $slug, $id ) {
 		global $wpdb;
-		$table = FFB_Install::table_event_types();
-
 		if ( '' === $slug ) {
 			$slug = 'appointment';
 		}
@@ -243,7 +238,7 @@ class FFB_Event_Types {
 		$suffix    = 2;
 
 		while ( true ) {
-			$exists = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE slug = %s AND id <> %d", $candidate, $id ) ); // phpcs:ignore WordPress.DB
+			$exists = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}ffb_event_types WHERE slug = %s AND id <> %d", $candidate, $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 			if ( ! $exists ) {
 				return $candidate;
 			}
