@@ -65,8 +65,31 @@ add_action( 'plugins_loaded', 'ffb_init' );
  */
 function ffb_load_textdomain() {
 	load_plugin_textdomain( 'fines-finest-booking', false, dirname( plugin_basename( FFB_FILE ) ) . '/languages' );
+	ffb_refresh_default_consent_text();
 }
 add_action( 'init', 'ffb_load_textdomain' );
+
+/**
+ * Ersetzt einmalig den alten Standard-Einwilligungstext ohne Umlaute durch den uebersetzten.
+ *
+ * Bis Version 1.1.2 stand der Text fest im Code ("Datenschutzerklaerung") und wurde bei der
+ * Aktivierung gespeichert. Nur genau dieser Text wird ersetzt, eigene Formulierungen bleiben.
+ */
+function ffb_refresh_default_consent_text() {
+	if ( get_option( 'ffb_consent_text_refreshed' ) ) {
+		return;
+	}
+
+	$settings = get_option( 'ffb_settings', array() );
+	$old      = 'Ich habe die Datenschutzerklaerung gelesen und bin mit der Verarbeitung meiner Daten zur Terminabwicklung einverstanden.';
+
+	if ( is_array( $settings ) && isset( $settings['consent_text'] ) && $old === $settings['consent_text'] ) {
+		$settings['consent_text'] = __( 'I have read the privacy policy and agree to the processing of my data to arrange the appointment.', 'fines-finest-booking' );
+		update_option( 'ffb_settings', $settings, false );
+	}
+
+	update_option( 'ffb_consent_text_refreshed', 1, true );
+}
 
 /**
  * Deutsche Varianten ohne eigene Sprachdatei (de_AT, de_CH, de_DE_formal) nutzen die deutsche Uebersetzung.

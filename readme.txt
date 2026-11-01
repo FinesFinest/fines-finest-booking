@@ -49,6 +49,7 @@ Die ausfuehrliche Anleitung steht in der Datei INSTALL.md.
 * Block-Themes: Das Buchungsfeld bekam seine Konfiguration nicht, weil solche Themes den Inhalt vor dem Kopfbereich rendern. Die Skripte werden jetzt frueh registriert.
 * Die Erfolgsmeldung nach der Buchung zeigte "Uhr" doppelt.
 * Der Hinweis nach der Aktivierung sagte faelschlich, ohne Google sei nichts buchbar.
+* Der gespeicherte Standard-Einwilligungstext ohne Umlaute wird einmalig durch die neue Fassung ersetzt. Eigene Formulierungen bleiben unveraendert.
 
 = 1.1.2 =
 * Die Sperre gegen Doppelbuchungen nutzt eine Datenbanksperre. Die bisherige Sperre ueber eine Option war nicht atomar, zwei gleichzeitige Buchungen konnten beide durchgehen.
