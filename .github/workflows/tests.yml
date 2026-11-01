@@ -1,0 +1,43 @@
+name: Pruefen
+
+# Bei jedem Push und Pull Request: Syntax fuer die unterstuetzten PHP-Versionen
+# und die Tests der Slot-Berechnung.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  syntax:
+    name: php -l mit PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [ '7.4', '8.0', '8.3' ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Syntax pruefen
+        run: |
+          for f in $(find . -name '*.php' -not -path './.git/*' -not -path './tests/*'); do
+            php -l "$f" >/dev/null || exit 1
+          done
+          echo "php -l ohne Fehler"
+
+  tests:
+    name: PHPUnit mit PHP 8.3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: phpunit:11
+      - name: Tests
+        run: phpunit --testdox

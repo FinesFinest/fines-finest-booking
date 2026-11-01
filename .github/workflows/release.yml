@@ -29,10 +29,19 @@ jobs:
             exit 1
           fi
 
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: phpunit:11
+
       - name: Syntax pruefen
         run: |
           for f in $(find . -name '*.php' -not -path './.git/*'); do php -l "$f" >/dev/null || exit 1; done
           echo "php -l ohne Fehler"
+
+      - name: Tests
+        run: phpunit --testdox
 
       - name: ZIP bauen
         run: |
