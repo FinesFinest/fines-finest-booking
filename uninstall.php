@@ -27,6 +27,8 @@ delete_option( 'ffb_db_version' );
 delete_option( 'ffb_mail_tested' );
 delete_option( 'ffb_busy_cache_version' );
 delete_option( 'ffb_consent_text_refreshed' );
+delete_option( 'ffb_reminders_last_run' );
+delete_option( 'ffb_auto_update_enabled' );
 
 wp_clear_scheduled_hook( 'ffb_send_reminders' );
 wp_clear_scheduled_hook( 'ffb_cleanup' );

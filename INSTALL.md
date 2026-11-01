@@ -170,7 +170,7 @@ Arbeite die Liste durch. Jeder Punkt hat schon mal jemandem den Launch versaut.
 
 **Zeiten verschieben sich um eine Stunde.** Dann steht die Zeitzone der Website auf einem festen Versatz statt auf einer Stadt. Unter Einstellungen, Allgemein eine Stadt wählen. Der Kasten oben auf der Plugin-Seite warnt davor.
 
-**Erinnerungen kommen nicht.** WP-Cron läuft nur, wenn die Seite Besuch bekommt. Bei wenig Traffic richtest du beim Hoster einen echten Cronjob ein, der stündlich `wp-cron.php` aufruft.
+**Erinnerungen kommen nicht.** WP-Cron läuft nur, wenn die Seite Besuch bekommt. Bei wenig Traffic richtest du beim Hoster einen echten Cronjob ein, der stündlich `wp-cron.php` aufruft. Der Einrichtungsstand oben auf der Einstellungsseite zeigt, wann die Erinnerungsaufgabe zuletzt lief und wann sie als Nächstes dran ist; „Jetzt ausführen“ stößt sie von Hand an.
 
 ---
 

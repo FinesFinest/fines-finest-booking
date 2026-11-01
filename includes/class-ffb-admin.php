@@ -155,6 +155,15 @@ class FFB_Admin {
 				exit;
 			}
 
+			if ( 'run_reminders' === $do ) {
+				check_admin_referer( 'ffb_run_reminders' );
+				FFB_Cron::send_reminders();
+				FFB_Cron::reschedule_reminders();
+				FFB_Cron::schedule();
+				wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=cron_ok' ) );
+				exit;
+			}
+
 			if ( 'test_brevo' === $do ) {
 				check_admin_referer( 'ffb_test_brevo' );
 				$result = FFB_Brevo::test();
@@ -630,6 +639,41 @@ class FFB_Admin {
 		$seite_bekannt = 'ja' === $shortcode || '' !== (string) ffb_get_setting( 'booking_page_url' );
 		$anzahl        = count( $typen );
 
+		// Zustand der Erinnerungsaufgabe.
+		$cron     = FFB_Cron::status();
+		$cron_url = '<code>' . esc_html( site_url( 'wp-cron.php' ) ) . '</code>';
+		$format   = get_option( 'date_format' ) . ', ' . get_option( 'time_format' );
+		$next     = $cron['next'] > time()
+			/* translators: %s: human readable duration, e.g. "23 minutes" */
+			? sprintf( __( 'in %s', 'fines-finest-booking' ), human_time_diff( time(), $cron['next'] ) )
+			: __( 'at the next visit to the site', 'fines-finest-booking' );
+
+		if ( $cron['last'] ) {
+			/* translators: 1: date and time of the last run, 2: when the next run is due */
+			$cron_gut = sprintf( __( 'Runs hourly via WP-Cron. Last run %1$s, next run %2$s.', 'fines-finest-booking' ), wp_date( $format, $cron['last'] ), $next );
+		} else {
+			/* translators: %s: when the next run is due */
+			$cron_gut = sprintf( __( 'Runs hourly via WP-Cron. Not run yet, next run %s.', 'fines-finest-booking' ), $next );
+		}
+
+		if ( 'missing' === $cron['state'] ) {
+			$cron_schlecht = __( 'The reminder task is not scheduled. Click the button to schedule it again and run it once.', 'fines-finest-booking' );
+		} else {
+			$cron_schlecht = sprintf(
+				/* translators: 1: human readable duration, e.g. "3 hours", 2: URL of wp-cron.php in code formatting */
+				__( 'The reminder task was due %1$s ago but has not run. WP-Cron only runs when the site gets visitors. On a quiet site, set up a real cron job at your host that calls %2$s every hour.', 'fines-finest-booking' ),
+				human_time_diff( $cron['next'], time() ),
+				$cron_url
+			);
+		}
+
+		if ( $cron['disabled'] ) {
+			/* translators: %s: URL of wp-cron.php in code formatting */
+			$cron_hinweis   = sprintf( __( 'WP-Cron is switched off in wp-config.php (DISABLE_WP_CRON). A real cron job at your host must call %s regularly, for example every 15 minutes.', 'fines-finest-booking' ), $cron_url );
+			$cron_gut      .= ' ' . $cron_hinweis;
+			$cron_schlecht .= ' ' . $cron_hinweis;
+		}
+
 		return array(
 			array(
 				'ok'       => FFB_Google::is_connected(),
@@ -669,6 +713,14 @@ class FFB_Admin {
 				'schlecht' => __( 'Untested. Many hosts send emails unreliably, and you would only notice when someone does not show up.', 'fines-finest-booking' ),
 				'link'     => '#ffb-mails',
 				'aktion'   => __( 'Send test email', 'fines-finest-booking' ),
+			),
+			array(
+				'ok'       => 'ok' === $cron['state'],
+				'titel'    => __( 'Reminder task running', 'fines-finest-booking' ),
+				'gut'      => $cron_gut,
+				'schlecht' => $cron_schlecht,
+				'link'     => wp_nonce_url( admin_url( 'admin.php?page=ffb-settings&ffb_do=run_reminders' ), 'ffb_run_reminders' ),
+				'aktion'   => __( 'Run now', 'fines-finest-booking' ),
 			),
 		);
 	}
@@ -796,6 +848,7 @@ class FFB_Admin {
 			'brevo_ok'     => array( 'success', __( 'Brevo responds. The API key is valid.', 'fines-finest-booking' ) ),
 			'mail_ok'      => array( 'success', __( 'Test email sent. Check your inbox, including the spam folder.', 'fines-finest-booking' ) ),
 			'mail_error'   => array( 'error', __( 'The test email could not be sent.', 'fines-finest-booking' ) ),
+			'cron_ok'      => array( 'success', __( 'Reminder task has run.', 'fines-finest-booking' ) ),
 			'google_error' => array( 'error', __( 'The Google connection did not work.', 'fines-finest-booking' ) ),
 			'brevo_error'  => array( 'error', __( 'Brevo rejected the request.', 'fines-finest-booking' ) ),
 			'error'        => array( 'error', __( 'That did not work.', 'fines-finest-booking' ) ),

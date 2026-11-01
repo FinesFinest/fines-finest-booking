@@ -18,9 +18,55 @@ class FFB_Cron {
 	const HOOK_CLEANUP   = 'ffb_cleanup';
 
 	/**
+	 * Option mit dem Zeitstempel des letzten Erinnerungslaufs.
+	 */
+	const LAST_RUN_OPTION = 'ffb_reminders_last_run';
+
+	/**
 	 * So viele Stunden vor dem Termin oeffnet sich das Erinnerungsfenster.
 	 */
 	const REMINDER_WINDOW_HOURS = 25;
+
+	/**
+	 * Zustand der Erinnerungsaufgabe fuer den Einrichtungsstand.
+	 *
+	 * @return array next (Zeitstempel des naechsten Laufs, 0 wenn nicht eingeplant),
+	 *               last (Zeitstempel des letzten Laufs, 0 wenn nie),
+	 *               disabled (WP-Cron per Konstante abgeschaltet),
+	 *               state (ok, missing oder overdue).
+	 */
+	public static function status() {
+		$next = (int) wp_next_scheduled( self::HOOK_REMINDERS );
+
+		return array(
+			'next'     => $next,
+			'last'     => (int) get_option( self::LAST_RUN_OPTION, 0 ),
+			'disabled' => defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON,
+			'state'    => self::evaluate( $next, time() ),
+		);
+	}
+
+	/**
+	 * Bewertet den Zeitplan der Erinnerungsaufgabe.
+	 *
+	 * WP-Cron laeuft nur bei Seitenaufrufen und darf deshalb etwas spaet dran sein.
+	 * Mehr als eine Stunde Verzug bei einer stuendlichen Aufgabe heisst aber:
+	 * Niemand stoesst den Cron an, und Erinnerungen bleiben liegen.
+	 *
+	 * @param int $next Zeitstempel des naechsten geplanten Laufs, 0 wenn keiner.
+	 * @param int $now  Jetzt.
+	 * @return string ok, missing oder overdue.
+	 */
+	public static function evaluate( $next, $now ) {
+		if ( (int) $next <= 0 ) {
+			return 'missing';
+		}
+		if ( (int) $now - (int) $next > HOUR_IN_SECONDS ) {
+			return 'overdue';
+		}
+
+		return 'ok';
+	}
 
 	/**
 	 * Braucht eine Buchung mit diesem Start noch eine Erinnerung?
@@ -64,6 +110,18 @@ class FFB_Cron {
 	}
 
 	/**
+	 * Plant die Erinnerungsaufgabe neu, naechster Lauf in einer Stunde.
+	 *
+	 * Macht nach einem Lauf von Hand dasselbe, was WP-Cron nach einem eigenen Lauf
+	 * tut. Bleibt der Cron danach wieder liegen, zeigt der Einrichtungsstand das
+	 * nach einer Stunde Verzug erneut an.
+	 */
+	public static function reschedule_reminders() {
+		wp_clear_scheduled_hook( self::HOOK_REMINDERS );
+		wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', self::HOOK_REMINDERS );
+	}
+
+	/**
 	 * Aufgaben entfernen.
 	 */
 	public static function unschedule() {
@@ -76,6 +134,8 @@ class FFB_Cron {
 	 */
 	public static function send_reminders() {
 		global $wpdb;
+
+		update_option( self::LAST_RUN_OPTION, time(), false );
 
 		$table = FFB_Install::table_bookings();
 
