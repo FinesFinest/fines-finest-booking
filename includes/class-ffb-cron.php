@@ -108,6 +108,9 @@ class FFB_Cron {
 			$wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE start_utc < %s", $cutoff ) ); // phpcs:ignore WordPress.DB
 		}
 
+		// Reste der Buchungssperre ueber Optionen, die bis Version 1.1.1 genutzt wurde.
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'ffb_lock_' ) . '%' ) ); // phpcs:ignore WordPress.DB
+
 		$upload = wp_upload_dir();
 		$dir    = trailingslashit( $upload['basedir'] ) . 'ffb-tmp';
 

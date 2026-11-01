@@ -70,7 +70,7 @@ class FFB_Bookings {
 
 	/**
 	 * Prueft, ob ein Slot noch frei ist, und legt die Buchung an.
-	 * Nutzt einen Lock, damit zwei gleichzeitige Buchungen nicht denselben Slot bekommen.
+	 * Eine Datenbanksperre sorgt dafuer, dass zwei gleichzeitige Buchungen nicht denselben Slot bekommen.
 	 *
 	 * @param array             $event Termintyp.
 	 * @param DateTimeImmutable $start Start (UTC).
@@ -81,22 +81,9 @@ class FFB_Bookings {
 		global $wpdb;
 		$table = FFB_Install::table_bookings();
 
-		/*
-		 * Sperre ueber add_option. Der Optionsname hat einen eindeutigen Index, deshalb
-		 * scheitert der zweite gleichzeitige Aufruf zuverlaessig. Eine liegengebliebene
-		 * Sperre aus einem abgebrochenen Request wird nach 30 Sekunden uebernommen.
-		 */
-		$lock_key = 'ffb_lock_' . md5( $event['id'] . $start->format( 'c' ) );
-		$now      = time();
-
-		if ( false === add_option( $lock_key, $now, '', 'no' ) ) {
-			$held = (int) get_option( $lock_key );
-
-			if ( $held > $now - 30 ) {
-				return new WP_Error( 'ffb_locked', 'Der Termin wird gerade von jemand anderem gebucht. Bitte waehle einen anderen Slot.' );
-			}
-
-			update_option( $lock_key, $now, false );
+		$lock = self::acquire_lock();
+		if ( is_wp_error( $lock ) ) {
+			return $lock;
 		}
 
 		$end = $start->modify( '+' . (int) $event['duration'] . ' minutes' );
@@ -110,7 +97,7 @@ class FFB_Bookings {
 		);
 
 		if ( $conflict > 0 ) {
-			delete_option( $lock_key );
+			self::release_lock();
 			return new WP_Error( 'ffb_taken', 'Dieser Termin ist inzwischen vergeben. Bitte waehle einen anderen.' );
 		}
 
@@ -135,13 +122,62 @@ class FFB_Bookings {
 			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
 
-		delete_option( $lock_key );
+		self::release_lock();
 
 		if ( ! $inserted ) {
 			return new WP_Error( 'ffb_db', 'Die Buchung konnte nicht gespeichert werden.' );
 		}
 
 		return (int) $wpdb->insert_id;
+	}
+
+	/**
+	 * Name der Datenbanksperre. Enthaelt Datenbank und Tabellenpraefix, damit sich
+	 * mehrere WordPress-Installationen auf demselben Datenbankserver nicht gegenseitig blockieren.
+	 *
+	 * @return string
+	 */
+	protected static function lock_name() {
+		global $wpdb;
+
+		return 'ffb_booking_' . md5( $wpdb->dbname . '|' . $wpdb->prefix );
+	}
+
+	/**
+	 * Holt die Sperre fuer das Anlegen einer Buchung.
+	 *
+	 * Eine benannte MySQL-Sperre (GET_LOCK) ist atomar, gilt ueber alle Termintypen
+	 * hinweg und wird von der Datenbank selbst freigegeben, wenn der Request abbricht.
+	 * Eine Sperre ueber add_option() reicht dafuer nicht: WordPress schreibt dort mit
+	 * INSERT ... ON DUPLICATE KEY UPDATE, zwei gleichzeitige Aufrufe melden also beide Erfolg.
+	 *
+	 * @return true|WP_Error
+	 */
+	protected static function acquire_lock() {
+		global $wpdb;
+
+		$result = $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', self::lock_name(), 5 ) ); // phpcs:ignore WordPress.DB
+
+		if ( null === $result ) {
+			// Die Datenbank liefert keine Sperre. Buchen geht weiter, aber nicht still.
+			FFB_Google::log( 'Buchungssperre nicht verfuegbar' . ( $wpdb->last_error ? ' (' . $wpdb->last_error . ')' : '' ) . '. Die Buchung wurde ohne Sperre angelegt.' );
+			return true;
+		}
+
+		if ( 1 === (int) $result ) {
+			return true;
+		}
+
+		return new WP_Error( 'ffb_locked', 'Der Termin wird gerade von jemand anderem gebucht. Bitte versuch es gleich noch einmal.' );
+	}
+
+	/**
+	 * Gibt die Sperre wieder frei.
+	 */
+	protected static function release_lock() {
+		global $wpdb;
+
+		$wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', self::lock_name() ) ); // phpcs:ignore WordPress.DB
 	}
 
 	/**
