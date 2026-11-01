@@ -723,6 +723,36 @@ class FFB_Admin {
 			</p>
 
 			<?php
+			$release = FFB_Updater::latest_release();
+			$auto    = FFB_Updater::auto_update_active() ? __( 'enabled', 'fines-finest-booking' ) : __( 'disabled', 'fines-finest-booking' );
+			?>
+			<p class="ffb-status__tz">
+			<?php
+			if ( is_wp_error( $release ) ) {
+				echo esc_html(
+					sprintf(
+						/* translators: 1: installed version, 2: error message, 3: enabled or disabled */
+						__( 'Updates come from GitHub. Installed: %1$s. The latest release could not be read: %2$s Automatic updates: %3$s.', 'fines-finest-booking' ),
+						FFB_VERSION,
+						$release->get_error_message(),
+						$auto
+					)
+				);
+			} else {
+				echo esc_html(
+					sprintf(
+						/* translators: 1: installed version, 2: latest release version, 3: enabled or disabled */
+						__( 'Updates come from GitHub. Installed: %1$s, latest release: %2$s. Automatic updates: %3$s.', 'fines-finest-booking' ),
+						FFB_VERSION,
+						$release['version'],
+						$auto
+					)
+				);
+			}
+			?>
+			</p>
+
+			<?php
 			$fehlende = FFB_Google::is_connected() ? FFB_Google::unreachable_busy_calendars() : array();
 			if ( $fehlende ) :
 				?>

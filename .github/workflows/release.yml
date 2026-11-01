@@ -1,0 +1,61 @@
+name: Release-ZIP bauen
+
+# Laeuft bei jedem Tag der Form v1.2.0: prueft, dass der Tag zur Plugin-Version passt,
+# packt das Plugin in einen Ordner "fines-finest-booking" und haengt das ZIP an ein
+# GitHub-Release. Die WordPress-Installationen holen sich genau dieses ZIP.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag gegen Plugin-Version pruefen
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          HEADER=$(grep -m1 -E '^ \* Version:' fines-finest-booking.php | awk '{print $3}')
+          STABLE=$(grep -m1 -E '^Stable tag:' readme.txt | awk '{print $3}')
+          echo "Tag: $TAG, Plugin-Kopf: $HEADER, readme: $STABLE"
+          if [ "$TAG" != "$HEADER" ] || [ "$TAG" != "$STABLE" ]; then
+            echo "Versionen passen nicht zusammen. Abbruch."
+            exit 1
+          fi
+
+      - name: Syntax pruefen
+        run: |
+          for f in $(find . -name '*.php' -not -path './.git/*'); do php -l "$f" >/dev/null || exit 1; done
+          echo "php -l ohne Fehler"
+
+      - name: ZIP bauen
+        run: |
+          mkdir -p build/fines-finest-booking
+          rsync -a ./ build/fines-finest-booking/ \
+            --exclude='.git' --exclude='.github' --exclude='.gitignore' \
+            --exclude='build' --exclude='tests' --exclude='node_modules'
+          cd build && zip -qr fines-finest-booking.zip fines-finest-booking
+          unzip -l fines-finest-booking.zip | head -15
+
+      - name: Changelog aus readme.txt auslesen
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          awk -v v="$V" '$0 == "= " v " =" { f = 1; next } f && /^= / { exit } f' readme.txt > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Keine Changelog-Eintraege fuer $V in readme.txt gefunden." > release-notes.md
+          fi
+          cat release-notes.md
+
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/fines-finest-booking.zip \
+            --title "Version ${GITHUB_REF_NAME#v}" \
+            --notes-file release-notes.md

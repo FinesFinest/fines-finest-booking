@@ -11,6 +11,7 @@
  * License:           GPL-2.0-or-later
  * Text Domain:       fines-finest-booking
  * Domain Path:       /languages
+ * Update URI:        https://github.com/FinesFinest/fines-finest-booking
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -35,6 +36,7 @@ require_once FFB_DIR . 'includes/class-ffb-shortcode.php';
 require_once FFB_DIR . 'includes/class-ffb-cron.php';
 require_once FFB_DIR . 'includes/class-ffb-privacy.php';
 require_once FFB_DIR . 'includes/class-ffb-admin.php';
+require_once FFB_DIR . 'includes/class-ffb-updater.php';
 
 register_activation_hook( __FILE__, array( 'FFB_Install', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'FFB_Install', 'deactivate' ) );
@@ -48,6 +50,7 @@ function ffb_init() {
 	FFB_Shortcode::init();
 	FFB_Cron::init();
 	FFB_Privacy::init();
+	FFB_Updater::init();
 
 	add_action( 'phpmailer_init', array( 'FFB_Mailer', 'add_plain_text' ) );
 
