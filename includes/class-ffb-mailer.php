@@ -351,16 +351,32 @@ class FFB_Mailer {
 	}
 
 	/**
-	 * Erinnerung 24 Stunden vorher.
+	 * Erinnerung am Tag vor dem Termin. Laeuft der Cron spaeter, auch am Tag selbst.
 	 *
 	 * @param array $booking Buchung.
 	 * @param array $event   Termintyp.
 	 */
 	public static function send_reminder( $booking, $event ) {
 		$when = self::format_datetime( $booking['start_utc'] );
+		$time = self::time_only( $booking['start_utc'] );
+		$tag  = self::relative_day( $booking['start_utc'] );
+
+		if ( 'heute' === $tag ) {
+			$satz    = 'kurze Erinnerung: Unser Termin ist heute.';
+			$titel   = 'Heute ist es soweit';
+			$betreff = 'Erinnerung: ' . $event['title'] . ' heute um ' . $time . ' Uhr';
+		} elseif ( 'morgen' === $tag ) {
+			$satz    = 'kurze Erinnerung: Unser Termin ist morgen.';
+			$titel   = 'Morgen ist es soweit';
+			$betreff = 'Erinnerung: ' . $event['title'] . ' morgen um ' . $time . ' Uhr';
+		} else {
+			$satz    = 'kurze Erinnerung an unseren Termin.';
+			$titel   = 'Bald ist es soweit';
+			$betreff = 'Erinnerung: ' . $event['title'] . ' am ' . $when;
+		}
 
 		$content  = '<p>Hallo ' . esc_html( self::first_name( $booking['name'] ) ) . ',</p>';
-		$content .= '<p>kurze Erinnerung: Unser Termin ist morgen.</p>';
+		$content .= '<p>' . esc_html( $satz ) . '</p>';
 		$content .= self::detail_block(
 			array(
 				'Termin' => $event['title'],
@@ -374,7 +390,29 @@ class FFB_Mailer {
 
 		$content .= '<p>Passt es doch nicht? <a href="' . esc_url( self::cancel_url( $booking ) ) . '" style="color:' . esc_attr( ffb_get_setting( 'color_secondary' ) ) . ';">Hier absagen</a></p>';
 
-		wp_mail( $booking['email'], 'Erinnerung: ' . $event['title'] . ' morgen um ' . self::time_only( $booking['start_utc'] ) . ' Uhr', self::wrap( 'Morgen ist es soweit', $content ), self::headers() );
+		wp_mail( $booking['email'], $betreff, self::wrap( $titel, $content ), self::headers() );
+	}
+
+	/**
+	 * Liegt ein Zeitpunkt heute oder morgen? Gerechnet in der Zeitzone der Website.
+	 *
+	 * @param string   $utc UTC-Zeit.
+	 * @param int|null $now Jetzt als Zeitstempel, nur fuer Tests.
+	 * @return string 'heute', 'morgen' oder leer.
+	 */
+	public static function relative_day( $utc, $now = null ) {
+		$tz    = ffb_timezone();
+		$day   = ( new DateTimeImmutable( $utc, new DateTimeZone( 'UTC' ) ) )->setTimezone( $tz )->format( 'Y-m-d' );
+		$today = null === $now ? new DateTimeImmutable( 'now', $tz ) : ( new DateTimeImmutable( '@' . (int) $now ) )->setTimezone( $tz );
+
+		if ( $day === $today->format( 'Y-m-d' ) ) {
+			return 'heute';
+		}
+		if ( $day === $today->modify( '+1 day' )->format( 'Y-m-d' ) ) {
+			return 'morgen';
+		}
+
+		return '';
 	}
 
 	/**

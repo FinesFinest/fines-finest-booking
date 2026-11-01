@@ -103,6 +103,9 @@ class FFB_Bookings {
 
 		$token = bin2hex( random_bytes( 24 ) );
 
+		// Wer kurzfristig bucht, hat die Bestaetigung gerade erst bekommen und braucht keine Erinnerung mehr.
+		$reminder_sent = FFB_Cron::reminder_needed( $start ) ? 0 : 1;
+
 		$inserted = $wpdb->insert( // phpcs:ignore WordPress.DB
 			$table,
 			array(
@@ -117,9 +120,10 @@ class FFB_Bookings {
 				'token'         => $token,
 				'source'        => isset( $data['source'] ) ? $data['source'] : '',
 				'consent_at'    => current_time( 'mysql', true ),
+				'reminder_sent' => $reminder_sent,
 				'created_at'    => current_time( 'mysql', true ),
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s' )
 		);
 
 		self::release_lock();

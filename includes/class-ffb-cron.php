@@ -18,6 +18,28 @@ class FFB_Cron {
 	const HOOK_CLEANUP   = 'ffb_cleanup';
 
 	/**
+	 * So viele Stunden vor dem Termin oeffnet sich das Erinnerungsfenster.
+	 */
+	const REMINDER_WINDOW_HOURS = 25;
+
+	/**
+	 * Braucht eine Buchung mit diesem Start noch eine Erinnerung?
+	 *
+	 * Nein, wenn der Termin schon innerhalb des Erinnerungsfensters liegt: Die
+	 * Bestaetigung ist dann gerade erst angekommen, eine zweite Mail eine Stunde
+	 * spaeter waere nur laestig.
+	 *
+	 * @param DateTimeInterface $start Start des Termins.
+	 * @param int|null          $now   Jetzt als Zeitstempel, nur fuer Tests.
+	 * @return bool
+	 */
+	public static function reminder_needed( $start, $now = null ) {
+		$now = null === $now ? time() : (int) $now;
+
+		return ( $start->getTimestamp() - $now ) >= self::REMINDER_WINDOW_HOURS * HOUR_IN_SECONDS;
+	}
+
+	/**
 	 * Hooks registrieren.
 	 */
 	public static function init() {
@@ -50,7 +72,7 @@ class FFB_Cron {
 	}
 
 	/**
-	 * Verschickt Erinnerungen fuer Termine in 24 bis 25 Stunden.
+	 * Verschickt Erinnerungen fuer Termine innerhalb der naechsten 25 Stunden.
 	 */
 	public static function send_reminders() {
 		global $wpdb;
@@ -61,10 +83,11 @@ class FFB_Cron {
 		 * Untere Grenze ist bewusst "jetzt" und nicht "in 24 Stunden": WP-Cron laeuft nur,
 		 * wenn die Seite Besuch bekommt, und faellt dadurch regelmaessig aus dem Takt.
 		 * Ein festes Fenster wuerde Termine still ueberspringen. Das Feld reminder_sent
-		 * verhindert Doppelversand.
+		 * verhindert Doppelversand. Buchungen, die erst innerhalb des Fensters entstehen,
+		 * markiert FFB_Bookings::create() sofort als erinnert (siehe reminder_needed()).
 		 */
 		$from = ffb_now_utc();
-		$to   = ffb_now_utc()->modify( '+25 hours' );
+		$to   = ffb_now_utc()->modify( '+' . self::REMINDER_WINDOW_HOURS . ' hours' );
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB
 			$wpdb->prepare(
