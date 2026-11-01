@@ -105,7 +105,18 @@ class FFB_Admin {
 
 			if ( 'delete_event_type' === $do ) {
 				check_admin_referer( 'ffb_delete_event_type' );
-				FFB_Event_Types::delete( (int) ( $_GET['id'] ?? 0 ) );
+				$id    = (int) ( $_GET['id'] ?? 0 );
+				$offen = FFB_Bookings::count_upcoming( $id );
+
+				// Mit kuenftigen Terminen nicht loeschen: Die Buchungen verloeren sonst still ihre Erinnerung.
+				if ( $offen > 0 ) {
+					$meldung = 1 === $offen ? 'Dieser Termintyp hat noch einen kuenftigen Termin.' : sprintf( 'Dieser Termintyp hat noch %d kuenftige Termine.', $offen );
+					set_transient( 'ffb_admin_error', $meldung . ' Sag die Termine erst ab oder nimm dem Termintyp den Haken "Buchbar", bis sie vorbei sind.', 60 );
+					wp_safe_redirect( admin_url( 'admin.php?page=ffb-event-types&ffb_notice=not_deleted' ) );
+					exit;
+				}
+
+				FFB_Event_Types::delete( $id );
 				wp_safe_redirect( admin_url( 'admin.php?page=ffb-event-types&ffb_notice=deleted' ) );
 				exit;
 			}
@@ -674,6 +685,7 @@ class FFB_Admin {
 		$map = array(
 			'saved'        => array( 'success', 'Gespeichert.' ),
 			'deleted'      => array( 'success', 'Termintyp geloescht.' ),
+			'not_deleted'  => array( 'error', 'Termintyp nicht geloescht.' ),
 			'cancelled'    => array( 'success', 'Termin abgesagt.' ),
 			'google_ok'    => array( 'success', 'Google-Kalender ist verbunden.' ),
 			'disconnected' => array( 'success', 'Google-Verbindung getrennt.' ),
@@ -824,7 +836,7 @@ class FFB_Admin {
 						<td><?php echo $event['active'] ? 'aktiv' : 'inaktiv'; ?></td>
 						<td>
 							<a class="button button-small" href="<?php echo esc_url( admin_url( 'admin.php?page=ffb-event-types&edit=' . $event['id'] ) ); ?>">Bearbeiten</a>
-							<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffb-event-types&ffb_do=delete_event_type&id=' . $event['id'] ), 'ffb_delete_event_type' ) ); ?>" onclick="return confirm('Termintyp loeschen? Bereits gebuchte Termine bleiben bestehen.');">Loeschen</a>
+							<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffb-event-types&ffb_do=delete_event_type&id=' . $event['id'] ), 'ffb_delete_event_type' ) ); ?>" onclick="return confirm('Termintyp loeschen? Vergangene Buchungen bleiben erhalten. Hat er noch kuenftige Termine, wird er nicht geloescht.');">Loeschen</a>
 						</td>
 					</tr>
 				<?php endforeach; ?>

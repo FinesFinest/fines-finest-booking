@@ -240,6 +240,25 @@ class FFB_Bookings {
 	}
 
 	/**
+	 * Zaehlt bestaetigte, kuenftige Buchungen eines Termintyps.
+	 *
+	 * @param int $event_type_id Termintyp-ID.
+	 * @return int
+	 */
+	public static function count_upcoming( $event_type_id ) {
+		global $wpdb;
+		$table = FFB_Install::table_bookings();
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE status = 'confirmed' AND event_type_id = %d AND start_utc > %s",
+				(int) $event_type_id,
+				ffb_now_utc()->format( 'Y-m-d H:i:s' )
+			)
+		);
+	}
+
+	/**
 	 * Buchungen fuer die Adminliste.
 	 *
 	 * @param string $scope    upcoming, past oder cancelled.

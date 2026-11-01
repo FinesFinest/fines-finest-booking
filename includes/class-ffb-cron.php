@@ -100,20 +100,34 @@ class FFB_Cron {
 
 		foreach ( (array) $rows as $booking ) {
 			$event = FFB_Event_Types::get( $booking['event_type_id'] );
+
 			if ( ! $event ) {
+				// Nicht still ueberspringen: einmal melden und die Buchung als erledigt markieren.
+				FFB_Google::log( 'Erinnerung fuer Buchung #' . (int) $booking['id'] . ' nicht verschickt: Der Termintyp existiert nicht mehr.' );
+				self::mark_reminder_sent( (int) $booking['id'] );
 				continue;
 			}
 
 			FFB_Mailer::send_reminder( $booking, $event );
-
-			$wpdb->update( // phpcs:ignore WordPress.DB
-				$table,
-				array( 'reminder_sent' => 1 ),
-				array( 'id' => (int) $booking['id'] ),
-				array( '%d' ),
-				array( '%d' )
-			);
+			self::mark_reminder_sent( (int) $booking['id'] );
 		}
+	}
+
+	/**
+	 * Merkt sich, dass die Erinnerung zu einer Buchung erledigt ist.
+	 *
+	 * @param int $booking_id Buchungs-ID.
+	 */
+	protected static function mark_reminder_sent( $booking_id ) {
+		global $wpdb;
+
+		$wpdb->update( // phpcs:ignore WordPress.DB
+			FFB_Install::table_bookings(),
+			array( 'reminder_sent' => 1 ),
+			array( 'id' => (int) $booking_id ),
+			array( '%d' ),
+			array( '%d' )
+		);
 	}
 
 	/**
