@@ -26,7 +26,8 @@ class FFB_Shortcode {
 	 */
 	public static function init() {
 		add_shortcode( 'ff_booking', array( __CLASS__, 'render' ) );
-		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'register_assets' ) );
+		add_action( 'init', array( __CLASS__, 'register_assets' ) );
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_for_content' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'maybe_standalone_cancel' ) );
 	}
 
@@ -91,20 +92,41 @@ class FFB_Shortcode {
 	}
 
 	/**
-	 * Assets registrieren.
+	 * Assets registrieren. Laeuft frueh auf init, nicht erst in wp_enqueue_scripts.
+	 *
+	 * Block-Themes rendern den Seiteninhalt, bevor wp_head() und damit
+	 * wp_enqueue_scripts laufen. Der Shortcode wuerde dann Konfiguration und
+	 * Farben an noch nicht registrierte Handles haengen, und WordPress wirft
+	 * beides stillschweigend weg. Mit der fruehen Registrierung klappt es auf
+	 * klassischen Themes, in Oxygen-Codebloecken und auf Block-Themes.
 	 */
 	public static function register_assets() {
 		wp_register_style( 'ffb-frontend', FFB_URL . 'assets/ffb-frontend.css', array(), FFB_VERSION );
 		wp_register_script( 'ffb-frontend', FFB_URL . 'assets/ffb-frontend.js', array(), FFB_VERSION, true );
+	}
 
-		// Steht der Shortcode im Beitragsinhalt, laden wir frueh. In Oxygen-Codebloecken
-		// greift stattdessen der Aufruf beim Rendern weiter unten.
+	/**
+	 * Steht der Shortcode im Beitragsinhalt, laden wir die Assets schon im Kopfbereich.
+	 * In Oxygen-Codebloecken greift stattdessen der Aufruf beim Rendern.
+	 */
+	public static function enqueue_for_content() {
 		$post = get_post();
 		if ( $post && has_shortcode( (string) $post->post_content, 'ff_booking' ) ) {
-			wp_enqueue_style( 'ffb-frontend' );
-			wp_enqueue_script( 'ffb-frontend' );
-			self::attach_data();
+			self::enqueue();
 		}
+	}
+
+	/**
+	 * Laedt Stylesheet und Skript samt Konfiguration.
+	 */
+	protected static function enqueue() {
+		if ( ! wp_script_is( 'ffb-frontend', 'registered' ) ) {
+			self::register_assets();
+		}
+
+		wp_enqueue_style( 'ffb-frontend' );
+		wp_enqueue_script( 'ffb-frontend' );
+		self::attach_data();
 	}
 
 	/**
@@ -238,10 +260,7 @@ class FFB_Shortcode {
 			'ff_booking'
 		);
 
-		wp_enqueue_style( 'ffb-frontend' );
-		wp_enqueue_script( 'ffb-frontend' );
-
-		self::attach_data();
+		self::enqueue();
 
 		// Storno-Ansicht, wenn der Mail-Link aufgerufen wurde.
 		$cancel_token = isset( $_GET['ffb_cancel'] ) ? sanitize_text_field( wp_unslash( $_GET['ffb_cancel'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
