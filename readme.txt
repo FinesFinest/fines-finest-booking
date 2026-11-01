@@ -4,7 +4,7 @@ Tags: booking, appointments, google calendar, termine, dsgvo
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.2
+Stable tag: 1.2.0
 License: GPLv2 or later
 
 Terminbuchung im eigenen Design, mit Google-Kalender-Sync, Google Meet, Bestaetigungsmails und Brevo-Anbindung.
@@ -41,6 +41,14 @@ Alle Buchungsdaten liegen in der Datenbank der eigenen Website. Kein externer An
 Die ausfuehrliche Anleitung steht in der Datei INSTALL.md.
 
 == Changelog ==
+
+= 1.2.0 =
+* Das Plugin ist uebersetzbar. Quellsprache ist Englisch, die deutsche Fassung liegt als Sprachpaket bei, jetzt mit Umlauten in allen Texten und Mails.
+* Die Textdomain heisst fines-finest-booking statt ff-booking, wie es das WordPress-Verzeichnis verlangt.
+* Datum und Uhrzeit in Mails und Backend folgen der Sprache der Website.
+* Block-Themes: Das Buchungsfeld bekam seine Konfiguration nicht, weil solche Themes den Inhalt vor dem Kopfbereich rendern. Die Skripte werden jetzt frueh registriert.
+* Die Erfolgsmeldung nach der Buchung zeigte "Uhr" doppelt.
+* Der Hinweis nach der Aktivierung sagte faelschlich, ohne Google sei nichts buchbar.
 
 = 1.1.2 =
 * Die Sperre gegen Doppelbuchungen nutzt eine Datenbanksperre. Die bisherige Sperre ueber eine Option war nicht atomar, zwei gleichzeitige Buchungen konnten beide durchgehen.

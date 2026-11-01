@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Fines Finest Booking 1.1.2\n"
+"Project-Id-Version: Fines Finest Booking 1.2.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/fines-finest-booking\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-01T18:09:36+00:00\n"
+"POT-Creation-Date: 2026-11-01T18:15:35+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: fines-finest-booking\n"
@@ -311,7 +311,7 @@ msgstr ""
 #: includes/class-ffb-mailer.php:421
 #: includes/class-ffb-mailer.php:468
 #: includes/class-ffb-privacy.php:76
-#: includes/class-ffb-shortcode.php:380
+#: includes/class-ffb-shortcode.php:399
 msgid "Appointment"
 msgstr ""
 
@@ -1094,7 +1094,7 @@ msgstr ""
 #: includes/class-ffb-mailer.php:217
 #: includes/class-ffb-mailer.php:363
 #: includes/class-ffb-privacy.php:92
-#: includes/class-ffb-shortcode.php:165
+#: includes/class-ffb-shortcode.php:187
 msgid "Phone"
 msgstr ""
 
@@ -1141,8 +1141,8 @@ msgstr ""
 
 #. translators: %d: duration in minutes
 #: includes/class-ffb-mailer.php:299
-#: includes/class-ffb-shortcode.php:163
-#: includes/class-ffb-shortcode.php:314
+#: includes/class-ffb-shortcode.php:185
+#: includes/class-ffb-shortcode.php:333
 #, php-format
 msgid "%d minute"
 msgid_plural "%d minutes"
@@ -1179,7 +1179,7 @@ msgstr ""
 
 #: includes/class-ffb-mailer.php:319
 #: includes/class-ffb-mailer.php:427
-#: includes/class-ffb-shortcode.php:186
+#: includes/class-ffb-shortcode.php:208
 msgid "Join video call"
 msgstr ""
 
@@ -1194,7 +1194,7 @@ msgid "If it no longer fits, please cancel in time: %s"
 msgstr ""
 
 #: includes/class-ffb-mailer.php:326
-#: includes/class-ffb-shortcode.php:388
+#: includes/class-ffb-shortcode.php:407
 msgid "Cancel appointment"
 msgstr ""
 
@@ -1214,13 +1214,13 @@ msgstr ""
 
 #: includes/class-ffb-mailer.php:361
 #: includes/class-ffb-privacy.php:84
-#: includes/class-ffb-shortcode.php:174
+#: includes/class-ffb-shortcode.php:196
 msgid "Name"
 msgstr ""
 
 #: includes/class-ffb-mailer.php:362
 #: includes/class-ffb-privacy.php:88
-#: includes/class-ffb-shortcode.php:175
+#: includes/class-ffb-shortcode.php:197
 msgid "Email"
 msgstr ""
 
@@ -1404,7 +1404,7 @@ msgid "This email address does not look right."
 msgstr ""
 
 #: includes/class-ffb-rest.php:250
-#: includes/class-ffb-shortcode.php:181
+#: includes/class-ffb-shortcode.php:203
 msgid "Without your consent to data processing I cannot set up the appointment."
 msgstr ""
 
@@ -1437,126 +1437,126 @@ msgid "The appointment is cancelled. You will get a confirmation by email shortl
 msgstr ""
 
 #. translators: %s: site name
-#: includes/class-ffb-shortcode.php:74
+#: includes/class-ffb-shortcode.php:75
 #, php-format
 msgid "Cancel appointment - %s"
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:160
-#: includes/class-ffb-shortcode.php:345
+#: includes/class-ffb-shortcode.php:182
+#: includes/class-ffb-shortcode.php:364
 msgid "Loading appointments …"
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:161
+#: includes/class-ffb-shortcode.php:183
 msgid "Something went wrong."
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:164
+#: includes/class-ffb-shortcode.php:186
 msgid "Google Meet"
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:166
+#: includes/class-ffb-shortcode.php:188
 msgid "No appointments are available right now. Send me an email and we will find one."
 msgstr ""
 
 #. translators: %d: number of free slots on a day
-#: includes/class-ffb-shortcode.php:168
-#: includes/class-ffb-shortcode.php:170
+#: includes/class-ffb-shortcode.php:190
+#: includes/class-ffb-shortcode.php:192
 #, php-format
 msgid "%d slot"
 msgid_plural "%d slots"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-ffb-shortcode.php:171
+#: includes/class-ffb-shortcode.php:193
 msgid "Your appointment"
 msgstr ""
 
 #. translators: 1: date like "Tuesday, March 3", 2: time like "15:00"
-#: includes/class-ffb-shortcode.php:173
+#: includes/class-ffb-shortcode.php:195
 #, php-format
 msgid "%1$s, %2$s"
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:176
+#: includes/class-ffb-shortcode.php:198
 msgid "Phone (optional)"
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:177
+#: includes/class-ffb-shortcode.php:199
 msgid "I agree to the processing of my data."
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:178
+#: includes/class-ffb-shortcode.php:200
 msgid "Privacy policy"
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:179
+#: includes/class-ffb-shortcode.php:201
 msgid "Book appointment"
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:180
+#: includes/class-ffb-shortcode.php:202
 msgid "Please fill in the required fields."
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:182
+#: includes/class-ffb-shortcode.php:204
 msgid "Booking …"
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:183
+#: includes/class-ffb-shortcode.php:205
 msgid "Your appointment is booked."
 msgstr ""
 
 #. translators: %s: email address
-#: includes/class-ffb-shortcode.php:185
+#: includes/class-ffb-shortcode.php:207
 #, php-format
 msgid "I have sent a confirmation to %s, with a calendar file to add the appointment."
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:187
+#: includes/class-ffb-shortcode.php:209
 msgid "I will call you at the agreed time."
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:188
+#: includes/class-ffb-shortcode.php:210
 msgid "Cancelling …"
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:189
-#: includes/class-ffb-shortcode.php:397
+#: includes/class-ffb-shortcode.php:211
+#: includes/class-ffb-shortcode.php:416
 msgid "Yes, cancel appointment"
 msgstr ""
 
 #. translators: 1: weekday name, 2: day of month, 3: month name
-#: includes/class-ffb-shortcode.php:191
+#: includes/class-ffb-shortcode.php:213
 #, php-format
 msgid "%1$s, %3$s %2$d"
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:256
+#: includes/class-ffb-shortcode.php:275
 msgid "No appointment type can be booked right now."
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:267
+#: includes/class-ffb-shortcode.php:286
 msgid "This appointment type cannot be booked right now."
 msgstr ""
 
 #. translators: %s: email address as link
-#: includes/class-ffb-shortcode.php:353
+#: includes/class-ffb-shortcode.php:372
 #, php-format
 msgid "Booking an appointment needs JavaScript. Otherwise just send me an email at %s."
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:376
+#: includes/class-ffb-shortcode.php:395
 msgid "There is no appointment for this link. Maybe it has already been deleted."
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:392
+#: includes/class-ffb-shortcode.php:411
 msgid "This appointment has already been cancelled."
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:394
+#: includes/class-ffb-shortcode.php:413
 msgid "This appointment is in the past."
 msgstr ""
 
-#: includes/class-ffb-shortcode.php:396
+#: includes/class-ffb-shortcode.php:415
 msgid "Do you want to cancel the appointment? The slot becomes available again."
 msgstr ""
