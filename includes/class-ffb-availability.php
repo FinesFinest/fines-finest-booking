@@ -58,6 +58,10 @@ class FFB_Availability {
 		$range_to   = $end_day->setTimezone( $utc );
 
 		$busy = self::collect_busy( $range_from, $range_to );
+		if ( is_wp_error( $busy ) ) {
+			// Ohne Wissen ueber belegte Zeiten lieber keine Slots als falsche.
+			return $busy;
+		}
 
 		// Globale Grenzen gelten fuer alle Termintypen und koennen nur weiter einschraenken.
 		$global          = self::global_limits();
@@ -267,7 +271,7 @@ class FFB_Availability {
 	 *
 	 * @param DateTimeInterface $from Start (UTC).
 	 * @param DateTimeInterface $to   Ende (UTC).
-	 * @return array
+	 * @return array|WP_Error Fehler, wenn Google verbunden ist, aber nicht antwortet.
 	 */
 	protected static function collect_busy( $from, $to ) {
 		$busy = array();
@@ -279,7 +283,12 @@ class FFB_Availability {
 			);
 		}
 
-		foreach ( FFB_Google::get_busy( $from, $to ) as $block ) {
+		$google = FFB_Google::get_busy( $from, $to );
+		if ( is_wp_error( $google ) ) {
+			return $google;
+		}
+
+		foreach ( $google as $block ) {
 			$busy[] = $block;
 		}
 
@@ -319,6 +328,10 @@ class FFB_Availability {
 		$local = $start->setTimezone( $tz );
 		$data  = self::get_slots( $event, $local->format( 'Y-m-d' ), 1 );
 		$want  = $start->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Y-m-d\TH:i:s\Z' );
+
+		if ( is_wp_error( $data ) ) {
+			return $data;
+		}
 
 		foreach ( $data['days'] as $day ) {
 			foreach ( $day['slots'] as $slot ) {

@@ -359,7 +359,8 @@ class FFB_Google {
 	 *
 	 * @param DateTimeInterface $from Start (UTC).
 	 * @param DateTimeInterface $to   Ende (UTC).
-	 * @return array Liste aus [start_ts, end_ts].
+	 * @return array|WP_Error Liste aus [start_ts, end_ts]. Fehler, wenn Google nicht antwortet
+	 *                        oder den Zielkalender nicht liefert: Dann ist unbekannt, was belegt ist.
 	 */
 	public static function get_busy( $from, $to ) {
 		if ( ! self::is_connected() ) {
@@ -389,10 +390,11 @@ class FFB_Google {
 		);
 
 		if ( is_wp_error( $result ) ) {
-			self::log( 'freeBusy: ' . $result->get_error_message() );
-			return array();
+			self::log( 'freeBusy: ' . $result->get_error_message() . ' Solange werden keine Termine angeboten.' );
+			return $result;
 		}
 
+		$ziel = (string) ffb_get_setting( 'google_calendar_id', 'primary' );
 		$busy = array();
 		if ( ! empty( $result['calendars'] ) && is_array( $result['calendars'] ) ) {
 			foreach ( $result['calendars'] as $kalender_id => $calendar ) {
@@ -402,6 +404,13 @@ class FFB_Google {
 					foreach ( (array) $calendar['errors'] as $fehler ) {
 						$gruende[] = isset( $fehler['reason'] ) ? $fehler['reason'] : 'unbekannt';
 					}
+
+					// Ohne den Zielkalender ist unbekannt, was belegt ist: lieber keine Termine anbieten.
+					if ( (string) $kalender_id === $ziel ) {
+						self::log( 'Zielkalender "' . $kalender_id . '" konnte nicht gelesen werden (' . implode( ', ', $gruende ) . '). Solange werden keine Termine angeboten.' );
+						return new WP_Error( 'ffb_calendar_unreadable', 'Der Zielkalender konnte nicht gelesen werden (' . implode( ', ', $gruende ) . ').' );
+					}
+
 					self::log( 'Kalender "' . $kalender_id . '" wurde nicht geprueft (' . implode( ', ', $gruende ) . '). Er blockt also keine Termine.' );
 					continue;
 				}

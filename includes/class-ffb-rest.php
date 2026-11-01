@@ -165,6 +165,15 @@ class FFB_Rest {
 	}
 
 	/**
+	 * Antwort, wenn belegte Zeiten nicht ermittelt werden koennen. Der Grund steht im Fehlerprotokoll.
+	 *
+	 * @return WP_Error
+	 */
+	protected static function busy_unavailable_error() {
+		return new WP_Error( 'ffb_busy_unavailable', 'Die freien Zeiten koennen gerade nicht geladen werden. Bitte versuch es in ein paar Minuten noch einmal.', array( 'status' => 503 ) );
+	}
+
+	/**
 	 * Freie Slots.
 	 *
 	 * @param WP_REST_Request $request Anfrage.
@@ -188,6 +197,9 @@ class FFB_Rest {
 		}
 
 		$data = FFB_Availability::get_slots( $event, $from, $days );
+		if ( is_wp_error( $data ) ) {
+			return self::busy_unavailable_error();
+		}
 
 		$data['event'] = array(
 			'slug'        => $event['slug'],
@@ -264,7 +276,12 @@ class FFB_Rest {
 
 		$valid = FFB_Availability::validate_slot( $event, $start );
 		if ( is_wp_error( $valid ) ) {
-			return new WP_Error( $valid->get_error_code(), $valid->get_error_message(), array( 'status' => 409 ) );
+			if ( 'ffb_slot_gone' === $valid->get_error_code() ) {
+				return new WP_Error( $valid->get_error_code(), $valid->get_error_message(), array( 'status' => 409 ) );
+			}
+
+			// Google antwortet nicht: lieber keine Buchung als eine, die mit dem Kalender kollidiert.
+			return self::busy_unavailable_error();
 		}
 
 		$booking_id = FFB_Bookings::create(
