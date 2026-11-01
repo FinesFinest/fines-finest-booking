@@ -134,7 +134,7 @@ Der Shortcode steht in der Termintypen-Liste, für den Standardtyp:
 
 Die Farben stellst du unter **Einstellungen → Design** ein. Ab Werk sind sie neutral gehalten, damit das Buchungsfeld auf jeder Website erträglich aussieht, bevor du es anpasst. Schriften stehen auf `inherit`, übernehmen also die der Seite.
 
-Die Absage-Links in den Mails zeigen auf dieselbe Seite mit dem Parameter `?ffb_cancel=…`. Das Plugin erkennt das und zeigt statt des Kalenders die Absage-Ansicht. Du brauchst dafür keine zweite Seite. Liefert die Seite ihren Inhalt nicht aus, etwa bei Passwortschutz, zeigt das Plugin eine eigene schlanke Absage-Seite.
+Die Absage-Links in den Mails zeigen auf dieselbe Seite mit dem Parameter `?ffb_cancel=…`. Das Plugin erkennt das und zeigt statt des Kalenders die Absage-Ansicht. Du brauchst dafür keine zweite Seite. Wird die Buchungsseite später umbenannt oder gelöscht, ist sie passwortgeschützt oder gar nicht eingetragen, zeigt das Plugin eine eigene schlanke Absage-Seite. Alte Links aus bereits verschickten Mails funktionieren also weiter.
 
 ---
 

@@ -78,6 +78,10 @@ function wp_kses_post( $text ) {
 	return $text;
 }
 
+function wp_parse_url( $url, $component = -1 ) {
+	return parse_url( $url, $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url
+}
+
 /**
  * Minimaler Ersatz fuer WP_Error.
  */
@@ -114,3 +118,4 @@ require_once ABSPATH . 'includes/class-ffb-availability.php';
 require_once ABSPATH . 'includes/class-ffb-cron.php';
 require_once ABSPATH . 'includes/class-ffb-mailer.php';
 require_once ABSPATH . 'includes/class-ffb-brevo.php';
+require_once ABSPATH . 'includes/class-ffb-shortcode.php';

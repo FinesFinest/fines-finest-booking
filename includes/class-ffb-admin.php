@@ -701,7 +701,7 @@ class FFB_Admin {
 				'ok'       => $seite_bekannt,
 				'titel'    => __( 'Booking page set up', 'fines-finest-booking' ),
 				'gut'      => __( 'Shortcode found or booking page saved.', 'fines-finest-booking' ),
-				'schlecht' => __( 'Put the shortcode on a page and enter its address below. The address is needed for the cancellation links in the emails.', 'fines-finest-booking' ),
+				'schlecht' => __( 'Put the shortcode on a page and enter its address below. Without the address, cancellation links open a plain cancellation page instead of your booking page.', 'fines-finest-booking' ),
 				'link'     => '#ffb-mails',
 				'aktion'   => __( 'Enter booking page', 'fines-finest-booking' ),
 			),
@@ -1499,7 +1499,7 @@ class FFB_Admin {
 						<th scope="row"><label for="ffb-page"><?php esc_html_e( 'Booking page', 'fines-finest-booking' ); ?></label></th>
 						<td>
 							<input id="ffb-page" name="ffb[booking_page_url]" type="url" class="regular-text" value="<?php echo esc_attr( ffb_get_setting( 'booking_page_url' ) ); ?>" placeholder="<?php echo esc_attr( home_url( '/' . sanitize_title( __( 'Appointment', 'fines-finest-booking' ) ) . '/' ) ); ?>">
-							<p class="description"><?php esc_html_e( 'The page with the shortcode. Needed for the cancellation links in the emails.', 'fines-finest-booking' ); ?></p>
+							<p class="description"><?php esc_html_e( 'The page with the shortcode. Cancellation links in the emails open it. Without it, or if the page disappears, they open a plain cancellation page instead.', 'fines-finest-booking' ); ?></p>
 						</td>
 					</tr>
 				</table>

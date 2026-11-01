@@ -45,6 +45,7 @@ Die ausfuehrliche Anleitung steht in der Datei INSTALL.md.
 = 1.2.1 =
 * Die Slot-Berechnung rechnet in Wanduhr-Minuten des Tages statt mit PHP-Zeitschritten. In der doppelten Stunde beim Sommerzeitende wird jede Uhrzeit genau einmal angeboten, unabhaengig von der PHP-Version.
 * Automatische Tests fuer die Slot-Berechnung (Zeitfenster, Geschaeftszeiten, Puffer, Vorlaufzeit, Tageslimit, Sperrtage, Horizont, beide Sommerzeitwechsel), das Erinnerungsfenster und die Telefonnummern-Normalisierung. GitHub prueft sie bei jedem Stand und vor jedem Release.
+* Absage-Links laufen nie mehr ins Leere. Wird die Buchungsseite umbenannt oder geloescht, ist keine eingetragen oder passt der Link zu keinem Termin, zeigt das Plugin seine eigene schlanke Absage-Seite mit klarer Meldung. Auf der eingetragenen Buchungsseite bleibt die Absage im Design der Website.
 * Neu im Einrichtungsstand: eine fuenfte Zeile zur Erinnerungsaufgabe mit letztem und naechstem Lauf. Sie warnt, wenn die Aufgabe nicht eingeplant oder laenger als eine Stunde ueberfaellig ist, und erklaert bei abgeschaltetem WP-Cron den noetigen Cronjob beim Hoster. Knopf "Jetzt ausfuehren" stoesst den Lauf von Hand an.
 
 = 1.2.0 =

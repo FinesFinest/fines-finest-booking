@@ -28,15 +28,19 @@ class FFB_Shortcode {
 		add_shortcode( 'ff_booking', array( __CLASS__, 'render' ) );
 		add_action( 'init', array( __CLASS__, 'register_assets' ) );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_for_content' ) );
-		add_action( 'template_redirect', array( __CLASS__, 'maybe_standalone_cancel' ) );
+		// Prioritaet 1: vor den Weiterleitungen von WordPress, die einen alten Link sonst umbiegen oder verlieren.
+		add_action( 'template_redirect', array( __CLASS__, 'maybe_standalone_cancel' ), 1 );
 	}
 
 	/**
-	 * Faengt den Absage-Link ab, wenn die Zielseite ihren Inhalt nicht ausliefert.
+	 * Faengt jeden Absage-Link ab, der nicht auf der Buchungsseite landet.
 	 *
-	 * Das passiert zum Beispiel bei passwortgeschuetzten Seiten: Dort wird der
-	 * Shortcode nie gerendert, die Absage-Ansicht waere also nicht erreichbar.
-	 * In dem Fall liefern wir eine eigenstaendige, schlanke Seite aus.
+	 * Auf der eingetragenen Buchungsseite rendert der Shortcode die Absage im
+	 * Design der Website. Ueberall sonst liefert das Plugin eine eigene, schlanke
+	 * Seite aus: wenn die Buchungsseite umbenannt oder geloescht wurde (404), wenn
+	 * keine eingetragen ist (Link zeigt auf die Startseite), wenn sie
+	 * passwortgeschuetzt ist oder wenn der Link zu keinem Termin passt. Alte Links
+	 * aus verschickten Mails laufen so nie ins Leere.
 	 */
 	public static function maybe_standalone_cancel() {
 		if ( is_admin() ) {
@@ -44,20 +48,74 @@ class FFB_Shortcode {
 		}
 
 		$token = isset( $_GET['ffb_cancel'] ) ? sanitize_text_field( wp_unslash( $_GET['ffb_cancel'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
-		if ( ! $token ) {
+		if ( '' === $token ) {
 			return;
 		}
 
-		// Liefert die Seite ihren Inhalt normal aus, uebernimmt der Shortcode.
-		if ( ! post_password_required() ) {
+		if ( self::is_booking_page_request() && ! post_password_required() ) {
 			return;
 		}
 
-		$booking = FFB_Bookings::get_by_token( $token );
-		if ( ! $booking ) {
-			return;
+		self::render_standalone_cancel( $token );
+	}
+
+	/**
+	 * Ist die aktuelle Anfrage die in den Einstellungen eingetragene Buchungsseite?
+	 *
+	 * @return bool
+	 */
+	protected static function is_booking_page_request() {
+		$configured = (string) ffb_get_setting( 'booking_page_url' );
+		if ( '' === $configured || is_404() ) {
+			return false;
 		}
 
+		$page_id = (int) url_to_postid( $configured );
+		if ( $page_id > 0 ) {
+			return is_singular() && (int) get_queried_object_id() === $page_id;
+		}
+
+		// Kein WordPress-Beitrag hinter der Adresse, etwa eine Builder-Vorlage: Pfad vergleichen.
+		$current = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+
+		if ( '' === trim( (string) wp_parse_url( $configured, PHP_URL_PATH ), '/' ) ) {
+			return is_front_page();
+		}
+
+		return self::same_path( $configured, $current );
+	}
+
+	/**
+	 * Vergleicht zwei Adressen allein anhand des Pfads. Schema, Host, Parameter
+	 * und ein Schraegstrich am Ende spielen keine Rolle.
+	 *
+	 * Eine eingetragene Adresse mit Parametern (etwa ?page_id=4) oder ohne Pfad
+	 * (die Startseite) laesst sich so nicht sicher vergleichen und ergibt false.
+	 *
+	 * @param string $configured Eingetragene Buchungsseite.
+	 * @param string $current    Aktuelle Anfrage.
+	 * @return bool
+	 */
+	public static function same_path( $configured, $current ) {
+		$a = wp_parse_url( (string) $configured );
+		$b = wp_parse_url( (string) $current );
+
+		if ( ! is_array( $a ) || ! is_array( $b ) || ! empty( $a['query'] ) ) {
+			return false;
+		}
+
+		$path_a = trim( isset( $a['path'] ) ? $a['path'] : '', '/' );
+		$path_b = trim( isset( $b['path'] ) ? $b['path'] : '', '/' );
+
+		return '' !== $path_a && $path_a === $path_b;
+	}
+
+	/**
+	 * Liefert die eigenstaendige Absage-Seite aus und beendet die Anfrage.
+	 *
+	 * @param string $token Token aus dem Mail-Link.
+	 */
+	protected static function render_standalone_cancel( $token ) {
 		nocache_headers();
 		status_header( 200 );
 
