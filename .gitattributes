@@ -1,0 +1,9 @@
+# Beim Export (git archive, GitHub-Quell-ZIP) weglassen: ins Paket gehoert nur das Plugin selbst.
+.github/        export-ignore
+.gitattributes  export-ignore
+.gitignore      export-ignore
+tests/          export-ignore
+
+# Zeilenenden immer LF, Sprachdateien sind binaer.
+*      text=auto eol=lf
+*.mo   binary
