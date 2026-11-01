@@ -36,12 +36,10 @@ jobs:
 
       - name: ZIP bauen
         run: |
-          mkdir -p build/fines-finest-booking
-          rsync -a ./ build/fines-finest-booking/ \
-            --exclude='.git' --exclude='.github' --exclude='.gitignore' \
-            --exclude='build' --exclude='tests' --exclude='node_modules'
-          cd build && zip -qr fines-finest-booking.zip fines-finest-booking
-          unzip -l fines-finest-booking.zip | head -15
+          # git archive beachtet die export-ignore-Regeln aus .gitattributes, genau wie das lokale Paket.
+          mkdir -p build
+          git archive --format=zip --prefix=fines-finest-booking/ -o build/fines-finest-booking.zip "$GITHUB_REF_NAME"
+          unzip -l build/fines-finest-booking.zip | head -15
 
       - name: Changelog aus readme.txt auslesen
         run: |
