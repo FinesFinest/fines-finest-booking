@@ -66,6 +66,16 @@ The booking is marked as cancelled, the slot is free again, the Google Calendar 
 
 The plugin answers every link with the cancellation parameter itself. If the booking page is missing, renamed or password protected, it shows its own lean cancellation page.
 
+== Screenshots ==
+
+1. Day picker: visitors see the next bookable days with the number of free slots.
+2. Free times for the chosen day, calculated from your time windows, buffers and Google calendars.
+3. Booking form with name, email, optional phone, your own extra questions and the consent checkbox.
+4. Confirmation: the appointment is booked, the email with the calendar file is on its way.
+5. Appointment type: duration, interval, buffers and two time windows per weekday.
+6. Bookings overview with contact details, source page and the answers to your questions.
+7. Settings with the setup status: every open step links to the next action.
+
 == Changelog ==
 
 = 1.2.1 =

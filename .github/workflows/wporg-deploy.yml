@@ -1,0 +1,84 @@
+name: Bei wordpress.org veroeffentlichen
+
+# Laeuft bei jedem Tag der Form v1.2.1, parallel zum Release-Workflow, und auf Wunsch von Hand
+# (Actions, "Bei wordpress.org veroeffentlichen", "Run workflow", Tag eintragen).
+# Schiebt die Fassung ohne GitHub-Updater in das SVN-Repository von wordpress.org:
+# trunk, tags/<Version> und die Bilder aus .wordpress-org als assets.
+#
+# Solange die Secrets SVN_USERNAME und SVN_PASSWORD fehlen, tut der Lauf nichts und sagt das.
+# Beide traegt Fine erst nach der Freigabe durch das Plugin-Team ein: Settings, Secrets and
+# variables, Actions. SVN_PASSWORD ist das eigene SVN-Passwort aus dem wordpress.org-Profil,
+# nicht das Konto-Passwort.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag, der veroeffentlicht werden soll, etwa v1.2.1'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+      SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+      TAG_INPUT: ${{ github.event.inputs.tag }}
+    steps:
+      - name: Secrets vorhanden?
+        id: secrets
+        run: |
+          if [ -z "$SVN_USERNAME" ] || [ -z "$SVN_PASSWORD" ]; then
+            echo "SVN_USERNAME oder SVN_PASSWORD fehlt. Veroeffentlichung bei wordpress.org uebersprungen."
+            echo "vorhanden=nein" >> "$GITHUB_OUTPUT"
+          else
+            echo "vorhanden=ja" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.secrets.outputs.vorhanden == 'ja'
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Tag gegen Plugin-Version pruefen
+        if: steps.secrets.outputs.vorhanden == 'ja'
+        run: |
+          TAG="${TAG_INPUT:-$GITHUB_REF_NAME}"
+          TAG="${TAG#v}"
+          HEADER=$(grep -m1 -E '^ \* Version:' fines-finest-booking.php | awk '{print $3}')
+          STABLE=$(grep -m1 -E '^Stable tag:' readme.txt | awk '{print $3}')
+          echo "Tag: $TAG, Plugin-Kopf: $HEADER, readme: $STABLE"
+          if [ "$TAG" != "$HEADER" ] || [ "$TAG" != "$STABLE" ]; then
+            echo "Versionen passen nicht zusammen. Abbruch."
+            exit 1
+          fi
+          echo "PLUGIN_VERSION=$TAG" >> "$GITHUB_ENV"
+
+      - name: Fassung ohne GitHub-Updater bauen
+        if: steps.secrets.outputs.vorhanden == 'ja'
+        run: |
+          # Gleicher Stand wie das wporg-ZIP des Releases: ohne Updater und ohne Update-URI.
+          rm -rf build/wporg && mkdir -p build/wporg
+          git archive --format=tar --prefix=fines-finest-booking/ HEAD | tar -x -C build/wporg
+          rm build/wporg/fines-finest-booking/includes/class-ffb-updater.php
+          sed -i '/^ \* Update URI:/d' build/wporg/fines-finest-booking/fines-finest-booking.php
+          if grep -q 'Update URI' build/wporg/fines-finest-booking/fines-finest-booking.php; then
+            echo "Update-URI steht noch im Plugin-Kopf. Abbruch."
+            exit 1
+          fi
+          ls build/wporg/fines-finest-booking
+
+      - name: In das SVN von wordpress.org uebertragen
+        if: steps.secrets.outputs.vorhanden == 'ja'
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SLUG: fines-finest-booking
+          VERSION: ${{ env.PLUGIN_VERSION }}
+          BUILD_DIR: build/wporg/fines-finest-booking
+          ASSETS_DIR: .wordpress-org
