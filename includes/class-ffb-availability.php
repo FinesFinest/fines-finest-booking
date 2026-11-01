@@ -17,15 +17,57 @@ class FFB_Availability {
 	/**
 	 * Liefert freie Slots, nach Tagen gruppiert.
 	 *
-	 * @param array  $event Termintyp.
-	 * @param string $from  Startdatum Y-m-d in Website-Zeitzone.
-	 * @param int    $days  Anzahl Tage.
+	 * Holt belegte Zeiten und Buchungszahlen aus Datenbank und Google und
+	 * ueberlaesst die Rechnung compute(), die ohne beides auskommt und darum
+	 * in den Tests mit festen Werten laeuft.
+	 *
+	 * @param array                  $event Termintyp.
+	 * @param string                 $from  Startdatum Y-m-d in Website-Zeitzone, leer fuer heute.
+	 * @param int                    $days  Anzahl Tage.
+	 * @param DateTimeInterface|null $now   Jetzt, nur fuer Tests; sonst die aktuelle Zeit.
 	 * @return array|WP_Error Fehler, wenn belegte Zeiten nicht ermittelt werden konnten.
 	 */
-	public static function get_slots( $event, $from = '', $days = 14 ) {
+	public static function get_slots( $event, $from = '', $days = 14, $now = null ) {
 		$tz  = ffb_timezone();
-		$now = new DateTimeImmutable( 'now', $tz );
+		$now = $now instanceof DateTimeInterface
+			? ( new DateTimeImmutable( '@' . $now->getTimestamp() ) )->setTimezone( $tz )
+			: new DateTimeImmutable( 'now', $tz );
 
+		$range       = self::range( $event, $now, $from, $days );
+		$busy        = array();
+		$daily_count = array();
+
+		if ( $range['end'] > $range['start'] ) {
+			$utc        = new DateTimeZone( 'UTC' );
+			$range_from = $range['start']->setTimezone( $utc );
+			$range_to   = $range['end']->setTimezone( $utc );
+
+			$busy = self::collect_busy( $range_from, $range_to );
+			if ( is_wp_error( $busy ) ) {
+				// Ohne Wissen ueber belegte Zeiten lieber keine Slots als falsche.
+				return $busy;
+			}
+
+			$daily_count = self::count_per_day( $range_from, $range_to, $tz, (int) $event['id'] );
+		}
+
+		return self::compute( $event, $now, $range, $busy, $daily_count, self::global_limits() );
+	}
+
+	/**
+	 * Bestimmt den Zeitraum, fuer den Slots berechnet werden.
+	 *
+	 * Beginn ist das gewuenschte Datum, fruehestens heute. Das Ende ist exklusiv
+	 * und reicht hoechstens bis zum Buchungshorizont des Termintyps.
+	 *
+	 * @param array             $event Termintyp mit max_days.
+	 * @param DateTimeImmutable $now   Jetzt in Website-Zeitzone.
+	 * @param string            $from  Wunsch-Startdatum Y-m-d, leer fuer heute.
+	 * @param int               $days  Anzahl Tage, wird auf 1 bis 60 begrenzt.
+	 * @return array start, end und horizon als DateTimeImmutable um 0:00 Uhr in Website-Zeitzone.
+	 */
+	public static function range( $event, $now, $from = '', $days = 14 ) {
+		$tz   = $now->getTimezone();
 		$days = min( 60, max( 1, (int) $days ) );
 
 		try {
@@ -45,79 +87,78 @@ class FFB_Availability {
 			$end_day = $horizon;
 		}
 
-		if ( $end_day <= $start_day ) {
-			return array(
-				'days'     => array(),
-				'timezone' => $tz->getName(),
-				'horizon'  => $horizon->format( 'Y-m-d' ),
-			);
-		}
+		return array(
+			'start'   => $start_day,
+			'end'     => $end_day,
+			'horizon' => $horizon,
+		);
+	}
 
-		$utc        = new DateTimeZone( 'UTC' );
-		$range_from = $start_day->setTimezone( $utc );
-		$range_to   = $end_day->setTimezone( $utc );
-
-		$busy = self::collect_busy( $range_from, $range_to );
-		if ( is_wp_error( $busy ) ) {
-			// Ohne Wissen ueber belegte Zeiten lieber keine Slots als falsche.
-			return $busy;
-		}
-
-		// Globale Grenzen gelten fuer alle Termintypen und koennen nur weiter einschraenken.
-		$global      = self::global_limits();
-		$notice      = max( (int) $event['min_notice'], $global['min_notice'] );
-		$earliest    = $now->modify( '+' . $notice . ' minutes' );
-		$daily_count = self::count_per_day( $range_from, $range_to, $tz, (int) $event['id'] );
-
+	/**
+	 * Die eigentliche Slot-Berechnung. Kennt weder Datenbank noch Google.
+	 *
+	 * @param array             $event       Termintyp: availability, blackouts, duration, slot_step,
+	 *                                       buffer_before, buffer_after, min_notice, daily_limit.
+	 * @param DateTimeImmutable $now         Jetzt in Website-Zeitzone.
+	 * @param array             $range       Ergebnis von range().
+	 * @param array             $busy        Belegte Zeitraeume als [start_ts, end_ts], UTC-Zeitstempel.
+	 * @param array             $daily_count Bestaetigte Buchungen dieses Termintyps je Tag, Y-m-d => Anzahl.
+	 * @param array             $global      Globale Grenzen wie aus global_limits(): enforce, hours, min_notice, blackouts.
+	 * @return array days (date, slots), timezone, horizon.
+	 */
+	public static function compute( $event, $now, $range, $busy, $daily_count, $global ) {
+		$tz     = $now->getTimezone();
+		$utc    = new DateTimeZone( 'UTC' );
 		$result = array();
-		$cursor = $start_day;
 
-		while ( $cursor < $end_day ) {
-			$date_key = $cursor->format( 'Y-m-d' );
-			$weekday  = (string) (int) $cursor->format( 'N' );
-			$windows  = isset( $event['availability'][ $weekday ] ) ? $event['availability'][ $weekday ] : array();
+		if ( $range['end'] > $range['start'] ) {
+			// Globale Grenzen gelten fuer alle Termintypen und koennen nur weiter einschraenken.
+			$notice   = max( (int) $event['min_notice'], (int) $global['min_notice'] );
+			$earliest = $now->modify( '+' . $notice . ' minutes' );
+			$cursor   = $range['start'];
 
-			if ( empty( $windows ) || in_array( $date_key, $event['blackouts'], true ) ) {
-				$cursor = $cursor->modify( '+1 day' );
-				continue;
-			}
+			while ( $cursor < $range['end'] ) {
+				$date_key = $cursor->format( 'Y-m-d' );
+				$weekday  = (string) (int) $cursor->format( 'N' );
+				$windows  = isset( $event['availability'][ $weekday ] ) ? $event['availability'][ $weekday ] : array();
 
-			if ( in_array( $date_key, $global['blackouts'], true ) ) {
-				$cursor = $cursor->modify( '+1 day' );
-				continue;
-			}
-
-			if ( $global['enforce'] ) {
-				$windows = self::intersect_windows( $windows, $global['hours'][ $weekday ] );
-
-				if ( empty( $windows ) ) {
+				if ( empty( $windows ) || in_array( $date_key, (array) $event['blackouts'], true ) || in_array( $date_key, (array) $global['blackouts'], true ) ) {
 					$cursor = $cursor->modify( '+1 day' );
 					continue;
 				}
-			}
 
-			$booked_today = isset( $daily_count[ $date_key ] ) ? (int) $daily_count[ $date_key ] : 0;
-			if ( $event['daily_limit'] > 0 && $booked_today >= $event['daily_limit'] ) {
+				if ( ! empty( $global['enforce'] ) ) {
+					$windows = self::intersect_windows( $windows, isset( $global['hours'][ $weekday ] ) ? $global['hours'][ $weekday ] : array() );
+
+					if ( empty( $windows ) ) {
+						$cursor = $cursor->modify( '+1 day' );
+						continue;
+					}
+				}
+
+				$booked_today = isset( $daily_count[ $date_key ] ) ? (int) $daily_count[ $date_key ] : 0;
+				if ( (int) $event['daily_limit'] > 0 && $booked_today >= (int) $event['daily_limit'] ) {
+					$cursor = $cursor->modify( '+1 day' );
+					continue;
+				}
+
+				$open = self::slots_for_day( $event, $cursor, $windows, $busy, $earliest, $utc );
+
+				if ( ! empty( $open ) ) {
+					$result[] = array(
+						'date'  => $date_key,
+						'slots' => $open,
+					);
+				}
+
 				$cursor = $cursor->modify( '+1 day' );
-				continue;
 			}
-
-			$open = self::slots_for_day( $event, $cursor, $windows, $busy, $earliest, $utc );
-
-			if ( ! empty( $open ) ) {
-				$result[] = array(
-					'date'  => $date_key,
-					'slots' => $open,
-				);
-			}
-
-			$cursor = $cursor->modify( '+1 day' );
 		}
 
 		return array(
 			'days'     => $result,
 			'timezone' => $tz->getName(),
-			'horizon'  => $horizon->format( 'Y-m-d' ),
+			'horizon'  => $range['horizon']->format( 'Y-m-d' ),
 		);
 	}
 
@@ -185,8 +226,10 @@ class FFB_Availability {
 	 */
 	protected static function slots_for_day( $event, $day, $windows, $busy, $earliest, $utc ) {
 		$slots    = array();
+		$seen     = array();
 		$duration = (int) $event['duration'];
 		$step     = max( 5, (int) $event['slot_step'] );
+		$earliest = $earliest->getTimestamp();
 
 		/*
 		 * Der noetige Abstand zu einem belegten Zeitraum ergibt sich aus beiden Puffern:
@@ -196,36 +239,35 @@ class FFB_Availability {
 		$pad = max( (int) $event['buffer_before'], (int) $event['buffer_after'] ) * 60;
 
 		foreach ( $windows as $window ) {
-			list( $win_start, $win_end ) = $window;
+			$start_minute = self::minutes_of_day( $window[0] );
+			$end_minute   = self::minutes_of_day( $window[1] );
 
-			$start = self::apply_time( $day, $win_start );
-			$stop  = self::apply_time( $day, $win_end );
-
-			if ( ! $start || ! $stop ) {
+			if ( null === $start_minute || null === $end_minute ) {
 				continue;
 			}
 
-			$cursor = $start;
+			/*
+			 * Gerechnet wird in Wanduhr-Minuten des Tages, jede Uhrzeit wird einzeln
+			 * aufgeloest. So haengt das Ergebnis nicht davon ab, wie PHP "+30 Minuten"
+			 * ueber einen Sommerzeitwechsel hinweg deutet. Eine fehlende Stunde springt
+			 * vor, eine doppelte Stunde wird einmal angeboten, kein Zeitpunkt doppelt.
+			 */
+			for ( $minute = $start_minute; $minute + $duration <= $end_minute; $minute += $step ) {
+				$cursor        = $day->setTime( intdiv( $minute, 60 ), $minute % 60, 0 );
+				$slot_start_ts = $cursor->getTimestamp();
+				$slot_end_ts   = $slot_start_ts + $duration * 60;
 
-			while ( true ) {
-				$slot_end = $cursor->modify( '+' . $duration . ' minutes' );
-				if ( $slot_end > $stop ) {
-					break;
+				if ( isset( $seen[ $slot_start_ts ] ) || $slot_start_ts < $earliest ) {
+					continue;
 				}
+				$seen[ $slot_start_ts ] = true;
 
-				if ( $cursor >= $earliest ) {
-					$slot_start_ts = $cursor->setTimezone( $utc )->getTimestamp();
-					$slot_end_ts   = $slot_end->setTimezone( $utc )->getTimestamp();
-
-					if ( ! self::collides( $slot_start_ts - $pad, $slot_end_ts + $pad, $busy ) ) {
-						$slots[] = array(
-							'start' => gmdate( 'Y-m-d\TH:i:s\Z', $slot_start_ts ),
-							'label' => $cursor->format( 'H:i' ),
-						);
-					}
+				if ( ! self::collides( $slot_start_ts - $pad, $slot_end_ts + $pad, $busy ) ) {
+					$slots[] = array(
+						'start' => gmdate( 'Y-m-d\TH:i:s\Z', $slot_start_ts ),
+						'label' => $cursor->format( 'H:i' ),
+					);
 				}
-
-				$cursor = $cursor->modify( '+' . $step . ' minutes' );
 			}
 		}
 
@@ -233,19 +275,18 @@ class FFB_Availability {
 	}
 
 	/**
-	 * Setzt eine Uhrzeit auf einen Tag. Beachtet Sommerzeitspruenge.
+	 * Wandelt "HH:MM" in Minuten seit Mitternacht.
 	 *
-	 * @param DateTimeImmutable $day  Tag.
-	 * @param string            $time HH:MM.
-	 * @return DateTimeImmutable|null
+	 * @param string $time HH:MM.
+	 * @return int|null
 	 */
-	protected static function apply_time( $day, $time ) {
-		$parts = explode( ':', $time );
-		if ( count( $parts ) !== 2 ) {
+	protected static function minutes_of_day( $time ) {
+		$parts = explode( ':', (string) $time );
+		if ( count( $parts ) !== 2 || ! is_numeric( $parts[0] ) || ! is_numeric( $parts[1] ) ) {
 			return null;
 		}
 
-		return $day->setTime( (int) $parts[0], (int) $parts[1], 0 );
+		return (int) $parts[0] * 60 + (int) $parts[1];
 	}
 
 	/**

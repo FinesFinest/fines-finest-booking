@@ -26,3 +26,7 @@ desktop.ini
 .env.*
 *-credentials.json
 secrets.*
+
+# PHPUnit
+.phpunit.cache/
+.phpunit.result.cache

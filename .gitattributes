@@ -7,3 +7,4 @@ tests/          export-ignore
 # Zeilenenden immer LF, Sprachdateien sind binaer.
 *      text=auto eol=lf
 *.mo   binary
+phpunit.xml.dist export-ignore

@@ -42,6 +42,10 @@ Die ausfuehrliche Anleitung steht in der Datei INSTALL.md.
 
 == Changelog ==
 
+= 1.2.1 =
+* Die Slot-Berechnung rechnet in Wanduhr-Minuten des Tages statt mit PHP-Zeitschritten. In der doppelten Stunde beim Sommerzeitende wird jede Uhrzeit genau einmal angeboten, unabhaengig von der PHP-Version.
+* Automatische Tests fuer die Slot-Berechnung (Zeitfenster, Geschaeftszeiten, Puffer, Vorlaufzeit, Tageslimit, Sperrtage, Horizont, beide Sommerzeitwechsel), das Erinnerungsfenster und die Telefonnummern-Normalisierung. GitHub prueft sie bei jedem Stand und vor jedem Release.
+
 = 1.2.0 =
 * Das Plugin ist uebersetzbar. Quellsprache ist Englisch, die deutsche Fassung liegt als Sprachpaket bei, jetzt mit Umlauten in allen Texten und Mails.
 * Die Textdomain heisst fines-finest-booking statt ff-booking, wie es das WordPress-Verzeichnis verlangt.
