@@ -4,7 +4,7 @@ Tags: booking, appointments, google calendar, termine, dsgvo
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 
 Terminbuchung im eigenen Design, mit Google-Kalender-Sync, Google Meet, Bestaetigungsmails und Brevo-Anbindung.
@@ -41,6 +41,14 @@ Alle Buchungsdaten liegen in der Datenbank der eigenen Website. Kein externer An
 Die ausfuehrliche Anleitung steht in der Datei INSTALL.md.
 
 == Changelog ==
+
+= 1.1.2 =
+* Die Sperre gegen Doppelbuchungen nutzt eine Datenbanksperre. Die bisherige Sperre ueber eine Option war nicht atomar, zwei gleichzeitige Buchungen konnten beide durchgehen.
+* Wer weniger als 25 Stunden vor dem Termin bucht, bekommt keine zusaetzliche Erinnerungsmail mehr. Bisher kam sie direkt nach der Bestaetigung und sprach von "morgen".
+* Die Erinnerungsmail sagt "heute", wenn der Termin am selben Tag ist, zum Beispiel wenn der Cron spaet dran war.
+* Ein Termintyp mit kuenftigen Terminen laesst sich nicht mehr loeschen. Vorher verloren diese Termine still ihre Erinnerung.
+* Brevo: Telefonnummern werden ins internationale Format gebracht. Lehnt Brevo die Nummer trotzdem ab, wird der Kontakt ohne Nummer angelegt statt gar nicht.
+* Die Google-Verbindung meldet sich, wenn die Anmeldung abgelaufen ist oder bei Google abgebrochen wurde, statt stumm zur Einstellungsseite zurueckzukehren.
 
 = 1.1.1 =
 * Der mitgelieferte Beispiel-Termintyp ist neutral: "Erstgespraech", ohne vorgegebenen Beschreibungstext und ohne Tageslimit.
