@@ -230,25 +230,6 @@ class FFB_Admin {
 				exit;
 			}
 
-			if ( 'check_updates' === $do ) {
-				check_admin_referer( 'ffb_check_updates' );
-				if ( ! class_exists( 'FFB_Updater' ) ) {
-					wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=error' ) );
-					exit;
-				}
-
-				$ergebnis = FFB_Updater::check_now();
-				if ( is_wp_error( $ergebnis ) ) {
-					set_transient( 'ffb_admin_error', $ergebnis->get_error_message(), 60 );
-					wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=update_check_error' ) );
-					exit;
-				}
-
-				set_transient( 'ffb_admin_error', $ergebnis['latest'], 60 );
-				wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=' . ( $ergebnis['update'] ? 'update_available' : 'update_none' ) ) );
-				exit;
-			}
-
 			if ( 'test_mail' === $do ) {
 				check_admin_referer( 'ffb_test_mail' );
 
@@ -290,6 +271,9 @@ class FFB_Admin {
 				}
 				exit;
 			}
+
+			// Aktionen aus Zusatzdateien, etwa der Knopf "Jetzt nach Updates suchen" der selbst gehosteten Fassung.
+			do_action( 'ffb_admin_action', $do );
 		}
 	}
 
@@ -889,40 +873,10 @@ class FFB_Admin {
 				<?php endif; ?>
 			</p>
 
-			<?php if ( class_exists( 'FFB_Updater' ) ) : // Fehlt in der Fassung fuer das WordPress-Verzeichnis. ?>
 			<?php
-			$release = FFB_Updater::latest_release();
-			$auto    = FFB_Updater::auto_update_active() ? __( 'enabled', 'fines-finest-booking' ) : __( 'disabled', 'fines-finest-booking' );
-			?>
-			<p class="ffb-status__tz">
-			<?php
-			if ( is_wp_error( $release ) ) {
-				echo esc_html(
-					sprintf(
-						/* translators: 1: installed version, 2: error message, 3: enabled or disabled */
-						__( 'Updates come from GitHub. Installed: %1$s. The latest release could not be read: %2$s Automatic updates: %3$s.', 'fines-finest-booking' ),
-						FFB_VERSION,
-						$release->get_error_message(),
-						$auto
-					)
-				);
-			} else {
-				echo esc_html(
-					sprintf(
-						/* translators: 1: installed version, 2: latest release version, 3: enabled or disabled */
-						__( 'Updates come from GitHub. Installed: %1$s, latest release: %2$s. Automatic updates: %3$s.', 'fines-finest-booking' ),
-						FFB_VERSION,
-						$release['version'],
-						$auto
-					)
-				);
-			}
-			?>
-				<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffb-settings&ffb_do=check_updates' ), 'ffb_check_updates' ) ); ?>"><?php esc_html_e( 'Check for updates now', 'fines-finest-booking' ); ?></a>
-			</p>
-			<?php endif; ?>
+			// Zusatzzeilen aus Zusatzdateien, etwa die Updatezeile der selbst gehosteten Fassung.
+			do_action( 'ffb_status_box_extra' );
 
-			<?php
 			$fehlende = FFB_Google::is_connected() ? FFB_Google::unreachable_busy_calendars() : array();
 			if ( $fehlende ) :
 				?>
@@ -971,13 +925,13 @@ class FFB_Admin {
 			'resent'             => array( 'success', __( 'Confirmation email sent again.', 'fines-finest-booking' ) ),
 			'resend_error'       => array( 'error', __( 'The confirmation email could not be sent again.', 'fines-finest-booking' ) ),
 			'duplicated'         => array( 'success', __( 'Appointment type duplicated. It stays inactive until you tick "Bookable" and save.', 'fines-finest-booking' ) ),
-			'update_none'        => array( 'success', __( 'Checked GitHub just now. No update available. Latest release:', 'fines-finest-booking' ) ),
-			'update_available'   => array( 'success', __( 'A newer version is available:', 'fines-finest-booking' ) ),
-			'update_check_error' => array( 'error', __( 'GitHub could not be checked:', 'fines-finest-booking' ) ),
 			'google_error'       => array( 'error', __( 'The Google connection did not work.', 'fines-finest-booking' ) ),
 			'brevo_error'        => array( 'error', __( 'Brevo rejected the request.', 'fines-finest-booking' ) ),
 			'error'              => array( 'error', __( 'That did not work.', 'fines-finest-booking' ) ),
 		);
+
+		// Weitere Hinweise aus Zusatzdateien, etwa die Ergebnisse der Updatepruefung der selbst gehosteten Fassung.
+		$map = (array) apply_filters( 'ffb_admin_notices', $map );
 
 		if ( ! isset( $map[ $notice ] ) ) {
 			return;
@@ -986,11 +940,8 @@ class FFB_Admin {
 		$detail = get_transient( 'ffb_admin_error' );
 		delete_transient( 'ffb_admin_error' );
 
-		// Bei einem gefundenen Update gleich der Weg zum Einspielen.
-		$link = array();
-		if ( 'update_available' === $notice && class_exists( 'FFB_Updater' ) ) {
-			$link = FFB_Updater::install_link();
-		}
+		// Zusatzlink hinter dem Hinweis, etwa der Weg zum Einspielen eines gefundenen Updates: (url, text) oder leer.
+		$link = (array) apply_filters( 'ffb_admin_notice_link', array(), $notice );
 
 		printf(
 			'<div class="notice notice-%s is-dismissible"><p>%s%s%s</p></div>',

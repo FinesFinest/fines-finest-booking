@@ -34,6 +34,13 @@ class FFB_Updater {
 		add_action( 'admin_init', array( __CLASS__, 'enable_auto_update_once' ) );
 		// Prioritaet 1: der Kern prueft die Plugins auf dieser Seite bei 10, der Cache muss vorher weg sein.
 		add_action( 'load-update-core.php', array( __CLASS__, 'maybe_clear_cache' ), 1 );
+
+		// Oberflaeche in den Einstellungen: Statuszeile, Knopf "Jetzt nach Updates suchen" und die Hinweise dazu.
+		// Alles dazu liegt hier, damit die Fassung fuer das WordPress-Verzeichnis ohne diese Datei nichts davon enthaelt.
+		add_action( 'ffb_admin_action', array( __CLASS__, 'handle_admin_action' ) );
+		add_action( 'ffb_status_box_extra', array( __CLASS__, 'render_status_line' ) );
+		add_filter( 'ffb_admin_notices', array( __CLASS__, 'add_notices' ) );
+		add_filter( 'ffb_admin_notice_link', array( __CLASS__, 'notice_link' ), 10, 2 );
 	}
 
 	/**
@@ -302,6 +309,95 @@ class FFB_Updater {
 		if ( isset( $_GET['force-check'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 			delete_site_transient( self::CACHE );
 		}
+	}
+
+	/**
+	 * Knopf "Jetzt nach Updates suchen" in den Einstellungen: fragt GitHub ab und
+	 * leitet mit dem passenden Hinweis zurueck.
+	 *
+	 * @param string $do Aktion aus der Adresse (ffb_do).
+	 */
+	public static function handle_admin_action( $do ) {
+		if ( 'check_updates' !== $do ) {
+			return;
+		}
+		check_admin_referer( 'ffb_check_updates' );
+
+		$ergebnis = self::check_now();
+		if ( is_wp_error( $ergebnis ) ) {
+			set_transient( 'ffb_admin_error', $ergebnis->get_error_message(), 60 );
+			wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=update_check_error' ) );
+			exit;
+		}
+
+		set_transient( 'ffb_admin_error', $ergebnis['latest'], 60 );
+		wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=' . ( $ergebnis['update'] ? 'update_available' : 'update_none' ) ) );
+		exit;
+	}
+
+	/**
+	 * Zeile im Einrichtungsstand: Quelle der Updates, installierte und neueste Version, Knopf.
+	 */
+	public static function render_status_line() {
+		$release = self::latest_release();
+		$auto    = self::auto_update_active() ? __( 'enabled', 'fines-finest-booking' ) : __( 'disabled', 'fines-finest-booking' );
+		?>
+		<p class="ffb-status__tz">
+		<?php
+		if ( is_wp_error( $release ) ) {
+			echo esc_html(
+				sprintf(
+					/* translators: 1: installed version, 2: error message, 3: enabled or disabled */
+					__( 'Updates come from GitHub. Installed: %1$s. The latest release could not be read: %2$s Automatic updates: %3$s.', 'fines-finest-booking' ),
+					FFB_VERSION,
+					$release->get_error_message(),
+					$auto
+				)
+			);
+		} else {
+			echo esc_html(
+				sprintf(
+					/* translators: 1: installed version, 2: latest release version, 3: enabled or disabled */
+					__( 'Updates come from GitHub. Installed: %1$s, latest release: %2$s. Automatic updates: %3$s.', 'fines-finest-booking' ),
+					FFB_VERSION,
+					$release['version'],
+					$auto
+				)
+			);
+		}
+		?>
+			<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffb-settings&ffb_do=check_updates' ), 'ffb_check_updates' ) ); ?>"><?php esc_html_e( 'Check for updates now', 'fines-finest-booking' ); ?></a>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Hinweistexte fuer die Ergebnisse des Knopfs.
+	 *
+	 * @param array $map Hinweise der Einstellungsseite, Schluessel => (Art, Text).
+	 * @return array
+	 */
+	public static function add_notices( $map ) {
+		$map['update_none']        = array( 'success', __( 'Checked GitHub just now. No update available. Latest release:', 'fines-finest-booking' ) );
+		$map['update_available']   = array( 'success', __( 'A newer version is available:', 'fines-finest-booking' ) );
+		$map['update_check_error'] = array( 'error', __( 'GitHub could not be checked:', 'fines-finest-booking' ) );
+
+		return $map;
+	}
+
+	/**
+	 * Bei einem gefundenen Update gleich der Weg zum Einspielen.
+	 *
+	 * @param array  $link   Bisheriger Link (url, text) oder leer.
+	 * @param string $notice Schluessel des Hinweises.
+	 * @return array
+	 */
+	public static function notice_link( $link, $notice ) {
+		if ( 'update_available' === $notice ) {
+			return self::install_link();
+		}
+
+		return $link;
 	}
 
 	/**

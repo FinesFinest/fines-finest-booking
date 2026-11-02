@@ -1,0 +1,54 @@
+== Changelog of Fines Finest Booking: versions before 1.2.0 ==
+
+The current entries are in readme.txt.
+
+= 1.1.2 =
+* The protection against double bookings uses a database lock. The previous lock via an option was not atomic, two simultaneous bookings could both go through.
+* Who books less than 25 hours before the appointment no longer gets an extra reminder email. It used to arrive right after the confirmation and spoke of "tomorrow".
+* The reminder email says "today" when the appointment is on the same day, for example when the cron ran late.
+* An appointment type with upcoming appointments can no longer be deleted. Those appointments used to lose their reminder silently.
+* Brevo: phone numbers are converted to the international format. If Brevo still rejects the number, the contact is created without it instead of not at all.
+* The Google connection reports when the login has expired or was aborted at Google, instead of returning silently to the settings page.
+
+= 1.1.1 =
+* The bundled sample appointment type is neutral, without preset description and without daily limit.
+* The default colours are neutral instead of a specific corporate design. Fonts are set to "inherit" and take over those of the website.
+* The setup guide no longer contains specific sample addresses and covers the new functions.
+* Affects new installations only. Existing settings, colours and appointment types stay unchanged.
+
+= 1.1.0 =
+* New: setup status at the top of the settings page. Four items with traffic lights, each linking to the next action: Google connected, appointment type active, booking page known, email sending tested.
+* New: "Send test email" button. Email sending can be checked without creating a real booking.
+* New: expandable help texts behind the sections, including the complete guide for the Google Cloud project. Click to open instead of hover, so it works on phones and with screen readers.
+* New: the redirect URI can be copied with one click.
+* New: the site's time zone is shown. If it is a fixed offset instead of a city, the plugin warns because of daylight saving time.
+* Notice right after activation that Google must be connected first.
+
+= 1.0.5 =
+* Time windows are selected instead of typed: two from-to pairs per weekday, in quarter-hour steps. Applies to the business hours and to every appointment type.
+* Incomplete or reversed pairs are discarded and block the day instead of opening it by accident. A typo can no longer allow a night booking.
+* Minimum notice can be given in minutes, hours or days. It is still stored in minutes.
+
+= 1.0.4 =
+* The target calendar is selected instead of typed. Only calendars the connected account may write to are offered.
+* Additional calendars to check are ticked instead of typed. Only calendars the connected account can actually see appear.
+* A configured calendar that Google does not deliver for this account is now clearly marked as ineffective instead of being ignored silently.
+* Google reports access problems per calendar, not as HTTP errors. These messages now end up in the error log.
+
+= 1.0.3 =
+* New: limits for all appointment types in the settings. Business hours per weekday, minimum notice and blocked days apply globally and cannot be overridden by any appointment type.
+* The global times are intersected with the times of the appointment type, so they only restrict further. An empty weekday blocks that day completely.
+* The longer of the two minimum notices wins, global or per appointment type.
+
+= 1.0.2 =
+* Brevo: the list is now selected instead of typed as an ID once the API key is saved. If the list is missing, the plugin says so clearly instead of doing nothing silently.
+* New: origin of a booking. The plugin remembers the page where the booking was made; in the shortcode this can be overridden with quelle="...". Visible in the backend, in the notification email, in the calendar entry and as the attribute FFB_QUELLE in Brevo.
+* New: the title of the calendar entry can be set per appointment type, with the placeholders {name}, {termintyp}, {quelle}, {datum}, {uhrzeit} and {email}.
+* Emails get an additional plain-text version. Pure HTML costs points with spam filters.
+
+= 1.0.1 =
+* Appointment type form: Cancel button next to Save, leads back to the list.
+* Cancellation links also work when the booking page does not deliver its content, for example when it is password protected. In that case the plugin serves its own lean cancellation page.
+
+= 1.0.0 =
+* First version.
