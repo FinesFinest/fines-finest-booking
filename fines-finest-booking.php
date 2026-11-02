@@ -27,7 +27,7 @@ define( 'FFB_DB_VERSION', 3 );
 // Kaffeekasse: Adresse fuer ein Dankeschoen an Fine (PayPal.Me). Leer = keine Zeile in den Einstellungen.
 // Fuer Tests laesst sie sich in der wp-config.php vorbelegen.
 if ( ! defined( 'FFB_DONATE_URL' ) ) {
-	define( 'FFB_DONATE_URL', '' );
+	define( 'FFB_DONATE_URL', 'https://www.paypal.com/paypalme/finesfinest' );
 }
 
 require_once FFB_DIR . 'includes/class-ffb-install.php';

@@ -1,5 +1,6 @@
 === Fines Finest Booking ===
 Contributors: finesfinest
+Donate link: https://www.paypal.com/paypalme/finesfinest
 Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
 Tested up to: 7.1
