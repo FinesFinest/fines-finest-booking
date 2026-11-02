@@ -131,3 +131,12 @@
 .ffb-admin .ffb-hint li { margin-bottom: .4em; }
 
 .ffb-admin .ffb-copy { margin-left: .5em; }
+
+/* Kaffeekasse am Ende der Einstellungen. */
+.ffb-admin .ffb-coffee {
+	margin-top: 32px;
+	padding-top: 16px;
+	border-top: 1px solid #dcdcde;
+	color: #646970;
+	max-width: 760px;
+}

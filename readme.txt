@@ -4,7 +4,7 @@ Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,17 @@ The plugin answers every link with the cancellation parameter itself. If the boo
 7. Settings with the setup status: every open step links to the next action.
 
 == Changelog ==
+
+= 1.2.2 =
+* Coffee fund: a link to say thank you to the developer, shown in the plugin directory and at the end of the settings page.
+* Banner, icon and screenshots for the WordPress plugin directory.
+* Settings and appointment types are linked from the plugin list.
+* One click creates the booking page with the shortcode and saves its address, straight from the setup status.
+* Copy button next to every shortcode.
+* Resend the confirmation email with the calendar file from the bookings list.
+* Duplicate an appointment type. The copy is inactive until you release it.
+* If no privacy policy link is set, the consent checkbox links to the privacy policy page from Settings, Privacy.
+* The day strip snaps into place when swiping on phones.
 
 = 1.2.1 =
 * The slot calculation steps through the wall-clock minutes of a day instead of PHP time intervals. In the repeated hour at the end of daylight saving time every time is offered exactly once, on every PHP version.

@@ -39,6 +39,23 @@ class FFB_Admin {
 		add_action( 'admin_init', array( __CLASS__, 'handle_actions' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'activation_notice' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( FFB_FILE ), array( __CLASS__, 'plugin_links' ) );
+	}
+
+	/**
+	 * Links "Einstellungen" und "Termintypen" in der Pluginliste.
+	 *
+	 * @param array $links Bisherige Links.
+	 * @return array
+	 */
+	public static function plugin_links( $links ) {
+		array_unshift(
+			$links,
+			'<a href="' . esc_url( admin_url( 'admin.php?page=ffb-settings' ) ) . '">' . esc_html__( 'Settings', 'fines-finest-booking' ) . '</a>',
+			'<a href="' . esc_url( admin_url( 'admin.php?page=ffb-event-types' ) ) . '">' . esc_html__( 'Appointment types', 'fines-finest-booking' ) . '</a>'
+		);
+
+		return $links;
 	}
 
 	/**
@@ -131,6 +148,85 @@ class FFB_Admin {
 
 				FFB_Event_Types::delete( $id );
 				wp_safe_redirect( admin_url( 'admin.php?page=ffb-event-types&ffb_notice=deleted' ) );
+				exit;
+			}
+
+			if ( 'create_page' === $do ) {
+				check_admin_referer( 'ffb_create_page' );
+				$title   = __( 'Book an appointment', 'fines-finest-booking' );
+				$page_id = wp_insert_post(
+					array(
+						'post_type'    => 'page',
+						'post_status'  => 'publish',
+						'post_title'   => $title,
+						'post_name'    => sanitize_title( $title ),
+						'post_content' => '<!-- wp:shortcode -->[ff_booking]<!-- /wp:shortcode -->',
+						'post_author'  => get_current_user_id(),
+					),
+					true
+				);
+
+				if ( is_wp_error( $page_id ) ) {
+					set_transient( 'ffb_admin_error', $page_id->get_error_message(), 60 );
+					wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=error' ) );
+					exit;
+				}
+
+				// Adresse merken, damit Absage-Links auf diese Seite fuehren.
+				$settings                     = (array) get_option( 'ffb_settings', array() );
+				$settings['booking_page_url'] = get_permalink( $page_id );
+				update_option( 'ffb_settings', $settings );
+				delete_transient( 'ffb_shortcode_found' );
+
+				set_transient( 'ffb_admin_error', get_permalink( $page_id ), 60 );
+				wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=page_created' ) );
+				exit;
+			}
+
+			if ( 'resend_confirmation' === $do ) {
+				check_admin_referer( 'ffb_resend_confirmation' );
+				$booking = FFB_Bookings::get( isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0 );
+				$event   = $booking ? FFB_Event_Types::get( $booking['event_type_id'] ) : null;
+
+				if ( ! $booking || ! $event || 'confirmed' !== $booking['status'] ) {
+					wp_safe_redirect( admin_url( 'admin.php?page=ffb-bookings&ffb_notice=error' ) );
+					exit;
+				}
+
+				// Die Mail erwartet die Antworten als Feld, nicht als JSON-Text aus der Datenbank.
+				if ( is_string( $booking['answers'] ) ) {
+					$booking['answers'] = (array) json_decode( $booking['answers'], true );
+				}
+
+				$gesendet = FFB_Mailer::send_confirmation( $booking, $event );
+				wp_safe_redirect( admin_url( 'admin.php?page=ffb-bookings&ffb_notice=' . ( $gesendet ? 'resent' : 'resend_error' ) ) );
+				exit;
+			}
+
+			if ( 'duplicate_event_type' === $do ) {
+				check_admin_referer( 'ffb_duplicate_event_type' );
+				$quelle = FFB_Event_Types::get( isset( $_GET['id'] ) ? absint( wp_unslash( $_GET['id'] ) ) : 0 );
+
+				if ( ! $quelle ) {
+					wp_safe_redirect( admin_url( 'admin.php?page=ffb-event-types&ffb_notice=error' ) );
+					exit;
+				}
+
+				$daten = $quelle;
+				unset( $daten['id'], $daten['created_at'] );
+				/* translators: %s: title of the copied appointment type */
+				$daten['title']  = sprintf( __( '%s (copy)', 'fines-finest-booking' ), $quelle['title'] );
+				$daten['slug']   = '';
+				$daten['active'] = 0; // Erst pruefen, dann freischalten.
+
+				$neu = FFB_Event_Types::save( $daten );
+				if ( is_wp_error( $neu ) ) {
+					set_transient( 'ffb_admin_error', $neu->get_error_message(), 60 );
+					wp_safe_redirect( admin_url( 'admin.php?page=ffb-event-types&ffb_notice=error' ) );
+					exit;
+				}
+
+				wp_safe_redirect( admin_url( 'admin.php?page=ffb-event-types&edit=' . (int) $neu . '&ffb_notice=duplicated' ) );
 				exit;
 			}
 
@@ -701,9 +797,9 @@ class FFB_Admin {
 				'ok'       => $seite_bekannt,
 				'titel'    => __( 'Booking page set up', 'fines-finest-booking' ),
 				'gut'      => __( 'Shortcode found or booking page saved.', 'fines-finest-booking' ),
-				'schlecht' => __( 'Put the shortcode on a page and enter its address below. Without the address, cancellation links open a plain cancellation page instead of your booking page.', 'fines-finest-booking' ),
-				'link'     => '#ffb-mails',
-				'aktion'   => __( 'Enter booking page', 'fines-finest-booking' ),
+				'schlecht' => __( 'One click creates a page with the booking widget and saves its address. Or put the shortcode on a page of your own and enter its address below.', 'fines-finest-booking' ),
+				'link'     => wp_nonce_url( admin_url( 'admin.php?page=ffb-settings&ffb_do=create_page' ), 'ffb_create_page' ),
+				'aktion'   => __( 'Create booking page', 'fines-finest-booking' ),
 			),
 			array(
 				'ok'       => (bool) get_option( 'ffb_mail_tested' ),
@@ -851,6 +947,10 @@ class FFB_Admin {
 			'mail_ok'      => array( 'success', __( 'Test email sent. Check your inbox, including the spam folder.', 'fines-finest-booking' ) ),
 			'mail_error'   => array( 'error', __( 'The test email could not be sent.', 'fines-finest-booking' ) ),
 			'cron_ok'      => array( 'success', __( 'Reminder task has run.', 'fines-finest-booking' ) ),
+			'page_created' => array( 'success', __( 'Booking page created and saved. Open it from the Pages menu to adjust text and design.', 'fines-finest-booking' ) ),
+			'resent'       => array( 'success', __( 'Confirmation email sent again.', 'fines-finest-booking' ) ),
+			'resend_error' => array( 'error', __( 'The confirmation email could not be sent again.', 'fines-finest-booking' ) ),
+			'duplicated'   => array( 'success', __( 'Appointment type duplicated. It stays inactive until you tick "Bookable" and save.', 'fines-finest-booking' ) ),
 			'google_error' => array( 'error', __( 'The Google connection did not work.', 'fines-finest-booking' ) ),
 			'brevo_error'  => array( 'error', __( 'Brevo rejected the request.', 'fines-finest-booking' ) ),
 			'error'        => array( 'error', __( 'That did not work.', 'fines-finest-booking' ) ),
@@ -908,7 +1008,7 @@ class FFB_Admin {
 						<th><?php esc_html_e( 'Appointment type', 'fines-finest-booking' ); ?></th>
 						<th><?php esc_html_e( 'Source', 'fines-finest-booking' ); ?></th>
 						<th><?php esc_html_e( 'Details', 'fines-finest-booking' ); ?></th>
-						<th style="width:120px;"><?php esc_html_e( 'Action', 'fines-finest-booking' ); ?></th>
+						<th style="width:170px;"><?php esc_html_e( 'Action', 'fines-finest-booking' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -939,6 +1039,9 @@ class FFB_Admin {
 						<td>
 							<?php if ( 'confirmed' === $row['status'] ) : ?>
 								<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffb-bookings&ffb_do=cancel_booking&id=' . (int) $row['id'] ), 'ffb_cancel_booking' ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Really cancel this appointment? The person will get an email.', 'fines-finest-booking' ) ); ?>');"><?php echo esc_html_x( 'Cancel', 'cancel an appointment', 'fines-finest-booking' ); ?></a>
+								<?php if ( strtotime( $row['start_utc'] . ' UTC' ) > time() ) : ?>
+									<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffb-bookings&ffb_do=resend_confirmation&id=' . (int) $row['id'] ), 'ffb_resend_confirmation' ) ); ?>" title="<?php esc_attr_e( 'Sends the confirmation email with the calendar file again.', 'fines-finest-booking' ); ?>"><?php esc_html_e( 'Resend email', 'fines-finest-booking' ); ?></a>
+								<?php endif; ?>
 							<?php else : ?>
 								<span class="ffb-badge"><?php esc_html_e( 'cancelled', 'fines-finest-booking' ); ?></span>
 							<?php endif; ?>
@@ -985,12 +1088,12 @@ class FFB_Admin {
 			<?php self::notices(); ?>
 
 			<table class="wp-list-table widefat fixed striped">
-				<thead><tr><th><?php esc_html_e( 'Title', 'fines-finest-booking' ); ?></th><th><?php esc_html_e( 'Shortcode', 'fines-finest-booking' ); ?></th><th><?php esc_html_e( 'Duration', 'fines-finest-booking' ); ?></th><th><?php esc_html_e( 'Status', 'fines-finest-booking' ); ?></th><th style="width:160px;"><?php esc_html_e( 'Action', 'fines-finest-booking' ); ?></th></tr></thead>
+				<thead><tr><th><?php esc_html_e( 'Title', 'fines-finest-booking' ); ?></th><th><?php esc_html_e( 'Shortcode', 'fines-finest-booking' ); ?></th><th><?php esc_html_e( 'Duration', 'fines-finest-booking' ); ?></th><th><?php esc_html_e( 'Status', 'fines-finest-booking' ); ?></th><th style="width:240px;"><?php esc_html_e( 'Action', 'fines-finest-booking' ); ?></th></tr></thead>
 				<tbody>
 				<?php foreach ( FFB_Event_Types::all() as $event ) : ?>
 					<tr>
 						<td><strong><a href="<?php echo esc_url( admin_url( 'admin.php?page=ffb-event-types&edit=' . $event['id'] ) ); ?>"><?php echo esc_html( $event['title'] ); ?></a></strong></td>
-						<td><code>[ff_booking event="<?php echo esc_html( $event['slug'] ); ?>"]</code></td>
+						<td><code id="ffb-sc-<?php echo (int) $event['id']; ?>">[ff_booking event="<?php echo esc_html( $event['slug'] ); ?>"]</code> <button type="button" class="button button-small ffb-copy" data-ffb-copy="#ffb-sc-<?php echo (int) $event['id']; ?>"><?php esc_html_e( 'Copy', 'fines-finest-booking' ); ?></button></td>
 						<td>
 						<?php
 						/* translators: %d: duration in minutes, abbreviated */
@@ -1000,6 +1103,7 @@ class FFB_Admin {
 						<td><?php echo $event['active'] ? esc_html__( 'active', 'fines-finest-booking' ) : esc_html__( 'inactive', 'fines-finest-booking' ); ?></td>
 						<td>
 							<a class="button button-small" href="<?php echo esc_url( admin_url( 'admin.php?page=ffb-event-types&edit=' . $event['id'] ) ); ?>"><?php esc_html_e( 'Edit', 'fines-finest-booking' ); ?></a>
+							<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffb-event-types&ffb_do=duplicate_event_type&id=' . $event['id'] ), 'ffb_duplicate_event_type' ) ); ?>"><?php esc_html_e( 'Duplicate', 'fines-finest-booking' ); ?></a>
 							<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffb-event-types&ffb_do=delete_event_type&id=' . $event['id'] ), 'ffb_delete_event_type' ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this appointment type? Past bookings are kept. If it still has upcoming appointments, it will not be deleted.', 'fines-finest-booking' ) ); ?>');"><?php esc_html_e( 'Delete', 'fines-finest-booking' ); ?></a>
 						</td>
 					</tr>
@@ -1570,7 +1674,10 @@ class FFB_Admin {
 					</tr>
 					<tr>
 						<th scope="row"><label for="ffb-privacy"><?php esc_html_e( 'Link to privacy policy', 'fines-finest-booking' ); ?></label></th>
-						<td><input id="ffb-privacy" name="ffb[privacy_url]" type="url" class="regular-text" value="<?php echo esc_attr( ffb_get_setting( 'privacy_url' ) ); ?>"></td>
+						<td>
+							<input id="ffb-privacy" name="ffb[privacy_url]" type="url" class="regular-text" value="<?php echo esc_attr( ffb_get_setting( 'privacy_url' ) ); ?>" placeholder="<?php echo esc_attr( get_privacy_policy_url() ); ?>">
+							<p class="description"><?php esc_html_e( 'Leave empty to use the privacy policy page from Settings, Privacy.', 'fines-finest-booking' ); ?></p>
+						</td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="ffb-retention"><?php esc_html_e( 'Retention', 'fines-finest-booking' ); ?></label></th>
@@ -1633,6 +1740,13 @@ class FFB_Admin {
 					<?php endforeach; ?>
 					</tbody>
 				</table>
+			<?php endif; ?>
+
+			<?php if ( FFB_DONATE_URL ) : // Kaffeekasse, nur mit hinterlegter Adresse. ?>
+				<p class="ffb-coffee">
+					<?php esc_html_e( 'Fines Finest Booking is free. It is built and maintained by Fine, a one-woman business. If the plugin saves you time, you can say thank you with a coffee.', 'fines-finest-booking' ); ?>
+					<a href="<?php echo esc_url( FFB_DONATE_URL ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Coffee fund via PayPal', 'fines-finest-booking' ); ?></a>
+				</p>
 			<?php endif; ?>
 		</div>
 		<?php

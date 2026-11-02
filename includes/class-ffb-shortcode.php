@@ -234,7 +234,8 @@ class FFB_Shortcode {
 		return array(
 			'root'          => esc_url_raw( rest_url( FFB_Rest::NS ) ),
 			'consentText'   => ffb_get_setting( 'consent_text' ),
-			'privacyUrl'    => ffb_get_setting( 'privacy_url' ),
+			// Ohne eigene Adresse gilt die Datenschutzseite aus Einstellungen, Datenschutz.
+			'privacyUrl'    => ffb_get_setting( 'privacy_url' ) ? ffb_get_setting( 'privacy_url' ) : get_privacy_policy_url(),
 			'months'        => $months,
 			'monthsShort'   => $months_short,
 			'weekdays'      => $weekdays,

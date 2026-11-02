@@ -287,6 +287,7 @@ class FFB_Mailer {
 	 *
 	 * @param array $booking Buchung.
 	 * @param array $event   Termintyp.
+	 * @return bool Ob wp_mail() den Versand angenommen hat.
 	 */
 	public static function send_confirmation( $booking, $event ) {
 		$when     = self::format_datetime( $booking['start_utc'] );
@@ -329,7 +330,7 @@ class FFB_Mailer {
 
 		$ics = self::build_ics( $booking, $event, 'REQUEST' );
 
-		wp_mail(
+		$sent = wp_mail(
 			$booking['email'],
 			/* translators: 1: appointment type, 2: date and time */
 			sprintf( __( 'Appointment confirmed: %1$s on %2$s', 'fines-finest-booking' ), $event['title'], $when ),
@@ -339,6 +340,8 @@ class FFB_Mailer {
 		);
 
 		self::cleanup( $ics );
+
+		return (bool) $sent;
 	}
 
 	/**

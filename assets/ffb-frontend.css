@@ -99,6 +99,7 @@
 	display: flex;
 	gap: 0.6rem;
 	overflow-x: auto;
+	scroll-snap-type: x proximity;
 	padding-bottom: 0.75rem;
 	scrollbar-width: thin;
 }
@@ -114,6 +115,7 @@
 
 .ffb-day {
 	flex: 0 0 auto;
+	scroll-snap-align: start;
 	min-width: 78px;
 	padding: 0.7rem 0.5rem;
 	display: flex;
