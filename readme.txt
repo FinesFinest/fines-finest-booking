@@ -5,7 +5,7 @@ Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.2
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,10 @@ The plugin answers every link with the cancellation parameter itself. If the boo
 7. Settings with the setup status: every open step links to the next action.
 
 == Changelog ==
+
+= 1.2.3 =
+* "Check for updates now" button in the settings: clears the six-hour GitHub cache, lets WordPress check straight away and shows the result, including the error if GitHub cannot be reached.
+* "Check again" on the WordPress Updates page now clears the plugin's GitHub cache before WordPress checks, not after.
 
 = 1.2.2 =
 * Coffee fund: a link to say thank you to the developer, shown in the plugin directory and at the end of the settings page.

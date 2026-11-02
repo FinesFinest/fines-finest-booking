@@ -32,7 +32,8 @@ class FFB_Updater {
 		add_filter( 'plugins_api', array( __CLASS__, 'details' ), 10, 3 );
 		add_filter( 'upgrader_source_selection', array( __CLASS__, 'fix_folder_name' ), 10, 4 );
 		add_action( 'admin_init', array( __CLASS__, 'enable_auto_update_once' ) );
-		add_action( 'load-update-core.php', array( __CLASS__, 'maybe_clear_cache' ) );
+		// Prioritaet 1: der Kern prueft die Plugins auf dieser Seite bei 10, der Cache muss vorher weg sein.
+		add_action( 'load-update-core.php', array( __CLASS__, 'maybe_clear_cache' ), 1 );
 	}
 
 	/**
@@ -244,6 +245,54 @@ class FFB_Updater {
 	 */
 	public static function auto_update_active() {
 		return in_array( self::basename(), (array) get_site_option( 'auto_update_plugins', array() ), true );
+	}
+
+	/**
+	 * Fragt GitHub sofort neu ab, laesst WordPress die Pluginliste neu pruefen
+	 * und sagt, ob ein Update ansteht. Fuer den Knopf in den Einstellungen.
+	 *
+	 * @return array|WP_Error installed, latest, update (bool).
+	 */
+	public static function check_now() {
+		delete_site_transient( self::CACHE );
+		$release = self::latest_release( true );
+		if ( is_wp_error( $release ) ) {
+			return $release;
+		}
+
+		// WordPress soll das Ergebnis sofort in Pluginliste und Update-Seite zeigen,
+		// nicht erst beim naechsten planmaessigen Lauf. Bestehende Daten bleiben erhalten.
+		$current = get_site_transient( 'update_plugins' );
+		if ( ! is_object( $current ) ) {
+			$current = new stdClass();
+		}
+		$current->last_checked = 0;
+		set_site_transient( 'update_plugins', $current );
+		wp_update_plugins();
+
+		return array(
+			'installed' => FFB_VERSION,
+			'latest'    => $release['version'],
+			'update'    => version_compare( $release['version'], FFB_VERSION, '>' ),
+		);
+	}
+
+	/**
+	 * Link zum Einspielen: direkt, wenn WordPress das Update schon kennt,
+	 * sonst zur Update-Seite, die es beim Aufruf selbst findet.
+	 *
+	 * @return array url, text.
+	 */
+	public static function install_link() {
+		$current = get_site_transient( 'update_plugins' );
+		if ( is_object( $current ) && isset( $current->response[ self::basename() ] ) ) {
+			return array(
+				wp_nonce_url( self_admin_url( 'update.php?action=upgrade-plugin&plugin=' . self::basename() ), 'upgrade-plugin_' . self::basename() ),
+				__( 'Install now', 'fines-finest-booking' ),
+			);
+		}
+
+		return array( self_admin_url( 'update-core.php' ), __( 'Open the Updates page', 'fines-finest-booking' ) );
 	}
 
 	/**

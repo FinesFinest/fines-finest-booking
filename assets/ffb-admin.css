@@ -133,6 +133,8 @@
 .ffb-admin .ffb-copy { margin-left: .5em; }
 
 /* Kaffeekasse am Ende der Einstellungen. */
+.ffb-admin .ffb-status__tz .button { margin-left: 6px; vertical-align: baseline; }
+
 .ffb-admin .ffb-coffee {
 	margin-top: 32px;
 	padding-top: 16px;

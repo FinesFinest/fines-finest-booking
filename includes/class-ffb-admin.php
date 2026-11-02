@@ -230,6 +230,25 @@ class FFB_Admin {
 				exit;
 			}
 
+			if ( 'check_updates' === $do ) {
+				check_admin_referer( 'ffb_check_updates' );
+				if ( ! class_exists( 'FFB_Updater' ) ) {
+					wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=error' ) );
+					exit;
+				}
+
+				$ergebnis = FFB_Updater::check_now();
+				if ( is_wp_error( $ergebnis ) ) {
+					set_transient( 'ffb_admin_error', $ergebnis->get_error_message(), 60 );
+					wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=update_check_error' ) );
+					exit;
+				}
+
+				set_transient( 'ffb_admin_error', $ergebnis['latest'], 60 );
+				wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=' . ( $ergebnis['update'] ? 'update_available' : 'update_none' ) ) );
+				exit;
+			}
+
 			if ( 'test_mail' === $do ) {
 				check_admin_referer( 'ffb_test_mail' );
 
@@ -899,6 +918,7 @@ class FFB_Admin {
 				);
 			}
 			?>
+				<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffb-settings&ffb_do=check_updates' ), 'ffb_check_updates' ) ); ?>"><?php esc_html_e( 'Check for updates now', 'fines-finest-booking' ); ?></a>
 			</p>
 			<?php endif; ?>
 
@@ -937,23 +957,26 @@ class FFB_Admin {
 		}
 
 		$map = array(
-			'saved'        => array( 'success', __( 'Saved.', 'fines-finest-booking' ) ),
-			'deleted'      => array( 'success', __( 'Appointment type deleted.', 'fines-finest-booking' ) ),
-			'not_deleted'  => array( 'error', __( 'Appointment type not deleted.', 'fines-finest-booking' ) ),
-			'cancelled'    => array( 'success', __( 'Appointment cancelled.', 'fines-finest-booking' ) ),
-			'google_ok'    => array( 'success', __( 'Google Calendar is connected.', 'fines-finest-booking' ) ),
-			'disconnected' => array( 'success', __( 'Google connection removed.', 'fines-finest-booking' ) ),
-			'brevo_ok'     => array( 'success', __( 'Brevo responds. The API key is valid.', 'fines-finest-booking' ) ),
-			'mail_ok'      => array( 'success', __( 'Test email sent. Check your inbox, including the spam folder.', 'fines-finest-booking' ) ),
-			'mail_error'   => array( 'error', __( 'The test email could not be sent.', 'fines-finest-booking' ) ),
-			'cron_ok'      => array( 'success', __( 'Reminder task has run.', 'fines-finest-booking' ) ),
-			'page_created' => array( 'success', __( 'Booking page created and saved. Open it from the Pages menu to adjust text and design.', 'fines-finest-booking' ) ),
-			'resent'       => array( 'success', __( 'Confirmation email sent again.', 'fines-finest-booking' ) ),
-			'resend_error' => array( 'error', __( 'The confirmation email could not be sent again.', 'fines-finest-booking' ) ),
-			'duplicated'   => array( 'success', __( 'Appointment type duplicated. It stays inactive until you tick "Bookable" and save.', 'fines-finest-booking' ) ),
-			'google_error' => array( 'error', __( 'The Google connection did not work.', 'fines-finest-booking' ) ),
-			'brevo_error'  => array( 'error', __( 'Brevo rejected the request.', 'fines-finest-booking' ) ),
-			'error'        => array( 'error', __( 'That did not work.', 'fines-finest-booking' ) ),
+			'saved'              => array( 'success', __( 'Saved.', 'fines-finest-booking' ) ),
+			'deleted'            => array( 'success', __( 'Appointment type deleted.', 'fines-finest-booking' ) ),
+			'not_deleted'        => array( 'error', __( 'Appointment type not deleted.', 'fines-finest-booking' ) ),
+			'cancelled'          => array( 'success', __( 'Appointment cancelled.', 'fines-finest-booking' ) ),
+			'google_ok'          => array( 'success', __( 'Google Calendar is connected.', 'fines-finest-booking' ) ),
+			'disconnected'       => array( 'success', __( 'Google connection removed.', 'fines-finest-booking' ) ),
+			'brevo_ok'           => array( 'success', __( 'Brevo responds. The API key is valid.', 'fines-finest-booking' ) ),
+			'mail_ok'            => array( 'success', __( 'Test email sent. Check your inbox, including the spam folder.', 'fines-finest-booking' ) ),
+			'mail_error'         => array( 'error', __( 'The test email could not be sent.', 'fines-finest-booking' ) ),
+			'cron_ok'            => array( 'success', __( 'Reminder task has run.', 'fines-finest-booking' ) ),
+			'page_created'       => array( 'success', __( 'Booking page created and saved. Open it from the Pages menu to adjust text and design.', 'fines-finest-booking' ) ),
+			'resent'             => array( 'success', __( 'Confirmation email sent again.', 'fines-finest-booking' ) ),
+			'resend_error'       => array( 'error', __( 'The confirmation email could not be sent again.', 'fines-finest-booking' ) ),
+			'duplicated'         => array( 'success', __( 'Appointment type duplicated. It stays inactive until you tick "Bookable" and save.', 'fines-finest-booking' ) ),
+			'update_none'        => array( 'success', __( 'Checked GitHub just now. No update available. Latest release:', 'fines-finest-booking' ) ),
+			'update_available'   => array( 'success', __( 'A newer version is available:', 'fines-finest-booking' ) ),
+			'update_check_error' => array( 'error', __( 'GitHub could not be checked:', 'fines-finest-booking' ) ),
+			'google_error'       => array( 'error', __( 'The Google connection did not work.', 'fines-finest-booking' ) ),
+			'brevo_error'        => array( 'error', __( 'Brevo rejected the request.', 'fines-finest-booking' ) ),
+			'error'              => array( 'error', __( 'That did not work.', 'fines-finest-booking' ) ),
 		);
 
 		if ( ! isset( $map[ $notice ] ) ) {
@@ -963,11 +986,18 @@ class FFB_Admin {
 		$detail = get_transient( 'ffb_admin_error' );
 		delete_transient( 'ffb_admin_error' );
 
+		// Bei einem gefundenen Update gleich der Weg zum Einspielen.
+		$link = array();
+		if ( 'update_available' === $notice && class_exists( 'FFB_Updater' ) ) {
+			$link = FFB_Updater::install_link();
+		}
+
 		printf(
-			'<div class="notice notice-%s is-dismissible"><p>%s%s</p></div>',
+			'<div class="notice notice-%s is-dismissible"><p>%s%s%s</p></div>',
 			esc_attr( $map[ $notice ][0] ),
 			esc_html( $map[ $notice ][1] ),
-			$detail ? ' <code>' . esc_html( $detail ) . '</code>' : ''
+			$detail ? ' <code>' . esc_html( $detail ) . '</code>' : '',
+			$link ? ' <a href="' . esc_url( $link[0] ) . '">' . esc_html( $link[1] ) . '</a>' : ''
 		);
 	}
 
