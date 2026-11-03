@@ -3,7 +3,7 @@
  * Plugin Name:       Fines Finest Booking
  * Plugin URI:        https://fines-finest.com
  * Description:       Appointment booking in your own design, with Google Calendar sync, Google Meet, confirmation emails and Brevo. All data stays in your own WordPress database.
- * Version:           1.2.4
+ * Version:           1.2.5
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Fines Finest
@@ -18,11 +18,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FFB_VERSION', '1.2.4' );
+define( 'FFB_VERSION', '1.2.5' );
 define( 'FFB_FILE', __FILE__ );
 define( 'FFB_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FFB_URL', plugin_dir_url( __FILE__ ) );
-define( 'FFB_DB_VERSION', 3 );
+define( 'FFB_DB_VERSION', 4 );
 
 // Kaffeekasse: Adresse fuer ein Dankeschoen an Fine (PayPal.Me). Leer = keine Zeile in den Einstellungen.
 // Fuer Tests laesst sie sich in der wp-config.php vorbelegen.

@@ -114,7 +114,8 @@ Eine Sache noch: Eine Terminbuchung ist keine Newsletter-Einwilligung. Nimm eine
 
 - **Zeitfenster**: pro Wochentag, Format `09:00-12:00, 14:00-17:00`. Leer heißt: nicht buchbar.
 - **Raster**: in welchem Abstand Slots angeboten werden. 30 bedeutet halbstündlich.
-- **Puffer danach**: Zeit, die nach jedem Termin freibleibt. 15 Minuten sind ein guter Wert, sonst hetzt du von Call zu Call.
+- **Puffer davor und danach**: Zeit, die vor und nach jedem Termin freibleibt, wählbar im 5-Minuten-Takt. Zwischen zwei Buchungen zählen beide zusammen: Nach einem Termin 8:00 bis 8:30 Uhr mit 15 Minuten danach und 30 Minuten davor ist 9:15 Uhr der nächste Slot. 15 Minuten danach sind ein guter Wert, sonst hetzt du von Call zu Call.
+- **Puffer als Sperrzeiten in den Google Kalender eintragen**: Mit Haken legt jede Buchung zwei weitere Einträge an, „Vorbereitung“ vor und „Nachbereitung“ nach dem Termin, als belegt. Sie verschwinden mit dem Termin. Ohne Haken rechnet das Plugin trotzdem mit den Puffern, im Kalender steht dann nur der Termin.
 - **Vorlaufzeit**: in Minuten. 720 heißt, niemand kann für die nächsten zwölf Stunden buchen.
 - **Zusatzfragen**: eine pro Zeile, Format `Label | typ | pflicht`. Typen sind `text`, `textarea`, `tel`, `url`.
 
@@ -149,9 +150,9 @@ Arbeite die Liste durch. Jeder Punkt hat schon mal jemandem den Launch versaut.
 5. Termin steht im Google-Kalender, Meet-Link funktioniert
 6. Benachrichtigung an dich ist da
 7. Kontakt liegt in Brevo
-8. Slot ist auf der Website weg, der Puffer blockt auch den direkt folgenden
+8. Slot ist auf der Website weg, die Puffer blocken auch die Slots davor und danach; mit Haken stehen Vorbereitung und Nachbereitung im Google-Kalender
 9. Trag im Google-Kalender einen Termin ein, lade die Seite neu, der Slot ist blockiert
-10. Absage-Link aus der Mail klicken, Termin verschwindet aus dem Kalender, Slot ist wieder frei
+10. Absage-Link aus der Mail klicken, Termin und Sperrzeiten verschwinden aus dem Kalender, Slot ist wieder frei
 11. Auf dem Handy einmal komplett durchbuchen
 
 ---

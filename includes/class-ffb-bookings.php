@@ -106,7 +106,8 @@ class FFB_Bookings {
 			)
 		);
 
-		if ( $conflict > 0 ) {
+		// Erst die reine Ueberschneidung, dann der Abstand samt Puffer beider Seiten.
+		if ( $conflict > 0 || FFB_Availability::conflicts_with_bookings( $event, $start, $end ) ) {
 			self::release_lock();
 			return new WP_Error( 'ffb_taken', __( 'This slot has just been taken. Please pick another one.', 'fines-finest-booking' ) );
 		}
@@ -203,22 +204,43 @@ class FFB_Bookings {
 	/**
 	 * Schreibt Google-Daten an eine Buchung.
 	 *
-	 * @param int    $id       Buchungs-ID.
-	 * @param string $event_id Google-Event-ID.
-	 * @param string $meet_url Meet-Link.
+	 * @param int    $id        Buchungs-ID.
+	 * @param string $event_id  Google-Event-ID.
+	 * @param string $meet_url  Meet-Link.
+	 * @param string $before_id Google-Event-ID der Sperrzeit vor dem Termin, leer ohne.
+	 * @param string $after_id  Google-Event-ID der Sperrzeit nach dem Termin, leer ohne.
 	 */
-	public static function set_google( $id, $event_id, $meet_url ) {
+	public static function set_google( $id, $event_id, $meet_url, $before_id = '', $after_id = '' ) {
 		global $wpdb;
 		$wpdb->update( // phpcs:ignore WordPress.DB
 			FFB_Install::table_bookings(),
 			array(
-				'google_event_id' => (string) $event_id,
-				'meet_url'        => esc_url_raw( (string) $meet_url ),
+				'google_event_id'  => (string) $event_id,
+				'meet_url'         => esc_url_raw( (string) $meet_url ),
+				'google_before_id' => (string) $before_id,
+				'google_after_id'  => (string) $after_id,
 			),
 			array( 'id' => (int) $id ),
-			array( '%s', '%s' ),
+			array( '%s', '%s', '%s', '%s' ),
 			array( '%d' )
 		);
+	}
+
+	/**
+	 * Google-Event-IDs einer Buchung: Termin und, falls angelegt, die beiden Sperrzeiten.
+	 *
+	 * @param array $booking Buchung.
+	 * @return array
+	 */
+	public static function google_event_ids( $booking ) {
+		$ids = array();
+		foreach ( array( 'google_event_id', 'google_before_id', 'google_after_id' ) as $column ) {
+			if ( ! empty( $booking[ $column ] ) ) {
+				$ids[] = (string) $booking[ $column ];
+			}
+		}
+
+		return $ids;
 	}
 
 	/**
@@ -244,8 +266,8 @@ class FFB_Bookings {
 			array( '%d' )
 		);
 
-		if ( ! empty( $booking['google_event_id'] ) ) {
-			FFB_Google::delete_event( $booking['google_event_id'] );
+		foreach ( self::google_event_ids( $booking ) as $event_id ) {
+			FFB_Google::delete_event( $event_id );
 		}
 
 		if ( $notify_client ) {

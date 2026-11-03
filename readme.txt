@@ -5,7 +5,7 @@ Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,7 @@ All booking data lives in your own WordPress database. No third-party widget in 
 = Features =
 
 * Several appointment types, each with its own duration, time windows and extra questions
-* Buffer before and after the appointment, minimum notice, booking horizon, daily limit
+* Buffer before and after the appointment, optionally entered in Google Calendar as blocked time; minimum notice, booking horizon, daily limit
 * Availability is checked against any number of Google calendars
 * Google Meet, phone or on site as the meeting place
 * Confirmation and reminder emails in your own corporate design, ICS file attached
@@ -78,6 +78,14 @@ The plugin answers every link with the cancellation parameter itself. If the boo
 7. Settings with the setup status: every open step links to the next action.
 
 == Changelog ==
+
+= 1.2.5 =
+* Buffers add up between two bookings: the buffer after the earlier appointment plus the buffer before the next one. Before, only the larger of the two counted. With the defaults (0 before, 15 after) nothing changes.
+* Entries from Google Calendar keep the slot's own buffers around them: the buffer after in front of the entry, the buffer before behind it.
+* New per appointment type: "Enter the buffers in Google Calendar as blocked time". Every booking then creates two extra entries, "Preparation" before and "Follow-up" after the appointment, marked as busy, without guests. They are deleted together with the appointment. If one of them cannot be created, the error log says so and the booking stays valid.
+* The buffers are chosen from a list in 5-minute steps up to 120 minutes instead of typed.
+* The double-booking check behind the booking lock respects the buffers of both sides.
+* Database: two columns for the IDs of the blocked times and one for the new option. Existing data stays unchanged.
 
 = 1.2.4 =
 * Directory edition: the update texts of the self-hosted edition are no longer part of its code. No functional change.

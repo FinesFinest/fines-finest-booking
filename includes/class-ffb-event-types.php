@@ -69,8 +69,8 @@ class FFB_Event_Types {
 		$row['blackouts']    = array_values( array_filter( (array) json_decode( (string) $row['blackouts'], true ) ) );
 		$row['questions']    = self::normalize_questions( json_decode( (string) $row['questions'], true ) );
 
-		foreach ( array( 'id', 'duration', 'slot_step', 'buffer_before', 'buffer_after', 'min_notice', 'max_days', 'daily_limit', 'active', 'sort_order' ) as $int_key ) {
-			$row[ $int_key ] = (int) $row[ $int_key ];
+		foreach ( array( 'id', 'duration', 'slot_step', 'buffer_before', 'buffer_after', 'min_notice', 'max_days', 'daily_limit', 'calendar_buffers', 'active', 'sort_order' ) as $int_key ) {
+			$row[ $int_key ] = isset( $row[ $int_key ] ) ? (int) $row[ $int_key ] : 0;
 		}
 
 		return $row;
@@ -186,27 +186,28 @@ class FFB_Event_Types {
 		}
 
 		$fields = array(
-			'slug'           => $slug,
-			'title'          => $title,
-			'description'    => isset( $data['description'] ) ? wp_kses_post( $data['description'] ) : '',
-			'duration'       => max( 5, (int) ( $data['duration'] ?? 30 ) ),
-			'slot_step'      => max( 5, (int) ( $data['slot_step'] ?? 30 ) ),
-			'buffer_before'  => max( 0, (int) ( $data['buffer_before'] ?? 0 ) ),
-			'buffer_after'   => max( 0, (int) ( $data['buffer_after'] ?? 0 ) ),
-			'min_notice'     => max( 0, (int) ( $data['min_notice'] ?? 720 ) ),
-			'max_days'       => max( 1, (int) ( $data['max_days'] ?? 45 ) ),
-			'daily_limit'    => max( 0, (int) ( $data['daily_limit'] ?? 0 ) ),
-			'location'       => $location,
-			'location_note'  => isset( $data['location_note'] ) ? sanitize_text_field( $data['location_note'] ) : '',
-			'calendar_title' => isset( $data['calendar_title'] ) ? sanitize_text_field( $data['calendar_title'] ) : '',
-			'availability'   => wp_json_encode( self::normalize_availability( $data['availability'] ?? array() ) ),
-			'blackouts'      => wp_json_encode( self::clean_blackouts( $data['blackouts'] ?? array() ) ),
-			'questions'      => wp_json_encode( self::normalize_questions( $data['questions'] ?? array() ) ),
-			'active'         => empty( $data['active'] ) ? 0 : 1,
-			'sort_order'     => (int) ( $data['sort_order'] ?? 0 ),
+			'slug'             => $slug,
+			'title'            => $title,
+			'description'      => isset( $data['description'] ) ? wp_kses_post( $data['description'] ) : '',
+			'duration'         => max( 5, (int) ( $data['duration'] ?? 30 ) ),
+			'slot_step'        => max( 5, (int) ( $data['slot_step'] ?? 30 ) ),
+			'buffer_before'    => max( 0, (int) ( $data['buffer_before'] ?? 0 ) ),
+			'buffer_after'     => max( 0, (int) ( $data['buffer_after'] ?? 0 ) ),
+			'min_notice'       => max( 0, (int) ( $data['min_notice'] ?? 720 ) ),
+			'max_days'         => max( 1, (int) ( $data['max_days'] ?? 45 ) ),
+			'daily_limit'      => max( 0, (int) ( $data['daily_limit'] ?? 0 ) ),
+			'location'         => $location,
+			'location_note'    => isset( $data['location_note'] ) ? sanitize_text_field( $data['location_note'] ) : '',
+			'calendar_title'   => isset( $data['calendar_title'] ) ? sanitize_text_field( $data['calendar_title'] ) : '',
+			'calendar_buffers' => empty( $data['calendar_buffers'] ) ? 0 : 1,
+			'availability'     => wp_json_encode( self::normalize_availability( $data['availability'] ?? array() ) ),
+			'blackouts'        => wp_json_encode( self::clean_blackouts( $data['blackouts'] ?? array() ) ),
+			'questions'        => wp_json_encode( self::normalize_questions( $data['questions'] ?? array() ) ),
+			'active'           => empty( $data['active'] ) ? 0 : 1,
+			'sort_order'       => (int) ( $data['sort_order'] ?? 0 ),
 		);
 
-		$formats = array( '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d' );
+		$formats = array( '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%d', '%d' );
 
 		if ( $id > 0 ) {
 			$wpdb->update( $table, $fields, array( 'id' => (int) $id ), $formats, array( '%d' ) ); // phpcs:ignore WordPress.DB

@@ -583,6 +583,112 @@ class FFB_Google {
 	}
 
 	/**
+	 * Baut die Kalendereintraege fuer die Puffer einer Buchung.
+	 *
+	 * Reines PHP ohne Google, damit die Tests die Zeiten nachrechnen koennen.
+	 * Gerechnet wird auf den UTC-Zeitpunkten, so stimmt die Dauer auch ueber
+	 * einen Sommerzeitwechsel. Ein Puffer von 0 Minuten ergibt keinen Eintrag.
+	 *
+	 * @param array $booking Buchung mit start_utc, end_utc, name, email, source.
+	 * @param array $event   Termintyp mit buffer_before, buffer_after, title, calendar_title.
+	 * @return array before und/oder after => Payload fuer events.insert.
+	 */
+	public static function buffer_payloads( $booking, $event ) {
+		$tz      = ffb_timezone();
+		$utc     = new DateTimeZone( 'UTC' );
+		$start   = new DateTimeImmutable( $booking['start_utc'], $utc );
+		$end     = new DateTimeImmutable( $booking['end_utc'], $utc );
+		$summary = self::build_summary( $booking, $event );
+		$before  = max( 0, (int) $event['buffer_before'] );
+		$after   = max( 0, (int) $event['buffer_after'] );
+
+		$spans = array();
+		if ( $before > 0 ) {
+			$spans['before'] = array(
+				/* translators: %s: calendar title of the appointment */
+				sprintf( __( 'Preparation: %s', 'fines-finest-booking' ), $summary ),
+				$start->modify( '-' . $before . ' minutes' ),
+				$start,
+			);
+		}
+		if ( $after > 0 ) {
+			$spans['after'] = array(
+				/* translators: %s: calendar title of the appointment */
+				sprintf( __( 'Follow-up: %s', 'fines-finest-booking' ), $summary ),
+				$end,
+				$end->modify( '+' . $after . ' minutes' ),
+			);
+		}
+
+		$payloads = array();
+		foreach ( $spans as $key => $span ) {
+			$payloads[ $key ] = array(
+				'summary'      => $span[0],
+				'description'  => __( 'Buffer time for the appointment, entered by Fines Finest Booking. It is deleted together with the appointment.', 'fines-finest-booking' ),
+				'start'        => array(
+					'dateTime' => $span[1]->setTimezone( $tz )->format( 'Y-m-d\TH:i:s' ),
+					'timeZone' => $tz->getName(),
+				),
+				'end'          => array(
+					'dateTime' => $span[2]->setTimezone( $tz )->format( 'Y-m-d\TH:i:s' ),
+					'timeZone' => $tz->getName(),
+				),
+				'transparency' => 'opaque',
+				'reminders'    => array(
+					'useDefault' => false,
+					'overrides'  => array(),
+				),
+			);
+		}
+
+		return $payloads;
+	}
+
+	/**
+	 * Traegt die Puffer einer Buchung als Sperrzeiten in den Zielkalender ein.
+	 *
+	 * Jeder Eintrag wird einzeln versucht. Scheitert einer, steht der Grund im
+	 * Fehlerprotokoll; die Buchung und der Termineintrag bleiben bestehen.
+	 *
+	 * @param array $booking Buchungsdaten inklusive id.
+	 * @param array $event   Termintyp.
+	 * @return array before_id und after_id, leer, wenn nicht angelegt.
+	 */
+	public static function create_buffer_events( $booking, $event ) {
+		$ids = array(
+			'before_id' => '',
+			'after_id'  => '',
+		);
+
+		if ( ! self::is_connected() ) {
+			return $ids;
+		}
+
+		$calendar_id = ffb_get_setting( 'google_calendar_id', 'primary' );
+
+		foreach ( self::buffer_payloads( $booking, $event ) as $key => $payload ) {
+			$result = self::request( 'POST', '/calendars/' . rawurlencode( $calendar_id ) . '/events', $payload );
+
+			if ( is_wp_error( $result ) || empty( $result['id'] ) ) {
+				self::log(
+					sprintf(
+						/* translators: 1: booking ID, 2: title of the blocked time, 3: error message from Google */
+						__( 'Booking #%1$d: blocked time "%2$s" was not created: %3$s', 'fines-finest-booking' ),
+						(int) $booking['id'],
+						$payload['summary'],
+						is_wp_error( $result ) ? $result->get_error_message() : __( 'Google returned no event ID.', 'fines-finest-booking' )
+					)
+				);
+				continue;
+			}
+
+			$ids[ $key . '_id' ] = (string) $result['id'];
+		}
+
+		return $ids;
+	}
+
+	/**
 	 * Baut den Titel des Kalendereintrags aus der Vorlage des Termintyps.
 	 *
 	 * Platzhalter: {name}, {termintyp}, {quelle}, {datum}, {uhrzeit}, {email}

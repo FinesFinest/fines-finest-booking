@@ -35,6 +35,26 @@ class AvailabilityTest extends TestCase {
 	}
 
 	/**
+	 * Eigene Buchung in Berliner Zeit samt Puffer ihres Termintyps, so wie booked_spans() sie liefert.
+	 *
+	 * @param string $start Beginn des Termins.
+	 * @param string $end   Ende des Termins.
+	 * @param array  $type  Termintyp der Buchung.
+	 * @return array
+	 */
+	private function booked( $start, $end, array $type ) {
+		$utc = new DateTimeZone( 'UTC' );
+
+		return FFB_Availability::booking_span(
+			array(
+				'start_utc' => $this->berlin( $start )->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
+				'end_utc'   => $this->berlin( $end )->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
+			),
+			$type
+		);
+	}
+
+	/**
 	 * Termintyp mit sinnvollen Standardwerten: montags 9 bis 12 und 14 bis 17 Uhr,
 	 * 30 Minuten im 30-Minuten-Raster, ohne Puffer, ohne Vorlauf, ohne Limit.
 	 *
@@ -188,17 +208,19 @@ class AvailabilityTest extends TestCase {
 	}
 
 	/**
-	 * Ein belegter Zeitraum sperrt den Slot selbst und mit Puffer auch die Nachbarn.
+	 * Eine eigene Buchung sperrt den Slot selbst und mit Puffer auch die Nachbarn.
 	 *
-	 * Belegt: 10:00 bis 10:30 Uhr. Puffer 15 Minuten danach.
-	 * 9:30 bis 10:00 faellt weg, weil der eigene Puffer in die Belegung liefe.
-	 * 10:30 bis 11:00 faellt weg, weil der Abstand zur Belegung fehlt.
+	 * Gebucht: 10:00 bis 10:30 Uhr, derselbe Termintyp mit 15 Minuten Puffer danach,
+	 * belegt also bis 10:45 Uhr.
+	 * 9:30 bis 10:00 faellt weg, weil der eigene Puffer danach in die Buchung liefe.
+	 * 10:30 bis 11:00 faellt weg, weil der Puffer der Buchung bis 10:45 reicht.
 	 */
-	public function test_puffer_haelt_abstand_zu_belegtem_zeitraum() {
+	public function test_puffer_haelt_abstand_zu_eigener_buchung() {
 		$event  = $this->event( array( 'buffer_after' => 15 ) );
-		$busy   = array( $this->busy( '2026-11-02 10:00', '2026-11-02 10:30' ) );
+		$busy   = array( $this->booked( '2026-11-02 10:00', '2026-11-02 10:30', $event ) );
 		$result = $this->slots( $event, $this->berlin( '2026-11-01 12:00' ), $busy );
 
+		$this->assertSame( $this->busy( '2026-11-02 10:00', '2026-11-02 10:45' ), $busy[0], 'Die Buchung belegt den Termin plus Puffer danach.' );
 		$this->assertSame( array( '09:00', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30' ), $this->labels( $result, '2026-11-02' ) );
 	}
 
@@ -213,16 +235,103 @@ class AvailabilityTest extends TestCase {
 	}
 
 	/**
-	 * Von Puffer davor und danach gilt der groessere, in beide Richtungen.
+	 * Zwischen zwei Buchungen zaehlen Puffer danach und Puffer davor zusammen.
+	 *
+	 * Termintyp: 30 Minuten, Raster 15, Puffer 30 davor und 15 danach, Fenster 6 bis 12 Uhr.
+	 * Gebucht: 8:00 bis 8:30 Uhr, belegt also 7:30 bis 8:45 Uhr.
+	 * Davor muss ein Slot samt Nachbereitung bis 7:30 fertig sein: 6:45 bis 7:15 ist der letzte.
+	 * Danach braucht ein Slot 30 Minuten Vorbereitung ab 8:45: 9:15 ist der erste.
 	 */
-	public function test_groesserer_puffer_gilt_symmetrisch() {
-		$busy = array( $this->busy( '2026-11-02 10:00', '2026-11-02 10:30' ) );
-		$now  = $this->berlin( '2026-11-01 12:00' );
+	public function test_puffer_zaehlen_zwischen_zwei_buchungen_zusammen() {
+		$event = $this->event(
+			array(
+				'slot_step'     => 15,
+				'buffer_before' => 30,
+				'buffer_after'  => 15,
+				'availability'  => FFB_Event_Types::normalize_availability( array( '1' => array( array( '06:00', '12:00' ) ) ) ),
+			)
+		);
+		$busy   = array( $this->booked( '2026-11-02 08:00', '2026-11-02 08:30', $event ) );
+		$result = $this->slots( $event, $this->berlin( '2026-11-01 12:00' ), $busy );
 
-		$vorher  = $this->slots( $this->event( array( 'buffer_before' => 15 ) ), $now, $busy );
-		$nachher = $this->slots( $this->event( array( 'buffer_after' => 15 ) ), $now, $busy );
+		$this->assertSame( $this->busy( '2026-11-02 07:30', '2026-11-02 08:45' ), $busy[0] );
+		$this->assertSame(
+			array( '06:00', '06:15', '06:30', '06:45', '09:15', '09:30', '09:45', '10:00', '10:15', '10:30', '10:45', '11:00', '11:15', '11:30' ),
+			$this->labels( $result, '2026-11-02' )
+		);
+	}
 
-		$this->assertSame( $this->labels( $nachher, '2026-11-02' ), $this->labels( $vorher, '2026-11-02' ) );
+	/**
+	 * Jede Buchung bringt die Puffer ihres eigenen Termintyps mit, der Slot seine eigenen.
+	 *
+	 * Typ A: 15 Minuten danach, gebucht 10:00 bis 10:30 Uhr, belegt bis 10:45 Uhr.
+	 * Typ B: 10 Minuten davor, nichts danach, Raster 15.
+	 * Vor der Buchung passt 9:30 bis 10:00 noch, danach geht es um 11:00 weiter:
+	 * 10:45 plus 10 Minuten Vorbereitung ist 10:55, der naechste Slot im Raster ist 11:00.
+	 */
+	public function test_jede_buchung_bringt_die_puffer_ihres_typs_mit() {
+		$typ_a  = $this->event(
+			array(
+				'id'           => 1,
+				'buffer_after' => 15,
+			)
+		);
+		$typ_b  = $this->event(
+			array(
+				'id'            => 2,
+				'slot_step'     => 15,
+				'buffer_before' => 10,
+			)
+		);
+		$busy   = array( $this->booked( '2026-11-02 10:00', '2026-11-02 10:30', $typ_a ) );
+		$result = $this->slots( $typ_b, $this->berlin( '2026-11-01 12:00' ), $busy );
+
+		$this->assertSame( array( '09:00', '09:15', '09:30', '11:00', '11:15', '11:30' ), array_slice( $this->labels( $result, '2026-11-02' ), 0, 6 ) );
+	}
+
+	/**
+	 * Ein Eintrag aus dem Google-Kalender zaehlt so, wie er im Kalender steht.
+	 * Der Slot haelt davor seinen Puffer danach frei und dahinter seinen Puffer davor.
+	 *
+	 * Google: 8:00 bis 8:30 Uhr. Slot 30 Minuten, Raster 15, Puffer 30 davor und 15 danach.
+	 * 7:15 bis 7:45 ist der letzte Slot davor (15 Minuten Nachbereitung bis 8:00),
+	 * 9:00 der erste danach (30 Minuten Vorbereitung ab 8:30).
+	 */
+	public function test_google_eintrag_bekommt_die_puffer_des_slots() {
+		$event = $this->event(
+			array(
+				'slot_step'     => 15,
+				'buffer_before' => 30,
+				'buffer_after'  => 15,
+				'availability'  => FFB_Event_Types::normalize_availability( array( '1' => array( array( '06:00', '12:00' ) ) ) ),
+			)
+		);
+		$busy   = array( $this->busy( '2026-11-02 08:00', '2026-11-02 08:30' ) );
+		$result = $this->slots( $event, $this->berlin( '2026-11-01 12:00' ), $busy );
+
+		$this->assertSame(
+			array( '06:00', '06:15', '06:30', '06:45', '07:00', '07:15', '09:00', '09:15', '09:30', '09:45', '10:00', '10:15', '10:30', '10:45', '11:00', '11:15', '11:30' ),
+			$this->labels( $result, '2026-11-02' )
+		);
+	}
+
+	/**
+	 * Die Belegung einer Buchung reicht um die Puffer ihres Termintyps ueber den Termin hinaus.
+	 * Gibt es den Termintyp nicht mehr, zaehlt nur der Termin selbst.
+	 */
+	public function test_belegung_einer_buchung_mit_und_ohne_termintyp() {
+		// 7:00 Uhr UTC ist 8:00 Uhr Berliner Normalzeit.
+		$booking = array(
+			'start_utc' => '2026-11-02 07:00:00',
+			'end_utc'   => '2026-11-02 07:30:00',
+		);
+		$typ     = array(
+			'buffer_before' => 30,
+			'buffer_after'  => 15,
+		);
+
+		$this->assertSame( $this->busy( '2026-11-02 07:30', '2026-11-02 08:45' ), FFB_Availability::booking_span( $booking, $typ ) );
+		$this->assertSame( $this->busy( '2026-11-02 08:00', '2026-11-02 08:30' ), FFB_Availability::booking_span( $booking, null ) );
 	}
 
 	/**

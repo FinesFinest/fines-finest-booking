@@ -115,6 +115,7 @@ function is_wp_error( $thing ) {
 
 require_once ABSPATH . 'includes/class-ffb-event-types.php';
 require_once ABSPATH . 'includes/class-ffb-availability.php';
+require_once ABSPATH . 'includes/class-ffb-google.php';
 require_once ABSPATH . 'includes/class-ffb-cron.php';
 require_once ABSPATH . 'includes/class-ffb-mailer.php';
 require_once ABSPATH . 'includes/class-ffb-brevo.php';

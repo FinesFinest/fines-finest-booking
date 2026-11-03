@@ -133,11 +133,11 @@ class FFB_Privacy {
 		global $wpdb;
 
 		$table = FFB_Install::table_bookings();
-		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT id, google_event_id FROM {$wpdb->prefix}ffb_bookings WHERE email = %s", $email ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT id, google_event_id, google_before_id, google_after_id FROM {$wpdb->prefix}ffb_bookings WHERE email = %s", $email ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 
 		foreach ( (array) $rows as $row ) {
-			if ( ! empty( $row['google_event_id'] ) ) {
-				FFB_Google::delete_event( $row['google_event_id'] );
+			foreach ( FFB_Bookings::google_event_ids( $row ) as $event_id ) {
+				FFB_Google::delete_event( $event_id );
 			}
 		}
 

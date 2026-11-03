@@ -336,7 +336,16 @@ class FFB_Rest {
 				$google_error = $google->get_error_message();
 			} else {
 				$payload['meet_url'] = $google['meet_url'];
-				FFB_Bookings::set_google( $booking_id, $google['id'], $google['meet_url'] );
+
+				// Sperrzeiten nur, wenn der Termin selbst im Kalender steht. Scheitert eine, bleibt die Buchung gueltig.
+				$buffers = ! empty( $event['calendar_buffers'] )
+					? FFB_Google::create_buffer_events( $payload, $event )
+					: array(
+						'before_id' => '',
+						'after_id'  => '',
+					);
+
+				FFB_Bookings::set_google( $booking_id, $google['id'], $google['meet_url'], $buffers['before_id'], $buffers['after_id'] );
 			}
 		}
 

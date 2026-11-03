@@ -407,24 +407,25 @@ class FFB_Admin {
 		$questions = self::parse_questions( isset( $input['questions'] ) ? (string) $input['questions'] : '' );
 
 		$data = array(
-			'title'          => $input['title'] ?? '',
-			'slug'           => $input['slug'] ?? '',
-			'description'    => $input['description'] ?? '',
-			'duration'       => $input['duration'] ?? 30,
-			'slot_step'      => $input['slot_step'] ?? 30,
-			'buffer_before'  => $input['buffer_before'] ?? 0,
-			'buffer_after'   => $input['buffer_after'] ?? 0,
-			'min_notice'     => $input['min_notice'] ?? 720,
-			'max_days'       => $input['max_days'] ?? 45,
-			'daily_limit'    => $input['daily_limit'] ?? 0,
-			'location'       => $input['location'] ?? 'meet',
-			'location_note'  => $input['location_note'] ?? '',
-			'calendar_title' => $input['calendar_title'] ?? '',
-			'availability'   => $availability,
-			'blackouts'      => $input['blackouts'] ?? '',
-			'questions'      => $questions,
-			'active'         => ! empty( $input['active'] ),
-			'sort_order'     => $input['sort_order'] ?? 0,
+			'title'            => $input['title'] ?? '',
+			'slug'             => $input['slug'] ?? '',
+			'description'      => $input['description'] ?? '',
+			'duration'         => $input['duration'] ?? 30,
+			'slot_step'        => $input['slot_step'] ?? 30,
+			'buffer_before'    => $input['buffer_before'] ?? 0,
+			'buffer_after'     => $input['buffer_after'] ?? 0,
+			'min_notice'       => $input['min_notice'] ?? 720,
+			'max_days'         => $input['max_days'] ?? 45,
+			'daily_limit'      => $input['daily_limit'] ?? 0,
+			'location'         => $input['location'] ?? 'meet',
+			'location_note'    => $input['location_note'] ?? '',
+			'calendar_title'   => $input['calendar_title'] ?? '',
+			'calendar_buffers' => ! empty( $input['calendar_buffers'] ),
+			'availability'     => $availability,
+			'blackouts'        => $input['blackouts'] ?? '',
+			'questions'        => $questions,
+			'active'           => ! empty( $input['active'] ),
+			'sort_order'       => $input['sort_order'] ?? 0,
 		);
 
 		$result = FFB_Event_Types::save( $data, $id );
@@ -437,6 +438,30 @@ class FFB_Admin {
 
 		wp_safe_redirect( admin_url( 'admin.php?page=ffb-event-types&edit=' . (int) $result . '&ffb_notice=saved' ) );
 		exit;
+	}
+
+	/**
+	 * Auswahlfeld fuer Minuten im 5-Minuten-Takt, 0 bis 120.
+	 *
+	 * Ein gespeicherter Wert ausserhalb des Rasters bleibt als eigene Option
+	 * erhalten, damit Speichern ihn nicht stillschweigend aendert.
+	 *
+	 * @param string $name  Feldname.
+	 * @param int    $value Aktueller Wert in Minuten.
+	 */
+	public static function render_minutes_select( $name, $value ) {
+		$value  = max( 0, (int) $value );
+		$werte  = range( 0, 120, 5 );
+		if ( ! in_array( $value, $werte, true ) ) {
+			$werte[] = $value;
+			sort( $werte );
+		}
+
+		echo '<select name="' . esc_attr( $name ) . '">';
+		foreach ( $werte as $minuten ) {
+			echo '<option value="' . (int) $minuten . '"' . selected( $value, (int) $minuten, false ) . '>' . (int) $minuten . ' ' . esc_html__( 'min', 'fines-finest-booking' ) . '</option>';
+		}
+		echo '</select>';
 	}
 
 	/**
@@ -1104,24 +1129,25 @@ class FFB_Admin {
 		$event = $id ? FFB_Event_Types::get( $id ) : null;
 
 		$defaults = array(
-			'title'          => '',
-			'slug'           => '',
-			'description'    => '',
-			'duration'       => 30,
-			'slot_step'      => 30,
-			'buffer_before'  => 0,
-			'buffer_after'   => 15,
-			'min_notice'     => 720,
-			'max_days'       => 45,
-			'daily_limit'    => 0,
-			'location'       => 'meet',
-			'location_note'  => '',
-			'calendar_title' => '',
-			'availability'   => FFB_Event_Types::normalize_availability( array() ),
-			'blackouts'      => array(),
-			'questions'      => array(),
-			'active'         => 1,
-			'sort_order'     => 0,
+			'title'            => '',
+			'slug'             => '',
+			'description'      => '',
+			'duration'         => 30,
+			'slot_step'        => 30,
+			'buffer_before'    => 0,
+			'buffer_after'     => 15,
+			'min_notice'       => 720,
+			'max_days'         => 45,
+			'daily_limit'      => 0,
+			'location'         => 'meet',
+			'location_note'    => '',
+			'calendar_title'   => '',
+			'calendar_buffers' => 0,
+			'availability'     => FFB_Event_Types::normalize_availability( array() ),
+			'blackouts'        => array(),
+			'questions'        => array(),
+			'active'           => 1,
+			'sort_order'       => 0,
 		);
 
 		$event = $event ? array_merge( $defaults, $event ) : $defaults;
@@ -1166,9 +1192,12 @@ class FFB_Admin {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Buffer', 'fines-finest-booking' ); ?></th>
 						<td>
-							<label><?php esc_html_e( 'before', 'fines-finest-booking' ); ?> <input name="ffb[buffer_before]" type="number" min="0" step="5" value="<?php echo (int) $event['buffer_before']; ?>" class="small-text"> <?php esc_html_e( 'min', 'fines-finest-booking' ); ?></label>
+							<label><?php esc_html_e( 'before', 'fines-finest-booking' ); ?> <?php self::render_minutes_select( 'ffb[buffer_before]', (int) $event['buffer_before'] ); ?></label>
 							&nbsp;&nbsp;
-							<label><?php esc_html_e( 'after', 'fines-finest-booking' ); ?> <input name="ffb[buffer_after]" type="number" min="0" step="5" value="<?php echo (int) $event['buffer_after']; ?>" class="small-text"> <?php esc_html_e( 'min', 'fines-finest-booking' ); ?></label>
+							<label><?php esc_html_e( 'after', 'fines-finest-booking' ); ?> <?php self::render_minutes_select( 'ffb[buffer_after]', (int) $event['buffer_after'] ); ?></label>
+							<p class="description"><?php esc_html_e( 'The buffer before keeps preparation time free, the buffer after keeps follow-up time free. Between two bookings both add up.', 'fines-finest-booking' ); ?></p>
+							<p><label><input name="ffb[calendar_buffers]" type="checkbox" value="1" <?php checked( ! empty( $event['calendar_buffers'] ) ); ?>> <?php esc_html_e( 'Enter the buffers in Google Calendar as blocked time', 'fines-finest-booking' ); ?></label></p>
+							<p class="description"><?php esc_html_e( 'Creates two extra entries per booking, "Preparation" before and "Follow-up" after the appointment, marked as busy. They are deleted together with the appointment.', 'fines-finest-booking' ); ?></p>
 						</td>
 					</tr>
 					<tr>

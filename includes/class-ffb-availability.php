@@ -42,7 +42,12 @@ class FFB_Availability {
 			$range_from = $range['start']->setTimezone( $utc );
 			$range_to   = $range['end']->setTimezone( $utc );
 
-			$busy = self::collect_busy( $range_from, $range_to );
+			// Die Puffer eines Slots am Tagesrand reichen ueber den Zeitraum hinaus,
+			// darum werden belegte Zeiten um sie erweitert abgefragt.
+			$busy_from = new DateTimeImmutable( '@' . ( $range_from->getTimestamp() - max( 0, (int) $event['buffer_before'] ) * 60 ) );
+			$busy_to   = new DateTimeImmutable( '@' . ( $range_to->getTimestamp() + max( 0, (int) $event['buffer_after'] ) * 60 ) );
+
+			$busy = self::collect_busy( $busy_from, $busy_to );
 			if ( is_wp_error( $busy ) ) {
 				// Ohne Wissen ueber belegte Zeiten lieber keine Slots als falsche.
 				return $busy;
@@ -101,7 +106,8 @@ class FFB_Availability {
 	 *                                       buffer_before, buffer_after, min_notice, daily_limit.
 	 * @param DateTimeImmutable $now         Jetzt in Website-Zeitzone.
 	 * @param array             $range       Ergebnis von range().
-	 * @param array             $busy        Belegte Zeitraeume als [start_ts, end_ts], UTC-Zeitstempel.
+	 * @param array             $busy        Belegte Zeitraeume als [start_ts, end_ts], UTC-Zeitstempel. Eigene
+	 *                                       Buchungen bereits um ihre Puffer verlaengert, siehe booked_spans().
 	 * @param array             $daily_count Bestaetigte Buchungen dieses Termintyps je Tag, Y-m-d => Anzahl.
 	 * @param array             $global      Globale Grenzen wie aus global_limits(): enforce, hours, min_notice, blackouts.
 	 * @return array days (date, slots), timezone, horizon.
@@ -232,11 +238,14 @@ class FFB_Availability {
 		$earliest = $earliest->getTimestamp();
 
 		/*
-		 * Der noetige Abstand zu einem belegten Zeitraum ergibt sich aus beiden Puffern:
-		 * der Puffer nach dem vorherigen Termin und der Puffer vor diesem hier. Da alle
-		 * Termine eines Typs dieselben Werte haben, ist der groessere Wert der richtige.
+		 * Ein Slot braucht seinen Puffer davor und seinen Puffer danach frei. Eigene
+		 * Buchungen kommen aus collect_busy() schon um ihre eigenen Puffer verlaengert,
+		 * Google-Eintraege so, wie sie im Kalender stehen. Zwischen zwei Buchungen
+		 * zaehlen damit beide Puffer zusammen: Nach einem Termin 8:00 bis 8:30 mit
+		 * 15 Minuten danach und 30 Minuten davor ist 9:15 der erste freie Slot.
 		 */
-		$pad = max( (int) $event['buffer_before'], (int) $event['buffer_after'] ) * 60;
+		$before = max( 0, (int) $event['buffer_before'] ) * 60;
+		$after  = max( 0, (int) $event['buffer_after'] ) * 60;
 
 		foreach ( $windows as $window ) {
 			$start_minute = self::minutes_of_day( $window[0] );
@@ -262,7 +271,7 @@ class FFB_Availability {
 				}
 				$seen[ $slot_start_ts ] = true;
 
-				if ( ! self::collides( $slot_start_ts - $pad, $slot_end_ts + $pad, $busy ) ) {
+				if ( ! self::collides( $slot_start_ts - $before, $slot_end_ts + $after, $busy ) ) {
 					$slots[] = array(
 						'start' => gmdate( 'Y-m-d\TH:i:s\Z', $slot_start_ts ),
 						'label' => $cursor->format( 'H:i' ),
@@ -315,14 +324,7 @@ class FFB_Availability {
 	 * @return array|WP_Error Fehler, wenn Google verbunden ist, aber nicht antwortet.
 	 */
 	protected static function collect_busy( $from, $to ) {
-		$busy = array();
-
-		foreach ( FFB_Bookings::in_range( $from, $to ) as $booking ) {
-			$busy[] = array(
-				strtotime( $booking['start_utc'] . ' UTC' ),
-				strtotime( $booking['end_utc'] . ' UTC' ),
-			);
-		}
+		$busy = self::booked_spans( $from, $to );
 
 		$google = FFB_Google::get_busy( $from, $to );
 		if ( is_wp_error( $google ) ) {
@@ -334,6 +336,73 @@ class FFB_Availability {
 		}
 
 		return $busy;
+	}
+
+	/**
+	 * Belegte Zeitraeume eigener Buchungen, jede um die Puffer ihres Termintyps verlaengert.
+	 *
+	 * Die Abfrage reicht um den groessten Puffer aller Termintypen ueber den Zeitraum
+	 * hinaus. So zaehlt auch eine Buchung, die selbst davor endet, deren Puffer aber
+	 * hineinragt.
+	 *
+	 * @param DateTimeInterface $from Start (UTC).
+	 * @param DateTimeInterface $to   Ende (UTC).
+	 * @return array Liste aus [start_ts, end_ts].
+	 */
+	public static function booked_spans( $from, $to ) {
+		$types  = array();
+		$margin = 0;
+
+		foreach ( FFB_Event_Types::all() as $type ) {
+			$types[ (int) $type['id'] ] = $type;
+			$margin                     = max( $margin, (int) $type['buffer_before'], (int) $type['buffer_after'] );
+		}
+
+		$query_from = new DateTimeImmutable( '@' . ( $from->getTimestamp() - $margin * 60 ) );
+		$query_to   = new DateTimeImmutable( '@' . ( $to->getTimestamp() + $margin * 60 ) );
+
+		$spans = array();
+		foreach ( FFB_Bookings::in_range( $query_from, $query_to ) as $booking ) {
+			$type_id = (int) $booking['event_type_id'];
+			$spans[] = self::booking_span( $booking, isset( $types[ $type_id ] ) ? $types[ $type_id ] : null );
+		}
+
+		return $spans;
+	}
+
+	/**
+	 * Zeitraum, den eine Buchung samt der Puffer ihres Termintyps belegt.
+	 *
+	 * @param array      $booking Buchung mit start_utc und end_utc.
+	 * @param array|null $type    Termintyp mit buffer_before und buffer_after; null, wenn es ihn nicht mehr gibt.
+	 * @return array [start_ts, end_ts].
+	 */
+	public static function booking_span( $booking, $type ) {
+		$before = $type ? max( 0, (int) $type['buffer_before'] ) * 60 : 0;
+		$after  = $type ? max( 0, (int) $type['buffer_after'] ) * 60 : 0;
+
+		return array(
+			strtotime( $booking['start_utc'] . ' UTC' ) - $before,
+			strtotime( $booking['end_utc'] . ' UTC' ) + $after,
+		);
+	}
+
+	/**
+	 * Prueft, ob ein Termin samt Puffer mit einer bestehenden Buchung samt deren Puffer kollidiert.
+	 *
+	 * Laeuft in FFB_Bookings::create() unter der Buchungssperre. Zwei gleichzeitige
+	 * Buchungen bestehen sonst beide die Slotpruefung, weil keine die andere sieht.
+	 *
+	 * @param array             $event Termintyp.
+	 * @param DateTimeInterface $start Start (UTC).
+	 * @param DateTimeInterface $end   Ende (UTC).
+	 * @return bool
+	 */
+	public static function conflicts_with_bookings( $event, $start, $end ) {
+		$from = new DateTimeImmutable( '@' . ( $start->getTimestamp() - max( 0, (int) $event['buffer_before'] ) * 60 ) );
+		$to   = new DateTimeImmutable( '@' . ( $end->getTimestamp() + max( 0, (int) $event['buffer_after'] ) * 60 ) );
+
+		return self::collides( $from->getTimestamp(), $to->getTimestamp(), self::booked_spans( $from, $to ) );
 	}
 
 	/**
