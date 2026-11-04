@@ -5,7 +5,7 @@ Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ The plugin answers every link with the cancellation parameter itself. If the boo
 7. Settings with the setup status: every open step links to the next action.
 
 == Changelog ==
+
+= 1.2.6 =
+* Plugin URI now points to the development repository on GitHub, the author URI stays fines-finest.com. The plugin directory requires both to differ. No functional change.
 
 = 1.2.5 =
 * Buffers add up between two bookings: the buffer after the earlier appointment plus the buffer before the next one. Before, only the larger of the two counted. With the defaults (0 before, 15 after) nothing changes.
