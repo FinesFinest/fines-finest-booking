@@ -23,9 +23,10 @@ if ( empty( $ffbooking_settings['delete_on_uninstall'] ) ) {
 
 global $wpdb;
 
-foreach ( array( 'ffbooking_bookings', 'ffbooking_event_types', 'ffb_bookings', 'ffb_event_types' ) as $ffbooking_table ) {
-	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$ffbooking_table}" ); // phpcs:ignore WordPress.DB
-}
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ffbooking_bookings" ); // phpcs:ignore WordPress.DB
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ffbooking_event_types" ); // phpcs:ignore WordPress.DB
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ffb_bookings" ); // phpcs:ignore WordPress.DB
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ffb_event_types" ); // phpcs:ignore WordPress.DB
 
 $ffbooking_options = array( 'settings', 'google_tokens', 'google_log', 'db_version', 'mail_tested', 'busy_cache_version', 'consent_text_refreshed', 'reminders_last_run', 'auto_update_enabled' );
 foreach ( $ffbooking_options as $ffbooking_option ) {

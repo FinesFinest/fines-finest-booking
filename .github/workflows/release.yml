@@ -60,6 +60,8 @@ jobs:
           # Keine Sprachdateien im Verzeichnis-Paket: Dort liefert translate.wordpress.org die Sprachpakete.
           rm -rf build/wporg/fines-finest-booking/languages
           sed -i '/^ \* Update URI:/d' build/wporg/fines-finest-booking/fines-finest-booking.php
+          # Ohne Sprachordner darf der Header Domain Path nicht mehr auf ihn zeigen.
+          sed -i '/^ \* Domain Path:/d' build/wporg/fines-finest-booking/fines-finest-booking.php
           if grep -q 'Update URI' build/wporg/fines-finest-booking/fines-finest-booking.php; then
             echo "Update-URI steht noch im Plugin-Kopf. Abbruch."
             exit 1

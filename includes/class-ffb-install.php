@@ -189,6 +189,7 @@ class FFBooking_Install {
 	protected static function move_table( $old, $new ) {
 		global $wpdb;
 
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Eigene Tabellen, Namen aus $wpdb->prefix und festem Text.
 		if ( ! self::table_exists( $old ) ) {
 			return true; // Nichts zu uebernehmen, dbDelta legt die neue Tabelle an.
 		}
@@ -197,37 +198,37 @@ class FFBooking_Install {
 
 		try {
 			if ( self::table_exists( $new ) ) {
-				$rows = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$new}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$rows = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$new}`" );
 				if ( $rows > 0 ) {
 					return new WP_Error( 'table_exists', '', compact( 'old', 'new', 'rows' ) );
 				}
 				// Leere neue Tabelle, etwa aus einem abgebrochenen Versuch: entfernen, dann umbenennen.
-				if ( false === $wpdb->query( "DROP TABLE `{$new}`" ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				if ( false === $wpdb->query( "DROP TABLE `{$new}`" ) ) {
 					return new WP_Error( 'drop_failed', '', array( 'new' => $new, 'error' => $wpdb->last_error ) );
 				}
 			}
 
 			// RENAME liefert bei Erfolg 0, bei einem Fehler false.
-			if ( false !== $wpdb->query( "RENAME TABLE `{$old}` TO `{$new}`" ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			if ( false !== $wpdb->query( "RENAME TABLE `{$old}` TO `{$new}`" ) ) {
 				return true;
 			}
 			$rename_error = $wpdb->last_error;
 
 			// Umbenennen nicht erlaubt: Kopie anlegen und fuellen.
-			$created = $wpdb->query( "CREATE TABLE `{$new}` LIKE `{$old}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$copied  = false === $created ? false : $wpdb->query( "INSERT INTO `{$new}` SELECT * FROM `{$old}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$created = $wpdb->query( "CREATE TABLE `{$new}` LIKE `{$old}`" );
+			$copied  = false === $created ? false : $wpdb->query( "INSERT INTO `{$new}` SELECT * FROM `{$old}`" );
 			if ( false === $created || false === $copied ) {
 				$copy_error = $wpdb->last_error;
 				if ( false !== $created ) {
-					$wpdb->query( "DROP TABLE IF EXISTS `{$new}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->query( "DROP TABLE IF EXISTS `{$new}`" );
 				}
 				return new WP_Error( 'copy_failed', '', compact( 'old', 'new', 'rename_error', 'copy_error' ) );
 			}
 
-			$old_rows = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$old}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$new_rows = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$new}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$old_rows = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$old}`" );
+			$new_rows = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$new}`" );
 			if ( $old_rows !== $new_rows ) {
-				$wpdb->query( "DROP TABLE IF EXISTS `{$new}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->query( "DROP TABLE IF EXISTS `{$new}`" );
 				return new WP_Error( 'copy_incomplete', '', compact( 'old', 'new', 'old_rows', 'new_rows' ) );
 			}
 
@@ -235,6 +236,7 @@ class FFBooking_Install {
 		} finally {
 			$wpdb->suppress_errors( $suppress );
 		}
+		// phpcs:enable
 	}
 
 	/**
@@ -428,8 +430,7 @@ class FFBooking_Install {
 	public static function seed_defaults() {
 		global $wpdb;
 
-		$table = self::table_event_types();
-		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle, laeuft nur bei der Aktivierung.
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ffbooking_event_types" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle, laeuft nur bei der Aktivierung.
 
 		if ( $count > 0 ) {
 			return;
@@ -457,7 +458,7 @@ class FFBooking_Install {
 		$title = __( 'Intro call', 'fines-finest-booking' );
 
 		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$table,
+			self::table_event_types(),
 			array(
 				'slug'          => sanitize_title( $title ),
 				'title'         => $title,
