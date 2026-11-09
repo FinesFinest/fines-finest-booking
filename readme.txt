@@ -5,7 +5,7 @@ Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.6
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,8 +30,9 @@ All booking data lives in your own WordPress database. No third-party widget in 
 
 = Shortcodes =
 
-`[ff_booking event="intro-call"]` embeds one appointment type.
-`[ff_booking]` shows a choice when several appointment types are active.
+`[ffbooking event="intro-call"]` embeds one appointment type.
+`[ffbooking]` shows a choice when several appointment types are active.
+`[ff_booking]`, the name used up to version 1.2.6, keeps working on existing pages.
 
 = External services =
 
@@ -78,6 +79,15 @@ The plugin answers every link with the cancellation parameter itself. If the boo
 7. Settings with the setup status: every open step links to the next action.
 
 == Changelog ==
+
+= 1.3.0 =
+* Every name the plugin registers in WordPress now starts with ffbooking, as the plugin directory requires: database tables, options, hooks, REST namespace, shortcode, admin pages and asset handles. The update renames the tables and options by itself. Bookings, appointment types, settings and the Google connection stay as they are.
+* Shortcode: `[ffbooking]` replaces `[ff_booking]`. Pages with the old name keep working.
+* Cancellation links in emails sent before the update keep working.
+* The redirect URI of the Google connection now ends in page=ffbooking-settings. The existing connection keeps working. Before you connect Google again, add the new address in the Google Cloud Console; a notice in the backend shows it.
+* If the database tables cannot be renamed, the backend shows the database error. Nothing is deleted, and the plugin tries again on the next page load.
+* The stand-alone cancellation page attaches its two style rules to the stylesheet instead of printing a style element.
+* The plugin directory edition ships without translation files; translations come from translate.wordpress.org. The self-hosted edition keeps the German translation.
 
 = 1.2.6 =
 * Plugin URI now points to the development repository on GitHub, the author URI stays fines-finest.com. The plugin directory requires both to differ. No functional change.

@@ -2,6 +2,9 @@
 /**
  * Deinstallation. Loescht nur, wenn das in den Einstellungen erlaubt wurde.
  *
+ * Raeumt auch die Namen bis Version 1.2.6 (Praefix ffb) weg, falls eine
+ * Installation nie auf 1.3.0 umgestellt wurde.
+ *
  * @package FinesFinestBooking
  */
 
@@ -9,38 +12,52 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-$ffb_settings = get_option( 'ffb_settings', array() );
+$ffbooking_settings = get_option( 'ffbooking_settings', null );
+if ( null === $ffbooking_settings ) {
+	$ffbooking_settings = get_option( 'ffb_settings', array() );
+}
 
-if ( empty( $ffb_settings['delete_on_uninstall'] ) ) {
+if ( empty( $ffbooking_settings['delete_on_uninstall'] ) ) {
 	return;
 }
 
 global $wpdb;
 
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ffb_bookings" ); // phpcs:ignore WordPress.DB
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ffb_event_types" ); // phpcs:ignore WordPress.DB
+foreach ( array( 'ffbooking_bookings', 'ffbooking_event_types', 'ffb_bookings', 'ffb_event_types' ) as $ffbooking_table ) {
+	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$ffbooking_table}" ); // phpcs:ignore WordPress.DB
+}
 
-delete_option( 'ffb_settings' );
-delete_option( 'ffb_google_tokens' );
-delete_option( 'ffb_google_log' );
-delete_option( 'ffb_db_version' );
-delete_option( 'ffb_mail_tested' );
-delete_option( 'ffb_busy_cache_version' );
-delete_option( 'ffb_consent_text_refreshed' );
-delete_option( 'ffb_reminders_last_run' );
-delete_option( 'ffb_auto_update_enabled' );
+$ffbooking_options = array( 'settings', 'google_tokens', 'google_log', 'db_version', 'mail_tested', 'busy_cache_version', 'consent_text_refreshed', 'reminders_last_run', 'auto_update_enabled' );
+foreach ( $ffbooking_options as $ffbooking_option ) {
+	delete_option( 'ffbooking_' . $ffbooking_option );
+	delete_option( 'ffb_' . $ffbooking_option );
+}
+delete_option( 'ffbooking_migration_error' );
+delete_option( 'ffbooking_notice_redirect_uri' );
 
-wp_clear_scheduled_hook( 'ffb_send_reminders' );
-wp_clear_scheduled_hook( 'ffb_cleanup' );
+foreach ( array( 'ffbooking_send_reminders', 'ffbooking_cleanup', 'ffb_send_reminders', 'ffb_cleanup' ) as $ffbooking_hook ) {
+	wp_clear_scheduled_hook( $ffbooking_hook );
+}
 
-$ffb_upload = wp_upload_dir();
-$ffb_dir    = trailingslashit( $ffb_upload['basedir'] ) . 'ffb-tmp';
+// Transients mit neuem oder altem Praefix.
+$wpdb->query( // phpcs:ignore WordPress.DB
+	$wpdb->prepare(
+		"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s",
+		$wpdb->esc_like( '_transient_ffbooking_' ) . '%',
+		$wpdb->esc_like( '_transient_timeout_ffbooking_' ) . '%',
+		$wpdb->esc_like( '_transient_ffb_' ) . '%',
+		$wpdb->esc_like( '_transient_timeout_ffb_' ) . '%'
+	)
+);
 
-if ( is_dir( $ffb_dir ) ) {
-	foreach ( (array) glob( $ffb_dir . '/*' ) as $ffb_file ) {
-		if ( is_file( $ffb_file ) ) {
-			@unlink( $ffb_file ); // phpcs:ignore
+$ffbooking_upload = wp_upload_dir();
+$ffbooking_dir    = trailingslashit( $ffbooking_upload['basedir'] ) . 'ffb-tmp';
+
+if ( is_dir( $ffbooking_dir ) ) {
+	foreach ( (array) glob( $ffbooking_dir . '/*' ) as $ffbooking_file ) {
+		if ( is_file( $ffbooking_file ) ) {
+			@unlink( $ffbooking_file ); // phpcs:ignore
 		}
 	}
-	@rmdir( $ffb_dir ); // phpcs:ignore
+	@rmdir( $ffbooking_dir ); // phpcs:ignore
 }

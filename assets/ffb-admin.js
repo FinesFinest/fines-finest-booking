@@ -1,8 +1,8 @@
-/* global FFB_ADMIN */
+/* global FFBOOKING_ADMIN */
 ( function () {
 	'use strict';
 
-	var texte = window.FFB_ADMIN || {};
+	var texte = window.FFBOOKING_ADMIN || {};
 
 	document.addEventListener( 'click', function ( event ) {
 		// Hilfetexte auf- und zuklappen.

@@ -36,10 +36,10 @@ class ReminderTest extends TestCase {
 	public function test_erinnerung_nur_ausserhalb_des_fensters() {
 		$now = $this->utc( '2026-11-02 10:00:00' );
 
-		$this->assertTrue( FFB_Cron::reminder_needed( $this->at( $now, '+3 days' ), $now ) );
-		$this->assertTrue( FFB_Cron::reminder_needed( $this->at( $now, '+25 hours' ), $now ), 'Genau 25 Stunden liegen noch ausserhalb des Fensters.' );
-		$this->assertFalse( FFB_Cron::reminder_needed( $this->at( $now, '+25 hours -1 second' ), $now ) );
-		$this->assertFalse( FFB_Cron::reminder_needed( $this->at( $now, '+2 hours' ), $now ) );
+		$this->assertTrue( FFBooking_Cron::reminder_needed( $this->at( $now, '+3 days' ), $now ) );
+		$this->assertTrue( FFBooking_Cron::reminder_needed( $this->at( $now, '+25 hours' ), $now ), 'Genau 25 Stunden liegen noch ausserhalb des Fensters.' );
+		$this->assertFalse( FFBooking_Cron::reminder_needed( $this->at( $now, '+25 hours -1 second' ), $now ) );
+		$this->assertFalse( FFBooking_Cron::reminder_needed( $this->at( $now, '+2 hours' ), $now ) );
 	}
 
 	/**
@@ -49,14 +49,14 @@ class ReminderTest extends TestCase {
 		// Jetzt: 2. November 2026, 10:00 UTC, also 11:00 Uhr in Berlin.
 		$now = $this->utc( '2026-11-02 10:00:00' );
 
-		$this->assertSame( 'today', FFB_Mailer::relative_day( '2026-11-02 14:00:00', $now ) );
-		$this->assertSame( 'tomorrow', FFB_Mailer::relative_day( '2026-11-03 08:00:00', $now ) );
-		$this->assertSame( '', FFB_Mailer::relative_day( '2026-11-04 08:00:00', $now ) );
+		$this->assertSame( 'today', FFBooking_Mailer::relative_day( '2026-11-02 14:00:00', $now ) );
+		$this->assertSame( 'tomorrow', FFBooking_Mailer::relative_day( '2026-11-03 08:00:00', $now ) );
+		$this->assertSame( '', FFBooking_Mailer::relative_day( '2026-11-04 08:00:00', $now ) );
 
 		// 23:30 UTC ist in Berlin schon 00:30 Uhr des naechsten Tages.
 		$spaet = $this->utc( '2026-11-02 23:30:00' );
-		$this->assertSame( 'today', FFB_Mailer::relative_day( '2026-11-03 07:00:00', $spaet ) );
-		$this->assertSame( 'tomorrow', FFB_Mailer::relative_day( '2026-11-04 07:00:00', $spaet ) );
+		$this->assertSame( 'today', FFBooking_Mailer::relative_day( '2026-11-03 07:00:00', $spaet ) );
+		$this->assertSame( 'tomorrow', FFBooking_Mailer::relative_day( '2026-11-04 07:00:00', $spaet ) );
 	}
 
 	/**
@@ -65,6 +65,6 @@ class ReminderTest extends TestCase {
 	public function test_tagesgrenze_ueber_den_sommerzeitwechsel() {
 		$samstag = $this->utc( '2026-03-28 10:00:00' );
 
-		$this->assertSame( 'tomorrow', FFB_Mailer::relative_day( '2026-03-29 08:00:00', $samstag ) );
+		$this->assertSame( 'tomorrow', FFBooking_Mailer::relative_day( '2026-03-29 08:00:00', $samstag ) );
 	}
 }

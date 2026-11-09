@@ -1,8 +1,8 @@
-/* global FFB_CONFIG */
+/* global FFBOOKING_CONFIG */
 ( function () {
 	'use strict';
 
-	var config = window.FFB_CONFIG || {};
+	var config = window.FFBOOKING_CONFIG || {};
 	var i18n = config.i18n || {};
 	var session = null;
 	var sessionPromise = null;
@@ -381,7 +381,7 @@
 				submit.textContent = t( 'submit', 'Book appointment' );
 				showMessage( message, error.message, true );
 
-				if ( 'ffb_slot_gone' === error.code || 'ffb_taken' === error.code ) {
+				if ( 'ffbooking_slot_gone' === error.code || 'ffbooking_taken' === error.code ) {
 					window.setTimeout( function () {
 						self.load();
 					}, 2500 );

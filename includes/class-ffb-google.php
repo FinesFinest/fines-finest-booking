@@ -12,9 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * OAuth, FreeBusy, Termine anlegen und loeschen.
  */
-class FFB_Google {
+class FFBooking_Google {
 
-	const OPTION     = 'ffb_google_tokens';
+	const OPTION     = 'ffbooking_google_tokens';
 	const AUTH_URL   = 'https://accounts.google.com/o/oauth2/v2/auth';
 	const TOKEN_URL  = 'https://oauth2.googleapis.com/token';
 	const REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
@@ -27,7 +27,7 @@ class FFB_Google {
 	 * @return string
 	 */
 	public static function redirect_uri() {
-		return admin_url( 'admin.php?page=ffb-settings' );
+		return admin_url( 'admin.php?page=ffbooking-settings' );
 	}
 
 	/**
@@ -58,17 +58,17 @@ class FFB_Google {
 	 * @return string
 	 */
 	public static function auth_url() {
-		$client_id = ffb_get_setting( 'google_client_id' );
+		$client_id = ffbooking_get_setting( 'google_client_id' );
 		if ( ! $client_id ) {
 			return '';
 		}
 
 		// Zufaelliger State, 15 Minuten gueltig. Ein noch gueltiger wird weiterverwendet,
 		// damit zwei offene Einstellungsseiten sich nicht gegenseitig ungueltig machen.
-		$state = get_transient( 'ffb_oauth_state' );
+		$state = get_transient( 'ffbooking_oauth_state' );
 		if ( ! is_string( $state ) || '' === $state ) {
 			$state = wp_generate_password( 32, false );
-			set_transient( 'ffb_oauth_state', $state, 15 * MINUTE_IN_SECONDS );
+			set_transient( 'ffbooking_oauth_state', $state, 15 * MINUTE_IN_SECONDS );
 		}
 
 		return add_query_arg(
@@ -99,8 +99,8 @@ class FFB_Google {
 				'timeout' => 20,
 				'body'    => array(
 					'code'          => $code,
-					'client_id'     => ffb_get_setting( 'google_client_id' ),
-					'client_secret' => ffb_get_setting( 'google_client_secret' ),
+					'client_id'     => ffbooking_get_setting( 'google_client_id' ),
+					'client_secret' => ffbooking_get_setting( 'google_client_secret' ),
 					'redirect_uri'  => self::redirect_uri(),
 					'grant_type'    => 'authorization_code',
 				),
@@ -113,7 +113,7 @@ class FFB_Google {
 		}
 
 		if ( empty( $body['refresh_token'] ) ) {
-			return new WP_Error( 'ffb_no_refresh', __( 'Google did not send a refresh token. Remove the app at myaccount.google.com/permissions and connect it again.', 'fines-finest-booking' ) );
+			return new WP_Error( 'ffbooking_no_refresh', __( 'Google did not send a refresh token. Remove the app at myaccount.google.com/permissions and connect it again.', 'fines-finest-booking' ) );
 		}
 
 		$tokens = array(
@@ -131,7 +131,7 @@ class FFB_Google {
 			update_option( self::OPTION, $tokens, false );
 		}
 
-		update_option( 'ffb_busy_cache_version', (int) get_option( 'ffb_busy_cache_version', 1 ) + 1, false );
+		update_option( 'ffbooking_busy_cache_version', (int) get_option( 'ffbooking_busy_cache_version', 1 ) + 1, false );
 
 		return true;
 	}
@@ -153,7 +153,7 @@ class FFB_Google {
 		}
 
 		delete_option( self::OPTION );
-		update_option( 'ffb_busy_cache_version', (int) get_option( 'ffb_busy_cache_version', 1 ) + 1, false );
+		update_option( 'ffbooking_busy_cache_version', (int) get_option( 'ffbooking_busy_cache_version', 1 ) + 1, false );
 	}
 
 	/**
@@ -165,7 +165,7 @@ class FFB_Google {
 		$tokens = get_option( self::OPTION, array() );
 
 		if ( empty( $tokens['refresh_token'] ) ) {
-			return new WP_Error( 'ffb_not_connected', __( 'Google Calendar is not connected.', 'fines-finest-booking' ) );
+			return new WP_Error( 'ffbooking_not_connected', __( 'Google Calendar is not connected.', 'fines-finest-booking' ) );
 		}
 
 		if ( ! empty( $tokens['access_token'] ) && ! empty( $tokens['expires_at'] ) && $tokens['expires_at'] > time() ) {
@@ -178,8 +178,8 @@ class FFB_Google {
 				'timeout' => 20,
 				'body'    => array(
 					'refresh_token' => $tokens['refresh_token'],
-					'client_id'     => ffb_get_setting( 'google_client_id' ),
-					'client_secret' => ffb_get_setting( 'google_client_secret' ),
+					'client_id'     => ffbooking_get_setting( 'google_client_id' ),
+					'client_secret' => ffbooking_get_setting( 'google_client_secret' ),
 					'grant_type'    => 'refresh_token',
 				),
 			)
@@ -191,7 +191,7 @@ class FFB_Google {
 		}
 
 		if ( empty( $body['access_token'] ) ) {
-			return new WP_Error( 'ffb_refresh_failed', __( 'The Google token could not be renewed.', 'fines-finest-booking' ) );
+			return new WP_Error( 'ffbooking_refresh_failed', __( 'The Google token could not be renewed.', 'fines-finest-booking' ) );
 		}
 
 		$tokens['access_token'] = $body['access_token'];
@@ -259,7 +259,7 @@ class FFB_Google {
 		$message = isset( $data['error']['message'] ) ? $data['error']['message'] : ( isset( $data['error_description'] ) ? $data['error_description'] : $raw );
 
 		return new WP_Error(
-			'ffb_google_http_' . $code,
+			'ffbooking_google_http_' . $code,
 			sprintf(
 				/* translators: 1: HTTP status code, 2: error message from Google */
 				__( 'Google API (%1$d): %2$s', 'fines-finest-booking' ),
@@ -275,9 +275,9 @@ class FFB_Google {
 	 * @return array
 	 */
 	protected static function busy_calendar_ids() {
-		$ids = array( ffb_get_setting( 'google_calendar_id', 'primary' ) );
+		$ids = array( ffbooking_get_setting( 'google_calendar_id', 'primary' ) );
 
-		$extra = ffb_get_setting( 'google_busy_calendars' );
+		$extra = ffbooking_get_setting( 'google_busy_calendars' );
 		if ( $extra ) {
 			foreach ( preg_split( '/[\s,;]+/', $extra ) as $id ) {
 				$id = trim( $id );
@@ -301,10 +301,10 @@ class FFB_Google {
 	 */
 	public static function get_calendars( $force = false ) {
 		if ( ! self::is_connected() ) {
-			return new WP_Error( 'ffb_not_connected', __( 'Google Calendar is not connected.', 'fines-finest-booking' ) );
+			return new WP_Error( 'ffbooking_not_connected', __( 'Google Calendar is not connected.', 'fines-finest-booking' ) );
 		}
 
-		$cache_key = 'ffb_calendar_list_' . (int) get_option( 'ffb_busy_cache_version', 1 );
+		$cache_key = 'ffbooking_calendar_list_' . (int) get_option( 'ffbooking_busy_cache_version', 1 );
 
 		if ( ! $force ) {
 			$cached = get_transient( $cache_key );
@@ -383,8 +383,8 @@ class FFB_Google {
 			return array();
 		}
 
-		$version   = (int) get_option( 'ffb_busy_cache_version', 1 );
-		$cache_key = 'ffb_busy_' . md5( $version . $from->format( 'c' ) . $to->format( 'c' ) . implode( ',', self::busy_calendar_ids() ) );
+		$version   = (int) get_option( 'ffbooking_busy_cache_version', 1 );
+		$cache_key = 'ffbooking_busy_' . md5( $version . $from->format( 'c' ) . $to->format( 'c' ) . implode( ',', self::busy_calendar_ids() ) );
 		$cached    = get_transient( $cache_key );
 		if ( is_array( $cached ) ) {
 			return $cached;
@@ -416,7 +416,7 @@ class FFB_Google {
 			return $result;
 		}
 
-		$ziel = (string) ffb_get_setting( 'google_calendar_id', 'primary' );
+		$ziel = (string) ffbooking_get_setting( 'google_calendar_id', 'primary' );
 		$busy = array();
 		if ( ! empty( $result['calendars'] ) && is_array( $result['calendars'] ) ) {
 			foreach ( $result['calendars'] as $kalender_id => $calendar ) {
@@ -439,7 +439,7 @@ class FFB_Google {
 							)
 						);
 						return new WP_Error(
-							'ffb_calendar_unreadable',
+							'ffbooking_calendar_unreadable',
 							sprintf(
 								/* translators: %s: reasons reported by Google */
 								__( 'The target calendar could not be read (%s).', 'fines-finest-booking' ),
@@ -486,11 +486,11 @@ class FFB_Google {
 	 */
 	public static function create_event( $booking, $event ) {
 		if ( ! self::is_connected() ) {
-			return new WP_Error( 'ffb_not_connected', __( 'Google Calendar is not connected.', 'fines-finest-booking' ) );
+			return new WP_Error( 'ffbooking_not_connected', __( 'Google Calendar is not connected.', 'fines-finest-booking' ) );
 		}
 
-		$calendar_id = ffb_get_setting( 'google_calendar_id', 'primary' );
-		$tz          = ffb_timezone()->getName();
+		$calendar_id = ffbooking_get_setting( 'google_calendar_id', 'primary' );
+		$tz          = ffbooking_timezone()->getName();
 
 		$lines = array();
 		if ( ! empty( $booking['email'] ) ) {
@@ -594,7 +594,7 @@ class FFB_Google {
 	 * @return array before und/oder after => Payload fuer events.insert.
 	 */
 	public static function buffer_payloads( $booking, $event ) {
-		$tz      = ffb_timezone();
+		$tz      = ffbooking_timezone();
 		$utc     = new DateTimeZone( 'UTC' );
 		$start   = new DateTimeImmutable( $booking['start_utc'], $utc );
 		$end     = new DateTimeImmutable( $booking['end_utc'], $utc );
@@ -664,7 +664,7 @@ class FFB_Google {
 			return $ids;
 		}
 
-		$calendar_id = ffb_get_setting( 'google_calendar_id', 'primary' );
+		$calendar_id = ffbooking_get_setting( 'google_calendar_id', 'primary' );
 
 		foreach ( self::buffer_payloads( $booking, $event ) as $key => $payload ) {
 			$result = self::request( 'POST', '/calendars/' . rawurlencode( $calendar_id ) . '/events', $payload );
@@ -705,7 +705,7 @@ class FFB_Google {
 		}
 
 		$start = new DateTimeImmutable( $booking['start_utc'], new DateTimeZone( 'UTC' ) );
-		$start = $start->setTimezone( ffb_timezone() );
+		$start = $start->setTimezone( ffbooking_timezone() );
 
 		$ersetzungen = array(
 			'{name}'      => $booking['name'],
@@ -737,7 +737,7 @@ class FFB_Google {
 			return false;
 		}
 
-		$calendar_id = ffb_get_setting( 'google_calendar_id', 'primary' );
+		$calendar_id = ffbooking_get_setting( 'google_calendar_id', 'primary' );
 		$result      = self::request( 'DELETE', '/calendars/' . rawurlencode( $calendar_id ) . '/events/' . rawurlencode( $event_id ), null, array( 'sendUpdates' => 'none' ) );
 
 		if ( is_wp_error( $result ) ) {
@@ -754,7 +754,7 @@ class FFB_Google {
 	 * @param string $message Meldung.
 	 */
 	public static function log( $message ) {
-		$log = get_option( 'ffb_google_log', array() );
+		$log = get_option( 'ffbooking_google_log', array() );
 		if ( ! is_array( $log ) ) {
 			$log = array();
 		}
@@ -767,6 +767,6 @@ class FFB_Google {
 			)
 		);
 
-		update_option( 'ffb_google_log', array_slice( $log, 0, 20 ), false );
+		update_option( 'ffbooking_google_log', array_slice( $log, 0, 20 ), false );
 	}
 }

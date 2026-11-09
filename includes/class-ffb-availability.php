@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Slot-Logik: Wochenzeiten minus Buchungen minus Google-Kalender.
  */
-class FFB_Availability {
+class FFBooking_Availability {
 
 	/**
 	 * Liefert freie Slots, nach Tagen gruppiert.
@@ -28,7 +28,7 @@ class FFB_Availability {
 	 * @return array|WP_Error Fehler, wenn belegte Zeiten nicht ermittelt werden konnten.
 	 */
 	public static function get_slots( $event, $from = '', $days = 14, $now = null ) {
-		$tz  = ffb_timezone();
+		$tz  = ffbooking_timezone();
 		$now = $now instanceof DateTimeInterface
 			? ( new DateTimeImmutable( '@' . $now->getTimestamp() ) )->setTimezone( $tz )
 			: new DateTimeImmutable( 'now', $tz );
@@ -176,14 +176,14 @@ class FFB_Availability {
 	public static function global_limits() {
 		$hours = array();
 		for ( $day = 1; $day <= 7; $day++ ) {
-			$hours[ (string) $day ] = FFB_Admin::parse_windows( ffb_get_setting( 'hours_' . $day, '' ) );
+			$hours[ (string) $day ] = FFBooking_Admin::parse_windows( ffbooking_get_setting( 'hours_' . $day, '' ) );
 		}
 
 		return array(
-			'enforce'    => (int) ffb_get_setting( 'hours_enforce', 0 ) ? true : false,
+			'enforce'    => (int) ffbooking_get_setting( 'hours_enforce', 0 ) ? true : false,
 			'hours'      => $hours,
-			'min_notice' => max( 0, (int) ffb_get_setting( 'global_min_notice', 0 ) ),
-			'blackouts'  => FFB_Event_Types::clean_blackouts( ffb_get_setting( 'global_blackouts', '' ) ),
+			'min_notice' => max( 0, (int) ffbooking_get_setting( 'global_min_notice', 0 ) ),
+			'blackouts'  => FFBooking_Event_Types::clean_blackouts( ffbooking_get_setting( 'global_blackouts', '' ) ),
 		);
 	}
 
@@ -326,7 +326,7 @@ class FFB_Availability {
 	protected static function collect_busy( $from, $to ) {
 		$busy = self::booked_spans( $from, $to );
 
-		$google = FFB_Google::get_busy( $from, $to );
+		$google = FFBooking_Google::get_busy( $from, $to );
 		if ( is_wp_error( $google ) ) {
 			return $google;
 		}
@@ -353,7 +353,7 @@ class FFB_Availability {
 		$types  = array();
 		$margin = 0;
 
-		foreach ( FFB_Event_Types::all() as $type ) {
+		foreach ( FFBooking_Event_Types::all() as $type ) {
 			$types[ (int) $type['id'] ] = $type;
 			$margin                     = max( $margin, (int) $type['buffer_before'], (int) $type['buffer_after'] );
 		}
@@ -362,7 +362,7 @@ class FFB_Availability {
 		$query_to   = new DateTimeImmutable( '@' . ( $to->getTimestamp() + $margin * 60 ) );
 
 		$spans = array();
-		foreach ( FFB_Bookings::in_range( $query_from, $query_to ) as $booking ) {
+		foreach ( FFBooking_Bookings::in_range( $query_from, $query_to ) as $booking ) {
 			$type_id = (int) $booking['event_type_id'];
 			$spans[] = self::booking_span( $booking, isset( $types[ $type_id ] ) ? $types[ $type_id ] : null );
 		}
@@ -390,7 +390,7 @@ class FFB_Availability {
 	/**
 	 * Prueft, ob ein Termin samt Puffer mit einer bestehenden Buchung samt deren Puffer kollidiert.
 	 *
-	 * Laeuft in FFB_Bookings::create() unter der Buchungssperre. Zwei gleichzeitige
+	 * Laeuft in FFBooking_Bookings::create() unter der Buchungssperre. Zwei gleichzeitige
 	 * Buchungen bestehen sonst beide die Slotpruefung, weil keine die andere sieht.
 	 *
 	 * @param array             $event Termintyp.
@@ -420,7 +420,7 @@ class FFB_Availability {
 	protected static function count_per_day( $from, $to, $tz, $event_type_id ) {
 		$counts = array();
 
-		foreach ( FFB_Bookings::in_range( $from, $to, (int) $event_type_id ) as $booking ) {
+		foreach ( FFBooking_Bookings::in_range( $from, $to, (int) $event_type_id ) as $booking ) {
 			$local = ( new DateTimeImmutable( $booking['start_utc'], new DateTimeZone( 'UTC' ) ) )->setTimezone( $tz );
 			$key   = $local->format( 'Y-m-d' );
 
@@ -438,7 +438,7 @@ class FFB_Availability {
 	 * @return true|WP_Error
 	 */
 	public static function validate_slot( $event, $start ) {
-		$tz    = ffb_timezone();
+		$tz    = ffbooking_timezone();
 		$local = $start->setTimezone( $tz );
 		$data  = self::get_slots( $event, $local->format( 'Y-m-d' ), 1 );
 		$want  = $start->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Y-m-d\TH:i:s\Z' );
@@ -455,6 +455,6 @@ class FFB_Availability {
 			}
 		}
 
-		return new WP_Error( 'ffb_slot_gone', __( 'This slot is no longer available. Please pick another one.', 'fines-finest-booking' ) );
+		return new WP_Error( 'ffbooking_slot_gone', __( 'This slot is no longer available. Please pick another one.', 'fines-finest-booking' ) );
 	}
 }

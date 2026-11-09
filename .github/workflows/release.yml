@@ -57,6 +57,8 @@ jobs:
           rm -rf build/wporg && mkdir -p build/wporg
           git archive --format=tar --prefix=fines-finest-booking/ "$GITHUB_REF_NAME" | tar -x -C build/wporg
           rm build/wporg/fines-finest-booking/includes/class-ffb-updater.php
+          # Keine Sprachdateien im Verzeichnis-Paket: Dort liefert translate.wordpress.org die Sprachpakete.
+          rm -rf build/wporg/fines-finest-booking/languages
           sed -i '/^ \* Update URI:/d' build/wporg/fines-finest-booking/fines-finest-booking.php
           if grep -q 'Update URI' build/wporg/fines-finest-booking/fines-finest-booking.php; then
             echo "Update-URI steht noch im Plugin-Kopf. Abbruch."

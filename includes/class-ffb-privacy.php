@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Haengt sich in die WordPress-Datenschutz-Werkzeuge.
  */
-class FFB_Privacy {
+class FFBooking_Privacy {
 
 	/**
 	 * Hooks registrieren.
@@ -63,12 +63,12 @@ class FFB_Privacy {
 	public static function export( $email, $page = 1 ) {
 		global $wpdb;
 
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE email = %s", $email ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffbooking_bookings WHERE email = %s", $email ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 
 		$items = array();
 
 		foreach ( (array) $rows as $row ) {
-			$event = FFB_Event_Types::get( $row['event_type_id'] );
+			$event = FFBooking_Event_Types::get( $row['event_type_id'] );
 
 			$data = array(
 				array(
@@ -77,7 +77,7 @@ class FFB_Privacy {
 				),
 				array(
 					'name'  => __( 'Date and time', 'fines-finest-booking' ),
-					'value' => FFB_Mailer::format_datetime( $row['start_utc'] ),
+					'value' => FFBooking_Mailer::format_datetime( $row['start_utc'] ),
 				),
 				array(
 					'name'  => __( 'Name', 'fines-finest-booking' ),
@@ -109,7 +109,7 @@ class FFB_Privacy {
 			}
 
 			$items[] = array(
-				'group_id'    => 'ffb-bookings',
+				'group_id'    => 'ffbooking-bookings',
 				'group_label' => __( 'Appointment bookings', 'fines-finest-booking' ),
 				'item_id'     => 'ffb-booking-' . $row['id'],
 				'data'        => $data,
@@ -132,12 +132,12 @@ class FFB_Privacy {
 	public static function erase( $email, $page = 1 ) {
 		global $wpdb;
 
-		$table = FFB_Install::table_bookings();
-		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT id, google_event_id, google_before_id, google_after_id FROM {$wpdb->prefix}ffb_bookings WHERE email = %s", $email ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+		$table = FFBooking_Install::table_bookings();
+		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT id, google_event_id, google_before_id, google_after_id FROM {$wpdb->prefix}ffbooking_bookings WHERE email = %s", $email ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 
 		foreach ( (array) $rows as $row ) {
-			foreach ( FFB_Bookings::google_event_ids( $row ) as $event_id ) {
-				FFB_Google::delete_event( $event_id );
+			foreach ( FFBooking_Bookings::google_event_ids( $row ) as $event_id ) {
+				FFBooking_Google::delete_event( $event_id );
 			}
 		}
 
@@ -159,7 +159,7 @@ class FFB_Privacy {
 			return;
 		}
 
-		$days = (int) ffb_get_setting( 'retention_days', 730 );
+		$days = (int) ffbooking_get_setting( 'retention_days', 730 );
 
 		$content  = '<h3>' . esc_html__( 'Appointment booking', 'fines-finest-booking' ) . '</h3>';
 		$content .= '<p>' . esc_html__( 'When you book an appointment through this website, I store your name, your email address, optionally your phone number, your answers to the questions in the booking form, and the date and time of the appointment. This data is kept in the database of this website.', 'fines-finest-booking' ) . '</p>';

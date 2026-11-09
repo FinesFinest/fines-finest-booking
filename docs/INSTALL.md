@@ -41,7 +41,7 @@ Bei **Zielgruppe** oder **Testnutzer** trägst du die Google-Adresse ein, deren 
 
 - Anwendungstyp: **Webanwendung**
 - Name: beliebig
-- Unter **Autorisierte Weiterleitungs-URIs** trägst du genau die Adresse ein, die im Plugin unter **Buchungen → Einstellungen** bei „Weiterleitungs-URI" steht. Kopier sie von dort, tipp sie nicht ab.
+- Unter **Autorisierte Weiterleitungs-URIs** trägst du genau die Adresse ein, die im Plugin unter **Buchungen → Einstellungen** bei „Weiterleitungs-URI" steht. Kopier sie von dort, tipp sie nicht ab. Seit Version 1.3.0 endet die Adresse auf `admin.php?page=ffbooking-settings`. Hast du Google mit einer älteren Version verbunden, trag die neue Adresse zusätzlich ein, bevor du neu verbindest. Die bestehende Verbindung läuft auch ohne das weiter.
 
 Erstellen. Du bekommst **Client-ID** und **Client-Schlüssel** angezeigt.
 
@@ -128,14 +128,16 @@ Urlaub trägst du nicht hier ein, sondern als ganztägigen Termin im Google-Kale
 Der Shortcode steht in der Termintypen-Liste, für den Standardtyp:
 
 ```
-[ff_booking event="erstanalyse"]
+[ffbooking event="erstanalyse"]
 ```
+
+Bis Version 1.2.6 hieß der Shortcode `[ff_booking]`. Seiten mit dem alten Namen funktionieren weiter.
 
 **In Oxygen**: Seite anlegen, zum Beispiel `/termin`. Ein **Code Block** oder ein **Shortcode**-Element in die Section, Shortcode einfügen. Fertig.
 
 Die Farben stellst du unter **Einstellungen → Design** ein. Ab Werk sind sie neutral gehalten, damit das Buchungsfeld auf jeder Website erträglich aussieht, bevor du es anpasst. Schriften stehen auf `inherit`, übernehmen also die der Seite.
 
-Die Absage-Links in den Mails zeigen auf dieselbe Seite mit dem Parameter `?ffb_cancel=…`. Das Plugin erkennt das und zeigt statt des Kalenders die Absage-Ansicht. Du brauchst dafür keine zweite Seite. Wird die Buchungsseite später umbenannt oder gelöscht, ist sie passwortgeschützt oder gar nicht eingetragen, zeigt das Plugin eine eigene schlanke Absage-Seite. Alte Links aus bereits verschickten Mails funktionieren also weiter.
+Die Absage-Links in den Mails zeigen auf dieselbe Seite mit dem Parameter `?ffbooking_cancel=…` (Mails bis Version 1.2.6: `?ffb_cancel=…`, diese Links gelten weiter). Das Plugin erkennt das und zeigt statt des Kalenders die Absage-Ansicht. Du brauchst dafür keine zweite Seite. Wird die Buchungsseite später umbenannt oder gelöscht, ist sie passwortgeschützt oder gar nicht eingetragen, zeigt das Plugin eine eigene schlanke Absage-Seite. Alte Links aus bereits verschickten Mails funktionieren also weiter.
 
 ---
 

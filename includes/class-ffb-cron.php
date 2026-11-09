@@ -12,15 +12,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * WP-Cron-Anbindung.
  */
-class FFB_Cron {
+class FFBooking_Cron {
 
-	const HOOK_REMINDERS = 'ffb_send_reminders';
-	const HOOK_CLEANUP   = 'ffb_cleanup';
+	const HOOK_REMINDERS = 'ffbooking_send_reminders';
+	const HOOK_CLEANUP   = 'ffbooking_cleanup';
 
 	/**
 	 * Option mit dem Zeitstempel des letzten Erinnerungslaufs.
 	 */
-	const LAST_RUN_OPTION = 'ffb_reminders_last_run';
+	const LAST_RUN_OPTION = 'ffbooking_reminders_last_run';
 
 	/**
 	 * So viele Stunden vor dem Termin oeffnet sich das Erinnerungsfenster.
@@ -142,14 +142,14 @@ class FFB_Cron {
 		 * wenn die Seite Besuch bekommt, und faellt dadurch regelmaessig aus dem Takt.
 		 * Ein festes Fenster wuerde Termine still ueberspringen. Das Feld reminder_sent
 		 * verhindert Doppelversand. Buchungen, die erst innerhalb des Fensters entstehen,
-		 * markiert FFB_Bookings::create() sofort als erinnert (siehe reminder_needed()).
+		 * markiert FFBooking_Bookings::create() sofort als erinnert (siehe reminder_needed()).
 		 */
-		$from = ffb_now_utc();
-		$to   = ffb_now_utc()->modify( '+' . self::REMINDER_WINDOW_HOURS . ' hours' );
+		$from = ffbooking_now_utc();
+		$to   = ffbooking_now_utc()->modify( '+' . self::REMINDER_WINDOW_HOURS . ' hours' );
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 			$wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}ffb_bookings WHERE status = 'confirmed' AND reminder_sent = 0 AND start_utc > %s AND start_utc < %s",
+				"SELECT * FROM {$wpdb->prefix}ffbooking_bookings WHERE status = 'confirmed' AND reminder_sent = 0 AND start_utc > %s AND start_utc < %s",
 				$from->format( 'Y-m-d H:i:s' ),
 				$to->format( 'Y-m-d H:i:s' )
 			),
@@ -157,11 +157,11 @@ class FFB_Cron {
 		);
 
 		foreach ( (array) $rows as $booking ) {
-			$event = FFB_Event_Types::get( $booking['event_type_id'] );
+			$event = FFBooking_Event_Types::get( $booking['event_type_id'] );
 
 			if ( ! $event ) {
 				// Nicht still ueberspringen: einmal melden und die Buchung als erledigt markieren.
-				FFB_Google::log(
+				FFBooking_Google::log(
 					sprintf(
 						/* translators: %d: booking ID */
 						__( 'Reminder for booking #%d not sent: the appointment type no longer exists.', 'fines-finest-booking' ),
@@ -172,7 +172,7 @@ class FFB_Cron {
 				continue;
 			}
 
-			FFB_Mailer::send_reminder( $booking, $event );
+			FFBooking_Mailer::send_reminder( $booking, $event );
 			self::mark_reminder_sent( (int) $booking['id'] );
 		}
 	}
@@ -186,7 +186,7 @@ class FFB_Cron {
 		global $wpdb;
 
 		$wpdb->update( // phpcs:ignore WordPress.DB
-			FFB_Install::table_bookings(),
+			FFBooking_Install::table_bookings(),
 			array( 'reminder_sent' => 1 ),
 			array( 'id' => (int) $booking_id ),
 			array( '%d' ),
@@ -200,16 +200,16 @@ class FFB_Cron {
 	public static function cleanup() {
 		global $wpdb;
 
-		$days = (int) ffb_get_setting( 'retention_days', 730 );
+		$days = (int) ffbooking_get_setting( 'retention_days', 730 );
 
 		if ( $days > 0 ) {
-			$cutoff = ffb_now_utc()->modify( '-' . $days . ' days' )->format( 'Y-m-d H:i:s' );
+			$cutoff = ffbooking_now_utc()->modify( '-' . $days . ' days' )->format( 'Y-m-d H:i:s' );
 
-			$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}ffb_bookings WHERE start_utc < %s", $cutoff ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+			$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}ffbooking_bookings WHERE start_utc < %s", $cutoff ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 		}
 
 		// Reste der Buchungssperre ueber Optionen, die bis Version 1.1.1 genutzt wurde.
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'ffb_lock_' ) . '%' ) ); // phpcs:ignore WordPress.DB
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'ffbooking_lock_' ) . '%' ) ); // phpcs:ignore WordPress.DB
 
 		$upload = wp_upload_dir();
 		$dir    = trailingslashit( $upload['basedir'] ) . 'ffb-tmp';

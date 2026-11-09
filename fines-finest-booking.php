@@ -3,7 +3,7 @@
  * Plugin Name:       Fines Finest Booking
  * Plugin URI:        https://github.com/FinesFinest/fines-finest-booking
  * Description:       Appointment booking in your own design, with Google Calendar sync, Google Meet, confirmation emails and Brevo. All data stays in your own WordPress database.
- * Version:           1.2.6
+ * Version:           1.3.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Fines Finest
@@ -18,61 +18,61 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FFB_VERSION', '1.2.6' );
-define( 'FFB_FILE', __FILE__ );
-define( 'FFB_DIR', plugin_dir_path( __FILE__ ) );
-define( 'FFB_URL', plugin_dir_url( __FILE__ ) );
-define( 'FFB_DB_VERSION', 4 );
+define( 'FFBOOKING_VERSION', '1.3.0' );
+define( 'FFBOOKING_FILE', __FILE__ );
+define( 'FFBOOKING_DIR', plugin_dir_path( __FILE__ ) );
+define( 'FFBOOKING_URL', plugin_dir_url( __FILE__ ) );
+define( 'FFBOOKING_DB_VERSION', 5 );
 
 // Kaffeekasse: Adresse fuer ein Dankeschoen an Fine (PayPal.Me). Leer = keine Zeile in den Einstellungen.
 // Fuer Tests laesst sie sich in der wp-config.php vorbelegen.
-if ( ! defined( 'FFB_DONATE_URL' ) ) {
-	define( 'FFB_DONATE_URL', 'https://www.paypal.com/paypalme/finesfinest' );
+if ( ! defined( 'FFBOOKING_DONATE_URL' ) ) {
+	define( 'FFBOOKING_DONATE_URL', 'https://www.paypal.com/paypalme/finesfinest' );
 }
 
-require_once FFB_DIR . 'includes/class-ffb-install.php';
-require_once FFB_DIR . 'includes/class-ffb-event-types.php';
-require_once FFB_DIR . 'includes/class-ffb-bookings.php';
-require_once FFB_DIR . 'includes/class-ffb-availability.php';
-require_once FFB_DIR . 'includes/class-ffb-google.php';
-require_once FFB_DIR . 'includes/class-ffb-brevo.php';
-require_once FFB_DIR . 'includes/class-ffb-mailer.php';
-require_once FFB_DIR . 'includes/class-ffb-rest.php';
-require_once FFB_DIR . 'includes/class-ffb-shortcode.php';
-require_once FFB_DIR . 'includes/class-ffb-cron.php';
-require_once FFB_DIR . 'includes/class-ffb-privacy.php';
-require_once FFB_DIR . 'includes/class-ffb-admin.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-install.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-event-types.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-bookings.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-availability.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-google.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-brevo.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-mailer.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-rest.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-shortcode.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-cron.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-privacy.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-admin.php';
 
 // Der Updater der selbst gehosteten Fassung fehlt in der Fassung fuer das WordPress-Verzeichnis,
-// dort liefert wordpress.org die Updates. Seine Oberflaeche bringt er ueber die ffb_-Hooks selbst mit.
-if ( file_exists( FFB_DIR . 'includes/class-ffb-updater.php' ) ) {
-	require_once FFB_DIR . 'includes/class-ffb-updater.php';
+// dort liefert wordpress.org die Updates. Seine Oberflaeche bringt er ueber die ffbooking_-Hooks selbst mit.
+if ( file_exists( FFBOOKING_DIR . 'includes/class-ffb-updater.php' ) ) {
+	require_once FFBOOKING_DIR . 'includes/class-ffb-updater.php';
 }
 
-register_activation_hook( __FILE__, array( 'FFB_Install', 'activate' ) );
-register_deactivation_hook( __FILE__, array( 'FFB_Install', 'deactivate' ) );
+register_activation_hook( __FILE__, array( 'FFBooking_Install', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'FFBooking_Install', 'deactivate' ) );
 
 /**
  * Startet das Plugin.
  */
-function ffb_init() {
-	FFB_Install::maybe_upgrade();
-	FFB_Rest::init();
-	FFB_Shortcode::init();
-	FFB_Cron::init();
-	FFB_Privacy::init();
+function ffbooking_init() {
+	FFBooking_Install::maybe_upgrade();
+	FFBooking_Rest::init();
+	FFBooking_Shortcode::init();
+	FFBooking_Cron::init();
+	FFBooking_Privacy::init();
 
-	if ( class_exists( 'FFB_Updater' ) ) {
-		FFB_Updater::init();
+	if ( class_exists( 'FFBooking_Updater' ) ) {
+		FFBooking_Updater::init();
 	}
 
-	add_action( 'phpmailer_init', array( 'FFB_Mailer', 'add_plain_text' ) );
+	add_action( 'phpmailer_init', array( 'FFBooking_Mailer', 'add_plain_text' ) );
 
 	if ( is_admin() ) {
-		FFB_Admin::init();
+		FFBooking_Admin::init();
 	}
 }
-add_action( 'plugins_loaded', 'ffb_init' );
+add_action( 'plugins_loaded', 'ffbooking_init' );
 
 /**
  * Laedt die Uebersetzungen aus dem Ordner languages.
@@ -80,15 +80,16 @@ add_action( 'plugins_loaded', 'ffb_init' );
  * Nicht frueher als init: Seit WordPress 6.7 gilt frueheres Laden als Fehler.
  * Darum darf vor init auch kein Text uebersetzt werden.
  *
- * Plugin Check raet von load_plugin_textdomain() ab, weil wordpress.org eigene
- * Sprachpakete ausliefert. Die gibt es fuer dieses Plugin nicht: Die deutsche
- * Uebersetzung liegt im Ordner languages bei und wird nur so geladen.
+ * Die Fassung fuer das WordPress-Verzeichnis enthaelt keine Sprachdateien, dort
+ * liefert translate.wordpress.org die Sprachpakete. Die selbst gehostete Fassung
+ * von GitHub bringt die deutsche Uebersetzung im Ordner languages mit und laedt
+ * sie nur ueber diesen Aufruf.
  */
-function ffb_load_textdomain() {
-	load_plugin_textdomain( 'fines-finest-booking', false, dirname( plugin_basename( FFB_FILE ) ) . '/languages' );
-	ffb_refresh_default_consent_text();
+function ffbooking_load_textdomain() {
+	load_plugin_textdomain( 'fines-finest-booking', false, dirname( plugin_basename( FFBOOKING_FILE ) ) . '/languages' );
+	ffbooking_refresh_default_consent_text();
 }
-add_action( 'init', 'ffb_load_textdomain' );
+add_action( 'init', 'ffbooking_load_textdomain' );
 
 /**
  * Ersetzt einmalig den alten Standard-Einwilligungstext ohne Umlaute durch den uebersetzten.
@@ -96,20 +97,20 @@ add_action( 'init', 'ffb_load_textdomain' );
  * Bis Version 1.1.2 stand der Text fest im Code ("Datenschutzerklaerung") und wurde bei der
  * Aktivierung gespeichert. Nur genau dieser Text wird ersetzt, eigene Formulierungen bleiben.
  */
-function ffb_refresh_default_consent_text() {
-	if ( get_option( 'ffb_consent_text_refreshed' ) ) {
+function ffbooking_refresh_default_consent_text() {
+	if ( get_option( 'ffbooking_consent_text_refreshed' ) ) {
 		return;
 	}
 
-	$settings = get_option( 'ffb_settings', array() );
+	$settings = get_option( 'ffbooking_settings', array() );
 	$old      = 'Ich habe die Datenschutzerklaerung gelesen und bin mit der Verarbeitung meiner Daten zur Terminabwicklung einverstanden.';
 
 	if ( is_array( $settings ) && isset( $settings['consent_text'] ) && $old === $settings['consent_text'] ) {
 		$settings['consent_text'] = __( 'I have read the privacy policy and agree to the processing of my data to arrange the appointment.', 'fines-finest-booking' );
-		update_option( 'ffb_settings', $settings, false );
+		update_option( 'ffbooking_settings', $settings, false );
 	}
 
-	update_option( 'ffb_consent_text_refreshed', 1, true );
+	update_option( 'ffbooking_consent_text_refreshed', 1, true );
 }
 
 /**
@@ -119,24 +120,24 @@ function ffb_refresh_default_consent_text() {
  * @param string $domain Textdomain.
  * @return string
  */
-function ffb_plugin_locale( $locale, $domain ) {
+function ffbooking_plugin_locale( $locale, $domain ) {
 	if ( 'fines-finest-booking' !== $domain || 'de_DE' === $locale || 0 !== strpos( (string) $locale, 'de_' ) ) {
 		return $locale;
 	}
-	if ( file_exists( FFB_DIR . 'languages/fines-finest-booking-' . $locale . '.mo' ) ) {
+	if ( file_exists( FFBOOKING_DIR . 'languages/fines-finest-booking-' . $locale . '.mo' ) ) {
 		return $locale;
 	}
 
 	return 'de_DE';
 }
-add_filter( 'plugin_locale', 'ffb_plugin_locale', 10, 2 );
+add_filter( 'plugin_locale', 'ffbooking_plugin_locale', 10, 2 );
 
 /**
  * Standardwerte der Plugin-Einstellungen.
  *
  * @return array
  */
-function ffb_default_settings() {
+function ffbooking_default_settings() {
 	return array(
 		'google_client_id'      => '',
 		'google_client_secret'  => '',
@@ -185,9 +186,9 @@ function ffb_default_settings() {
  * @param mixed  $default Rueckfallwert.
  * @return mixed
  */
-function ffb_get_setting( $key, $default = null ) {
-	$settings = get_option( 'ffb_settings', array() );
-	$defaults = ffb_default_settings();
+function ffbooking_get_setting( $key, $default = null ) {
+	$settings = get_option( 'ffbooking_settings', array() );
+	$defaults = ffbooking_default_settings();
 
 	if ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) {
 		return $settings[ $key ];
@@ -203,8 +204,8 @@ function ffb_get_setting( $key, $default = null ) {
  *
  * @return string
  */
-function ffb_from_email() {
-	$configured = ffb_get_setting( 'from_email' );
+function ffbooking_from_email() {
+	$configured = ffbooking_get_setting( 'from_email' );
 	if ( $configured && is_email( $configured ) ) {
 		return $configured;
 	}
@@ -219,7 +220,7 @@ function ffb_from_email() {
  *
  * @return DateTimeZone
  */
-function ffb_timezone() {
+function ffbooking_timezone() {
 	return wp_timezone();
 }
 
@@ -228,6 +229,6 @@ function ffb_timezone() {
  *
  * @return DateTimeImmutable
  */
-function ffb_now_utc() {
+function ffbooking_now_utc() {
 	return new DateTimeImmutable( 'now', new DateTimeZone( 'UTC' ) );
 }

@@ -17,11 +17,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Verbindet die WordPress-Updateprüfung mit den GitHub-Releases.
  */
-class FFB_Updater {
+class FFBooking_Updater {
 
 	const REPO       = 'FinesFinest/fines-finest-booking';
 	const ASSET      = 'fines-finest-booking.zip';
-	const CACHE      = 'ffb_github_release';
+	const CACHE      = 'ffbooking_github_release';
 	const CACHE_TIME = 6 * HOUR_IN_SECONDS;
 
 	/**
@@ -37,10 +37,10 @@ class FFB_Updater {
 
 		// Oberflaeche in den Einstellungen: Statuszeile, Knopf "Jetzt nach Updates suchen" und die Hinweise dazu.
 		// Alles dazu liegt hier, damit die Fassung fuer das WordPress-Verzeichnis ohne diese Datei nichts davon enthaelt.
-		add_action( 'ffb_admin_action', array( __CLASS__, 'handle_admin_action' ) );
-		add_action( 'ffb_status_box_extra', array( __CLASS__, 'render_status_line' ) );
-		add_filter( 'ffb_admin_notices', array( __CLASS__, 'add_notices' ) );
-		add_filter( 'ffb_admin_notice_link', array( __CLASS__, 'notice_link' ), 10, 2 );
+		add_action( 'ffbooking_admin_action', array( __CLASS__, 'handle_admin_action' ) );
+		add_action( 'ffbooking_status_box_extra', array( __CLASS__, 'render_status_line' ) );
+		add_filter( 'ffbooking_admin_notices', array( __CLASS__, 'add_notices' ) );
+		add_filter( 'ffbooking_admin_notice_link', array( __CLASS__, 'notice_link' ), 10, 2 );
 	}
 
 	/**
@@ -49,7 +49,7 @@ class FFB_Updater {
 	 * @return string
 	 */
 	public static function basename() {
-		return plugin_basename( FFB_FILE );
+		return plugin_basename( FFBOOKING_FILE );
 	}
 
 	/**
@@ -146,7 +146,7 @@ class FFB_Updater {
 				'timeout' => 15,
 				'headers' => array(
 					'Accept'     => 'application/vnd.github+json',
-					'User-Agent' => 'FinesFinestBooking/' . FFB_VERSION . ' (' . home_url() . ')',
+					'User-Agent' => 'FinesFinestBooking/' . FFBOOKING_VERSION . ' (' . home_url() . ')',
 				),
 			)
 		);
@@ -162,7 +162,7 @@ class FFB_Updater {
 		if ( 200 !== $code || empty( $body['tag_name'] ) ) {
 			$message = isset( $body['message'] ) ? $body['message'] : (string) $code;
 			/* translators: %s: error message or HTTP status from GitHub */
-			$error = new WP_Error( 'ffb_github_http', sprintf( __( 'GitHub did not deliver a release: %s', 'fines-finest-booking' ), $message ) );
+			$error = new WP_Error( 'ffbooking_github_http', sprintf( __( 'GitHub did not deliver a release: %s', 'fines-finest-booking' ), $message ) );
 			self::log( $error->get_error_message() );
 			return $error;
 		}
@@ -177,7 +177,7 @@ class FFB_Updater {
 
 		if ( '' === $package ) {
 			/* translators: 1: release tag, 2: expected file name */
-			$error = new WP_Error( 'ffb_github_asset', sprintf( __( 'Release %1$s has no %2$s attached.', 'fines-finest-booking' ), $body['tag_name'], self::ASSET ) );
+			$error = new WP_Error( 'ffbooking_github_asset', sprintf( __( 'Release %1$s has no %2$s attached.', 'fines-finest-booking' ), $body['tag_name'], self::ASSET ) );
 			self::log( $error->get_error_message() );
 			return $error;
 		}
@@ -232,7 +232,7 @@ class FFB_Updater {
 	 * danach wie bei jedem Plugin in der Pluginliste.
 	 */
 	public static function enable_auto_update_once() {
-		if ( get_option( 'ffb_auto_update_enabled' ) ) {
+		if ( get_option( 'ffbooking_auto_update_enabled' ) ) {
 			return;
 		}
 
@@ -242,7 +242,7 @@ class FFB_Updater {
 			update_site_option( 'auto_update_plugins', array_values( array_unique( $list ) ) );
 		}
 
-		update_option( 'ffb_auto_update_enabled', 1, true );
+		update_option( 'ffbooking_auto_update_enabled', 1, true );
 	}
 
 	/**
@@ -278,9 +278,9 @@ class FFB_Updater {
 		wp_update_plugins();
 
 		return array(
-			'installed' => FFB_VERSION,
+			'installed' => FFBOOKING_VERSION,
 			'latest'    => $release['version'],
-			'update'    => version_compare( $release['version'], FFB_VERSION, '>' ),
+			'update'    => version_compare( $release['version'], FFBOOKING_VERSION, '>' ),
 		);
 	}
 
@@ -315,23 +315,23 @@ class FFB_Updater {
 	 * Knopf "Jetzt nach Updates suchen" in den Einstellungen: fragt GitHub ab und
 	 * leitet mit dem passenden Hinweis zurueck.
 	 *
-	 * @param string $do Aktion aus der Adresse (ffb_do).
+	 * @param string $do Aktion aus der Adresse (ffbooking_do).
 	 */
 	public static function handle_admin_action( $do ) {
 		if ( 'check_updates' !== $do ) {
 			return;
 		}
-		check_admin_referer( 'ffb_check_updates' );
+		check_admin_referer( 'ffbooking_check_updates' );
 
 		$ergebnis = self::check_now();
 		if ( is_wp_error( $ergebnis ) ) {
-			set_transient( 'ffb_admin_error', $ergebnis->get_error_message(), 60 );
-			wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=update_check_error' ) );
+			set_transient( 'ffbooking_admin_error', $ergebnis->get_error_message(), 60 );
+			wp_safe_redirect( admin_url( 'admin.php?page=ffbooking-settings&ffbooking_notice=update_check_error' ) );
 			exit;
 		}
 
-		set_transient( 'ffb_admin_error', $ergebnis['latest'], 60 );
-		wp_safe_redirect( admin_url( 'admin.php?page=ffb-settings&ffb_notice=' . ( $ergebnis['update'] ? 'update_available' : 'update_none' ) ) );
+		set_transient( 'ffbooking_admin_error', $ergebnis['latest'], 60 );
+		wp_safe_redirect( admin_url( 'admin.php?page=ffbooking-settings&ffbooking_notice=' . ( $ergebnis['update'] ? 'update_available' : 'update_none' ) ) );
 		exit;
 	}
 
@@ -349,7 +349,7 @@ class FFB_Updater {
 				sprintf(
 					/* translators: 1: installed version, 2: error message, 3: enabled or disabled */
 					__( 'Updates come from GitHub. Installed: %1$s. The latest release could not be read: %2$s Automatic updates: %3$s.', 'fines-finest-booking' ),
-					FFB_VERSION,
+					FFBOOKING_VERSION,
 					$release->get_error_message(),
 					$auto
 				)
@@ -359,14 +359,14 @@ class FFB_Updater {
 				sprintf(
 					/* translators: 1: installed version, 2: latest release version, 3: enabled or disabled */
 					__( 'Updates come from GitHub. Installed: %1$s, latest release: %2$s. Automatic updates: %3$s.', 'fines-finest-booking' ),
-					FFB_VERSION,
+					FFBOOKING_VERSION,
 					$release['version'],
 					$auto
 				)
 			);
 		}
 		?>
-			<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffb-settings&ffb_do=check_updates' ), 'ffb_check_updates' ) ); ?>"><?php esc_html_e( 'Check for updates now', 'fines-finest-booking' ); ?></a>
+			<a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffbooking-settings&ffbooking_do=check_updates' ), 'ffbooking_check_updates' ) ); ?>"><?php esc_html_e( 'Check for updates now', 'fines-finest-booking' ); ?></a>
 		</p>
 		<?php
 	}
@@ -406,6 +406,6 @@ class FFB_Updater {
 	 * @param string $message Meldung.
 	 */
 	protected static function log( $message ) {
-		FFB_Google::log( 'GitHub: ' . $message );
+		FFBooking_Google::log( 'GitHub: ' . $message );
 	}
 }

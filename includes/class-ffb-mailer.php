@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Baut und verschickt die Mails inklusive ICS-Anhang.
  */
-class FFB_Mailer {
+class FFBooking_Mailer {
 
 	/**
 	 * Standard-Header.
@@ -20,11 +20,11 @@ class FFB_Mailer {
 	 * @return array
 	 */
 	protected static function headers() {
-		$from_name = ffb_get_setting( 'from_name', get_bloginfo( 'name' ) );
+		$from_name = ffbooking_get_setting( 'from_name', get_bloginfo( 'name' ) );
 
 		return array(
 			'Content-Type: text/html; charset=UTF-8',
-			sprintf( 'From: %s <%s>', $from_name, ffb_from_email() ),
+			sprintf( 'From: %s <%s>', $from_name, ffbooking_from_email() ),
 		);
 	}
 
@@ -68,7 +68,7 @@ class FFB_Mailer {
 		$timestamp = strtotime( $utc . ' UTC' );
 
 		/* translators: PHP date format for a full date with weekday and time, e.g. "Tuesday, March 3, 2026, 3:00 pm". See https://www.php.net/manual/datetime.format.php */
-		return wp_date( __( 'l, F j, Y, g:i a', 'fines-finest-booking' ), $timestamp, ffb_timezone() );
+		return wp_date( __( 'l, F j, Y, g:i a', 'fines-finest-booking' ), $timestamp, ffbooking_timezone() );
 	}
 
 	/**
@@ -81,7 +81,7 @@ class FFB_Mailer {
 		$timestamp = strtotime( $utc . ' UTC' );
 
 		/* translators: PHP date format for a time of day, e.g. "3:00 pm". See https://www.php.net/manual/datetime.format.php */
-		return wp_date( __( 'g:i a', 'fines-finest-booking' ), $timestamp, ffb_timezone() );
+		return wp_date( __( 'g:i a', 'fines-finest-booking' ), $timestamp, ffbooking_timezone() );
 	}
 
 	/**
@@ -92,11 +92,11 @@ class FFB_Mailer {
 	 * @return string
 	 */
 	protected static function wrap( $title, $content ) {
-		$accent  = ffb_get_setting( 'color_accent' );
-		$bg      = ffb_get_setting( 'color_bg_deep' );
-		$surface = ffb_get_setting( 'color_bg' );
-		$text    = ffb_get_setting( 'color_text' );
-		$muted   = ffb_get_setting( 'color_muted' );
+		$accent  = ffbooking_get_setting( 'color_accent' );
+		$bg      = ffbooking_get_setting( 'color_bg_deep' );
+		$surface = ffbooking_get_setting( 'color_bg' );
+		$text    = ffbooking_get_setting( 'color_text' );
+		$muted   = ffbooking_get_setting( 'color_muted' );
 		$site    = get_bloginfo( 'name' );
 
 		ob_start();
@@ -134,8 +134,8 @@ class FFB_Mailer {
 	 * @return string
 	 */
 	protected static function detail_block( $rows ) {
-		$text  = ffb_get_setting( 'color_text' );
-		$muted = ffb_get_setting( 'color_muted' );
+		$text  = ffbooking_get_setting( 'color_text' );
+		$muted = ffbooking_get_setting( 'color_muted' );
 		$out   = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 24px;">';
 
 		foreach ( $rows as $label => $value ) {
@@ -157,7 +157,7 @@ class FFB_Mailer {
 	 * @return string
 	 */
 	protected static function button( $url, $label ) {
-		$accent = ffb_get_setting( 'color_accent' );
+		$accent = ffbooking_get_setting( 'color_accent' );
 
 		return '<p style="margin:0 0 20px;"><a href="' . esc_url( $url ) . '" style="display:inline-block;padding:14px 26px;background:' . esc_attr( $accent ) . ';color:#ffffff;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;border-radius:4px;">' . esc_html( $label ) . '</a></p>';
 	}
@@ -170,7 +170,7 @@ class FFB_Mailer {
 	 * @return string
 	 */
 	protected static function link( $url, $label ) {
-		return '<a href="' . esc_url( $url ) . '" style="color:' . esc_attr( ffb_get_setting( 'color_secondary' ) ) . ';">' . esc_html( $label ) . '</a>';
+		return '<a href="' . esc_url( $url ) . '" style="color:' . esc_attr( ffbooking_get_setting( 'color_secondary' ) ) . ';">' . esc_html( $label ) . '</a>';
 	}
 
 	/**
@@ -180,12 +180,12 @@ class FFB_Mailer {
 	 * @return string
 	 */
 	public static function cancel_url( $booking ) {
-		$base = ffb_get_setting( 'booking_page_url' );
+		$base = ffbooking_get_setting( 'booking_page_url' );
 		if ( ! $base ) {
 			$base = home_url( '/' );
 		}
 
-		return add_query_arg( 'ffb_cancel', $booking['token'], $base );
+		return add_query_arg( 'ffbooking_cancel', $booking['token'], $base );
 	}
 
 	/**
@@ -225,7 +225,7 @@ class FFB_Mailer {
 			$description .= "\n\n" . sprintf( __( 'Video call: %s', 'fines-finest-booking' ), $booking['meet_url'] );
 		}
 
-		$from_name = ffb_get_setting( 'from_name', get_bloginfo( 'name' ) );
+		$from_name = ffbooking_get_setting( 'from_name', get_bloginfo( 'name' ) );
 
 		$lines = array(
 			'BEGIN:VCALENDAR',
@@ -242,7 +242,7 @@ class FFB_Mailer {
 			'SUMMARY:' . self::ics_escape( sprintf( __( '%1$s with %2$s', 'fines-finest-booking' ), $event['title'], $from_name ) ),
 			'DESCRIPTION:' . self::ics_escape( $description ),
 			'LOCATION:' . self::ics_escape( $location ),
-			'ORGANIZER;CN=' . self::ics_escape( $from_name ) . ':mailto:' . ffb_from_email(),
+			'ORGANIZER;CN=' . self::ics_escape( $from_name ) . ':mailto:' . ffbooking_from_email(),
 			'STATUS:' . ( 'CANCEL' === $method ? 'CANCELLED' : 'CONFIRMED' ),
 			'SEQUENCE:' . ( 'CANCEL' === $method ? '1' : '0' ),
 			'END:VEVENT',
@@ -295,7 +295,7 @@ class FFB_Mailer {
 
 		$rows = array(
 			__( 'Appointment', 'fines-finest-booking' ) => $event['title'],
-			__( 'When', 'fines-finest-booking' )        => $when . ' (' . ffb_timezone()->getName() . ')',
+			__( 'When', 'fines-finest-booking' )        => $when . ' (' . ffbooking_timezone()->getName() . ')',
 			/* translators: %d: duration in minutes */
 			__( 'Duration', 'fines-finest-booking' )    => sprintf( _n( '%d minute', '%d minutes', $duration, 'fines-finest-booking' ), $duration ),
 		);
@@ -351,7 +351,7 @@ class FFB_Mailer {
 	 * @param array $event   Termintyp.
 	 */
 	public static function send_notification( $booking, $event ) {
-		$to = ffb_get_setting( 'notify_email', get_option( 'admin_email' ) );
+		$to = ffbooking_get_setting( 'notify_email', get_option( 'admin_email' ) );
 		if ( ! is_email( $to ) ) {
 			return;
 		}
@@ -377,7 +377,7 @@ class FFB_Mailer {
 
 		$content  = '<p>' . esc_html__( 'New booking through the website.', 'fines-finest-booking' ) . '</p>';
 		$content .= self::detail_block( $rows );
-		$content .= self::button( admin_url( 'admin.php?page=ffb-bookings' ), __( 'View bookings', 'fines-finest-booking' ) );
+		$content .= self::button( admin_url( 'admin.php?page=ffbooking-bookings' ), __( 'View bookings', 'fines-finest-booking' ) );
 
 		wp_mail(
 			$to,
@@ -422,7 +422,7 @@ class FFB_Mailer {
 		$content .= self::detail_block(
 			array(
 				__( 'Appointment', 'fines-finest-booking' ) => $event['title'],
-				__( 'When', 'fines-finest-booking' )        => $when . ' (' . ffb_timezone()->getName() . ')',
+				__( 'When', 'fines-finest-booking' )        => $when . ' (' . ffbooking_timezone()->getName() . ')',
 			)
 		);
 
@@ -447,7 +447,7 @@ class FFB_Mailer {
 	 * @return string 'today', 'tomorrow' oder leer.
 	 */
 	public static function relative_day( $utc, $now = null ) {
-		$tz    = ffb_timezone();
+		$tz    = ffbooking_timezone();
 		$day   = ( new DateTimeImmutable( $utc, new DateTimeZone( 'UTC' ) ) )->setTimezone( $tz )->format( 'Y-m-d' );
 		$today = null === $now ? new DateTimeImmutable( 'now', $tz ) : ( new DateTimeImmutable( '@' . (int) $now ) )->setTimezone( $tz );
 
@@ -467,7 +467,7 @@ class FFB_Mailer {
 	 * @param array $booking Buchung.
 	 */
 	public static function send_cancellation( $booking ) {
-		$event = FFB_Event_Types::get( $booking['event_type_id'] );
+		$event = FFBooking_Event_Types::get( $booking['event_type_id'] );
 		$title = $event ? $event['title'] : __( 'Appointment', 'fines-finest-booking' );
 		$when  = self::format_datetime( $booking['start_utc'] );
 
@@ -477,7 +477,7 @@ class FFB_Mailer {
 		$content .= '<p>' . esc_html( sprintf( __( 'Your appointment on %s is cancelled. The slot is available again.', 'fines-finest-booking' ), $when ) ) . '</p>';
 		$content .= '<p>' . esc_html__( 'If you would like a new appointment, just book one.', 'fines-finest-booking' ) . '</p>';
 
-		$page = ffb_get_setting( 'booking_page_url' );
+		$page = ffbooking_get_setting( 'booking_page_url' );
 		if ( $page ) {
 			$content .= self::button( $page, __( 'Book a new appointment', 'fines-finest-booking' ) );
 		}
@@ -490,7 +490,7 @@ class FFB_Mailer {
 			self::headers()
 		);
 
-		$to = ffb_get_setting( 'notify_email', get_option( 'admin_email' ) );
+		$to = ffbooking_get_setting( 'notify_email', get_option( 'admin_email' ) );
 		if ( is_email( $to ) ) {
 			wp_mail(
 				$to,

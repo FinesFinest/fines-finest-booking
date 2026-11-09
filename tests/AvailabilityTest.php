@@ -45,7 +45,7 @@ class AvailabilityTest extends TestCase {
 	private function booked( $start, $end, array $type ) {
 		$utc = new DateTimeZone( 'UTC' );
 
-		return FFB_Availability::booking_span(
+		return FFBooking_Availability::booking_span(
 			array(
 				'start_utc' => $this->berlin( $start )->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
 				'end_utc'   => $this->berlin( $end )->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
@@ -71,7 +71,7 @@ class AvailabilityTest extends TestCase {
 			'min_notice'    => 0,
 			'max_days'      => 45,
 			'daily_limit'   => 0,
-			'availability'  => FFB_Event_Types::normalize_availability(
+			'availability'  => FFBooking_Event_Types::normalize_availability(
 				array( '1' => array( array( '09:00', '12:00' ), array( '14:00', '17:00' ) ) )
 			),
 			'blackouts'     => array(),
@@ -111,9 +111,9 @@ class AvailabilityTest extends TestCase {
 	 * @return array
 	 */
 	private function slots( array $event, DateTimeImmutable $now, array $busy = array(), array $daily = array(), $global = null, $from = '', $days = 14 ) {
-		$range = FFB_Availability::range( $event, $now, $from, $days );
+		$range = FFBooking_Availability::range( $event, $now, $from, $days );
 
-		return FFB_Availability::compute( $event, $now, $range, $busy, $daily, null === $global ? $this->limits() : $global );
+		return FFBooking_Availability::compute( $event, $now, $range, $busy, $daily, null === $global ? $this->limits() : $global );
 	}
 
 	/**
@@ -172,7 +172,7 @@ class AvailabilityTest extends TestCase {
 		$event = $this->event(
 			array(
 				'duration'     => 45,
-				'availability' => FFB_Event_Types::normalize_availability( array( '1' => array( array( '09:00', '12:00' ) ) ) ),
+				'availability' => FFBooking_Event_Types::normalize_availability( array( '1' => array( array( '09:00', '12:00' ) ) ) ),
 			)
 		);
 
@@ -248,7 +248,7 @@ class AvailabilityTest extends TestCase {
 				'slot_step'     => 15,
 				'buffer_before' => 30,
 				'buffer_after'  => 15,
-				'availability'  => FFB_Event_Types::normalize_availability( array( '1' => array( array( '06:00', '12:00' ) ) ) ),
+				'availability'  => FFBooking_Event_Types::normalize_availability( array( '1' => array( array( '06:00', '12:00' ) ) ) ),
 			)
 		);
 		$busy   = array( $this->booked( '2026-11-02 08:00', '2026-11-02 08:30', $event ) );
@@ -303,7 +303,7 @@ class AvailabilityTest extends TestCase {
 				'slot_step'     => 15,
 				'buffer_before' => 30,
 				'buffer_after'  => 15,
-				'availability'  => FFB_Event_Types::normalize_availability( array( '1' => array( array( '06:00', '12:00' ) ) ) ),
+				'availability'  => FFBooking_Event_Types::normalize_availability( array( '1' => array( array( '06:00', '12:00' ) ) ) ),
 			)
 		);
 		$busy   = array( $this->busy( '2026-11-02 08:00', '2026-11-02 08:30' ) );
@@ -330,8 +330,8 @@ class AvailabilityTest extends TestCase {
 			'buffer_after'  => 15,
 		);
 
-		$this->assertSame( $this->busy( '2026-11-02 07:30', '2026-11-02 08:45' ), FFB_Availability::booking_span( $booking, $typ ) );
-		$this->assertSame( $this->busy( '2026-11-02 08:00', '2026-11-02 08:30' ), FFB_Availability::booking_span( $booking, null ) );
+		$this->assertSame( $this->busy( '2026-11-02 07:30', '2026-11-02 08:45' ), FFBooking_Availability::booking_span( $booking, $typ ) );
+		$this->assertSame( $this->busy( '2026-11-02 08:00', '2026-11-02 08:30' ), FFBooking_Availability::booking_span( $booking, null ) );
 	}
 
 	/**
@@ -436,9 +436,9 @@ class AvailabilityTest extends TestCase {
 		$typ    = array( array( '09:00', '12:00' ), array( '14:00', '17:00' ) );
 		$global = array( array( '10:00', '15:00' ) );
 
-		$this->assertSame( array( array( '10:00', '12:00' ), array( '14:00', '15:00' ) ), FFB_Availability::intersect_windows( $typ, $global ) );
-		$this->assertSame( array(), FFB_Availability::intersect_windows( $typ, array( array( '12:00', '14:00' ) ) ), 'Die Mittagspause ueberschneidet nichts.' );
-		$this->assertSame( array(), FFB_Availability::intersect_windows( $typ, array() ) );
+		$this->assertSame( array( array( '10:00', '12:00' ), array( '14:00', '15:00' ) ), FFBooking_Availability::intersect_windows( $typ, $global ) );
+		$this->assertSame( array(), FFBooking_Availability::intersect_windows( $typ, array( array( '12:00', '14:00' ) ) ), 'Die Mittagspause ueberschneidet nichts.' );
+		$this->assertSame( array(), FFBooking_Availability::intersect_windows( $typ, array() ) );
 	}
 
 	/**
@@ -448,7 +448,7 @@ class AvailabilityTest extends TestCase {
 		$event = $this->event( array( 'max_days' => 3 ) );
 		$now   = $this->berlin( '2026-11-01 12:00' );
 
-		$range = FFB_Availability::range( $event, $now, '', 14 );
+		$range = FFBooking_Availability::range( $event, $now, '', 14 );
 		$this->assertSame( '2026-11-01', $range['start']->format( 'Y-m-d' ) );
 		$this->assertSame( '2026-11-04', $range['end']->format( 'Y-m-d' ), 'Das Ende ist exklusiv: 1., 2. und 3. November sind drin.' );
 		$this->assertSame( '2026-11-04', $range['horizon']->format( 'Y-m-d' ) );
@@ -468,9 +468,9 @@ class AvailabilityTest extends TestCase {
 		$event = $this->event();
 		$now   = $this->berlin( '2026-11-01 12:00' );
 
-		$this->assertSame( '2026-11-01', FFB_Availability::range( $event, $now, '2026-10-01' )['start']->format( 'Y-m-d' ) );
-		$this->assertSame( '2026-11-01', FFB_Availability::range( $event, $now, 'quatsch' )['start']->format( 'Y-m-d' ) );
-		$this->assertSame( '2026-11-09', FFB_Availability::range( $event, $now, '2026-11-09' )['start']->format( 'Y-m-d' ) );
+		$this->assertSame( '2026-11-01', FFBooking_Availability::range( $event, $now, '2026-10-01' )['start']->format( 'Y-m-d' ) );
+		$this->assertSame( '2026-11-01', FFBooking_Availability::range( $event, $now, 'quatsch' )['start']->format( 'Y-m-d' ) );
+		$this->assertSame( '2026-11-09', FFBooking_Availability::range( $event, $now, '2026-11-09' )['start']->format( 'Y-m-d' ) );
 	}
 
 	/**
@@ -480,8 +480,8 @@ class AvailabilityTest extends TestCase {
 		$event = $this->event( array( 'max_days' => 365 ) );
 		$now   = $this->berlin( '2026-11-01 12:00' );
 
-		$this->assertSame( '2026-11-02', FFB_Availability::range( $event, $now, '', 0 )['end']->format( 'Y-m-d' ) );
-		$this->assertSame( '2026-12-31', FFB_Availability::range( $event, $now, '', 999 )['end']->format( 'Y-m-d' ) );
+		$this->assertSame( '2026-11-02', FFBooking_Availability::range( $event, $now, '', 0 )['end']->format( 'Y-m-d' ) );
+		$this->assertSame( '2026-12-31', FFBooking_Availability::range( $event, $now, '', 999 )['end']->format( 'Y-m-d' ) );
 	}
 
 	/**
@@ -501,7 +501,7 @@ class AvailabilityTest extends TestCase {
 	public function test_sommerzeitbeginn_verschiebt_die_utc_zeit_nicht_die_uhrzeit() {
 		$event = $this->event(
 			array(
-				'availability' => FFB_Event_Types::normalize_availability(
+				'availability' => FFBooking_Event_Types::normalize_availability(
 					array(
 						'6' => array( array( '09:00', '12:00' ) ),
 						'7' => array( array( '09:00', '12:00' ) ),
@@ -523,7 +523,7 @@ class AvailabilityTest extends TestCase {
 	public function test_sommerzeitbeginn_ueberspringt_die_fehlende_stunde() {
 		$event = $this->event(
 			array(
-				'availability' => FFB_Event_Types::normalize_availability( array( '7' => array( array( '01:00', '04:00' ) ) ) ),
+				'availability' => FFBooking_Event_Types::normalize_availability( array( '7' => array( array( '01:00', '04:00' ) ) ) ),
 			)
 		);
 
@@ -541,7 +541,7 @@ class AvailabilityTest extends TestCase {
 	public function test_sommerzeitende_verschiebt_die_utc_zeit_nicht_die_uhrzeit() {
 		$event = $this->event(
 			array(
-				'availability' => FFB_Event_Types::normalize_availability(
+				'availability' => FFBooking_Event_Types::normalize_availability(
 					array(
 						'6' => array( array( '09:00', '12:00' ) ),
 						'7' => array( array( '09:00', '12:00' ) ),
@@ -566,7 +566,7 @@ class AvailabilityTest extends TestCase {
 	public function test_sommerzeitende_bietet_jede_uhrzeit_einmal_an() {
 		$event = $this->event(
 			array(
-				'availability' => FFB_Event_Types::normalize_availability( array( '7' => array( array( '01:00', '04:00' ) ) ) ),
+				'availability' => FFBooking_Event_Types::normalize_availability( array( '7' => array( array( '01:00', '04:00' ) ) ) ),
 			)
 		);
 
@@ -589,7 +589,7 @@ class AvailabilityTest extends TestCase {
 	public function test_fenster_bis_kurz_vor_mitternacht() {
 		$event = $this->event(
 			array(
-				'availability' => FFB_Event_Types::normalize_availability( array( '1' => array( array( '22:00', '23:59' ) ) ) ),
+				'availability' => FFBooking_Event_Types::normalize_availability( array( '1' => array( array( '22:00', '23:59' ) ) ) ),
 			)
 		);
 

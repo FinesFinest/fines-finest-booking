@@ -56,7 +56,7 @@ class BufferEventsTest extends TestCase {
 	 * Termin 8:00 bis 8:30 Uhr: Vorbereitung 7:30 bis 8:00, Nachbereitung 8:30 bis 8:45.
 	 */
 	public function test_vorbereitung_und_nachbereitung_umschliessen_den_termin() {
-		$payloads = FFB_Google::buffer_payloads( $this->booking(), $this->event() );
+		$payloads = FFBooking_Google::buffer_payloads( $this->booking(), $this->event() );
 
 		$this->assertSame( array( 'before', 'after' ), array_keys( $payloads ) );
 
@@ -74,7 +74,7 @@ class BufferEventsTest extends TestCase {
 	 * Sperrzeiten sind belegt, ohne Gaeste, ohne Erinnerung, ohne Meet.
 	 */
 	public function test_sperrzeiten_sind_belegt_und_ohne_gaeste() {
-		$payloads = FFB_Google::buffer_payloads( $this->booking(), $this->event() );
+		$payloads = FFBooking_Google::buffer_payloads( $this->booking(), $this->event() );
 
 		$this->assertCount( 2, $payloads );
 		foreach ( $payloads as $payload ) {
@@ -90,7 +90,7 @@ class BufferEventsTest extends TestCase {
 	 * Ein Puffer von 0 Minuten ergibt keinen Eintrag.
 	 */
 	public function test_puffer_null_ergibt_keinen_eintrag() {
-		$keine = FFB_Google::buffer_payloads(
+		$keine = FFBooking_Google::buffer_payloads(
 			$this->booking(),
 			$this->event(
 				array(
@@ -101,7 +101,7 @@ class BufferEventsTest extends TestCase {
 		);
 		$this->assertSame( array(), $keine );
 
-		$nur_danach = FFB_Google::buffer_payloads( $this->booking(), $this->event( array( 'buffer_before' => 0 ) ) );
+		$nur_danach = FFBooking_Google::buffer_payloads( $this->booking(), $this->event( array( 'buffer_before' => 0 ) ) );
 		$this->assertSame( array( 'after' ), array_keys( $nur_danach ) );
 	}
 
@@ -109,7 +109,7 @@ class BufferEventsTest extends TestCase {
 	 * Der Titel folgt der Vorlage des Termintyps fuer den Kalendereintrag.
 	 */
 	public function test_titel_folgt_der_kalendervorlage() {
-		$payloads = FFB_Google::buffer_payloads( $this->booking(), $this->event( array( 'calendar_title' => '{name} ({termintyp})' ) ) );
+		$payloads = FFBooking_Google::buffer_payloads( $this->booking(), $this->event( array( 'calendar_title' => '{name} ({termintyp})' ) ) );
 
 		$this->assertSame( 'Preparation: Maria Keller (Erstanalyse)', $payloads['before']['summary'] );
 		$this->assertSame( 'Follow-up: Maria Keller (Erstanalyse)', $payloads['after']['summary'] );
@@ -121,7 +121,7 @@ class BufferEventsTest extends TestCase {
 	 */
 	public function test_vorbereitung_ueber_den_sommerzeitbeginn() {
 		// 3:00 Uhr MESZ ist 1:00 Uhr UTC.
-		$payloads = FFB_Google::buffer_payloads( $this->booking( '2026-03-29 01:00:00', '2026-03-29 01:30:00' ), $this->event() );
+		$payloads = FFBooking_Google::buffer_payloads( $this->booking( '2026-03-29 01:00:00', '2026-03-29 01:30:00' ), $this->event() );
 
 		$this->assertSame( '2026-03-29T01:30:00', $payloads['before']['start']['dateTime'] );
 		$this->assertSame( '2026-03-29T03:00:00', $payloads['before']['end']['dateTime'] );

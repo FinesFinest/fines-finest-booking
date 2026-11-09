@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Datenzugriff fuer Termintypen.
  */
-class FFB_Event_Types {
+class FFBooking_Event_Types {
 
 	/**
 	 * Alle Termintypen.
@@ -24,9 +24,9 @@ class FFB_Event_Types {
 		global $wpdb;
 
 		if ( $only_active ) {
-			$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}ffb_event_types WHERE active = 1 ORDER BY sort_order ASC, id ASC", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+			$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}ffbooking_event_types WHERE active = 1 ORDER BY sort_order ASC, id ASC", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 		} else {
-			$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}ffb_event_types ORDER BY sort_order ASC, id ASC", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+			$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}ffbooking_event_types ORDER BY sort_order ASC, id ASC", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 		}
 
 		return array_map( array( __CLASS__, 'hydrate' ), (array) $rows );
@@ -40,7 +40,7 @@ class FFB_Event_Types {
 	 */
 	public static function get( $id ) {
 		global $wpdb;
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_event_types WHERE id = %d", (int) $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffbooking_event_types WHERE id = %d", (int) $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 
 		return $row ? self::hydrate( $row ) : null;
 	}
@@ -53,7 +53,7 @@ class FFB_Event_Types {
 	 */
 	public static function get_by_slug( $slug ) {
 		global $wpdb;
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffb_event_types WHERE slug = %s", sanitize_title( $slug ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}ffbooking_event_types WHERE slug = %s", sanitize_title( $slug ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 
 		return $row ? self::hydrate( $row ) : null;
 	}
@@ -170,11 +170,11 @@ class FFB_Event_Types {
 	 */
 	public static function save( $data, $id = 0 ) {
 		global $wpdb;
-		$table = FFB_Install::table_event_types();
+		$table = FFBooking_Install::table_event_types();
 
 		$title = isset( $data['title'] ) ? sanitize_text_field( $data['title'] ) : '';
 		if ( '' === $title ) {
-			return new WP_Error( 'ffb_no_title', __( 'The appointment type needs a title.', 'fines-finest-booking' ) );
+			return new WP_Error( 'ffbooking_no_title', __( 'The appointment type needs a title.', 'fines-finest-booking' ) );
 		}
 
 		$slug = isset( $data['slug'] ) && $data['slug'] ? sanitize_title( $data['slug'] ) : sanitize_title( $title );
@@ -239,7 +239,7 @@ class FFB_Event_Types {
 		$suffix    = 2;
 
 		while ( true ) {
-			$exists = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}ffb_event_types WHERE slug = %s AND id <> %d", $candidate, $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
+			$exists = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}ffbooking_event_types WHERE slug = %s AND id <> %d", $candidate, $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle.
 			if ( ! $exists ) {
 				return $candidate;
 			}
@@ -277,7 +277,7 @@ class FFB_Event_Types {
 	 */
 	public static function delete( $id ) {
 		global $wpdb;
-		$table = FFB_Install::table_event_types();
+		$table = FFBooking_Install::table_event_types();
 
 		return (bool) $wpdb->delete( $table, array( 'id' => (int) $id ), array( '%d' ) ); // phpcs:ignore WordPress.DB
 	}

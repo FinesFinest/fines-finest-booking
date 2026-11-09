@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Rendert die Buchungsstrecke.
  */
-class FFB_Shortcode {
+class FFBooking_Shortcode {
 
 	/**
 	 * Wurde ein Shortcode auf der Seite gerendert?
@@ -25,6 +25,8 @@ class FFB_Shortcode {
 	 * Hooks registrieren.
 	 */
 	public static function init() {
+		add_shortcode( 'ffbooking', array( __CLASS__, 'render' ) );
+		// Name bis Version 1.2.6. Bleibt, damit bestehende Seiten weiter funktionieren.
 		add_shortcode( 'ff_booking', array( __CLASS__, 'render' ) );
 		add_action( 'init', array( __CLASS__, 'register_assets' ) );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_for_content' ) );
@@ -47,7 +49,7 @@ class FFB_Shortcode {
 			return;
 		}
 
-		$token = isset( $_GET['ffb_cancel'] ) ? sanitize_text_field( wp_unslash( $_GET['ffb_cancel'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		$token = self::cancel_token();
 		if ( '' === $token ) {
 			return;
 		}
@@ -60,12 +62,35 @@ class FFB_Shortcode {
 	}
 
 	/**
+	 * Liest das Absage-Token aus der Adresse.
+	 *
+	 * ffbooking_cancel ist der aktuelle Parameter. ffb_cancel steht in Mails, die
+	 * bis Version 1.2.6 verschickt wurden, und gilt weiter.
+	 *
+	 * @return string Leer, wenn kein Token mitkommt.
+	 */
+	public static function cancel_token() {
+		// phpcs:disable WordPress.Security.NonceVerification -- Der Link kommt aus einer Mail, ohne Formular. Das Token selbst ist der Schutz.
+		foreach ( array( 'ffbooking_cancel', 'ffb_cancel' ) as $key ) {
+			if ( isset( $_GET[ $key ] ) && is_string( $_GET[ $key ] ) ) {
+				$token = sanitize_text_field( wp_unslash( $_GET[ $key ] ) );
+				if ( '' !== $token ) {
+					return $token;
+				}
+			}
+		}
+		// phpcs:enable
+
+		return '';
+	}
+
+	/**
 	 * Ist die aktuelle Anfrage die in den Einstellungen eingetragene Buchungsseite?
 	 *
 	 * @return bool
 	 */
 	protected static function is_booking_page_request() {
-		$configured = (string) ffb_get_setting( 'booking_page_url' );
+		$configured = (string) ffbooking_get_setting( 'booking_page_url' );
 		if ( '' === $configured || is_404() ) {
 			return false;
 		}
@@ -136,16 +161,15 @@ class FFB_Shortcode {
 	<?php
 	// Stylesheet und Skript laufen ueber die WordPress-Warteschlange, wie auf der Buchungsseite.
 	self::enqueue();
-	wp_print_styles( array( 'ffb-frontend' ) );
+	// Die zwei Regeln fuer diese Seite haengen am Stylesheet, wie die Farben auch. Kein eigenes style-Element.
+	$background = sanitize_hex_color( (string) ffbooking_get_setting( 'color_bg_deep' ) );
+	wp_add_inline_style( 'ffbooking-frontend', 'body{margin:0;padding:3rem 1.25rem;background:' . ( $background ? $background : '#f6f7f8' ) . ';}.ffb{max-width:560px;}' );
+	wp_print_styles( array( 'ffbooking-frontend' ) );
 	?>
-	<style>
-		body { margin: 0; padding: 3rem 1.25rem; background: <?php echo esc_attr( ffb_get_setting( 'color_bg_deep' ) ); ?>; }
-		.ffb { max-width: 560px; }
-	</style>
 </head>
 <body>
 	<?php echo self::render_cancel( $token ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-	<?php wp_print_scripts( array( 'ffb-frontend' ) ); ?>
+	<?php wp_print_scripts( array( 'ffbooking-frontend' ) ); ?>
 </body>
 </html>
 		<?php
@@ -162,8 +186,8 @@ class FFB_Shortcode {
 	 * klassischen Themes, in Oxygen-Codebloecken und auf Block-Themes.
 	 */
 	public static function register_assets() {
-		wp_register_style( 'ffb-frontend', FFB_URL . 'assets/ffb-frontend.css', array(), FFB_VERSION );
-		wp_register_script( 'ffb-frontend', FFB_URL . 'assets/ffb-frontend.js', array(), FFB_VERSION, true );
+		wp_register_style( 'ffbooking-frontend', FFBOOKING_URL . 'assets/ffb-frontend.css', array(), FFBOOKING_VERSION );
+		wp_register_script( 'ffbooking-frontend', FFBOOKING_URL . 'assets/ffb-frontend.js', array(), FFBOOKING_VERSION, true );
 	}
 
 	/**
@@ -172,7 +196,7 @@ class FFB_Shortcode {
 	 */
 	public static function enqueue_for_content() {
 		$post = get_post();
-		if ( $post && has_shortcode( (string) $post->post_content, 'ff_booking' ) ) {
+		if ( $post && ( has_shortcode( (string) $post->post_content, 'ffbooking' ) || has_shortcode( (string) $post->post_content, 'ff_booking' ) ) ) {
 			self::enqueue();
 		}
 	}
@@ -181,12 +205,12 @@ class FFB_Shortcode {
 	 * Laedt Stylesheet und Skript samt Konfiguration.
 	 */
 	protected static function enqueue() {
-		if ( ! wp_script_is( 'ffb-frontend', 'registered' ) ) {
+		if ( ! wp_script_is( 'ffbooking-frontend', 'registered' ) ) {
 			self::register_assets();
 		}
 
-		wp_enqueue_style( 'ffb-frontend' );
-		wp_enqueue_script( 'ffb-frontend' );
+		wp_enqueue_style( 'ffbooking-frontend' );
+		wp_enqueue_script( 'ffbooking-frontend' );
 		self::attach_data();
 	}
 
@@ -198,8 +222,8 @@ class FFB_Shortcode {
 			return;
 		}
 
-		wp_add_inline_style( 'ffb-frontend', self::inline_vars() );
-		wp_localize_script( 'ffb-frontend', 'FFB_CONFIG', self::frontend_config() );
+		wp_add_inline_style( 'ffbooking-frontend', self::inline_vars() );
+		wp_localize_script( 'ffbooking-frontend', 'FFBOOKING_CONFIG', self::frontend_config() );
 
 		self::$rendered = true;
 	}
@@ -232,10 +256,10 @@ class FFB_Shortcode {
 		}
 
 		return array(
-			'root'          => esc_url_raw( rest_url( FFB_Rest::NS ) ),
-			'consentText'   => ffb_get_setting( 'consent_text' ),
+			'root'          => esc_url_raw( rest_url( FFBooking_Rest::NS ) ),
+			'consentText'   => ffbooking_get_setting( 'consent_text' ),
 			// Ohne eigene Adresse gilt die Datenschutzseite aus Einstellungen, Datenschutz.
-			'privacyUrl'    => ffb_get_setting( 'privacy_url' ) ? ffb_get_setting( 'privacy_url' ) : get_privacy_policy_url(),
+			'privacyUrl'    => ffbooking_get_setting( 'privacy_url' ) ? ffbooking_get_setting( 'privacy_url' ) : get_privacy_policy_url(),
 			'months'        => $months,
 			'monthsShort'   => $months_short,
 			'weekdays'      => $weekdays,
@@ -299,7 +323,7 @@ class FFB_Shortcode {
 
 		$out = '';
 		foreach ( $map as $var => $key ) {
-			$out .= $var . ':' . ffb_get_setting( $key ) . ';';
+			$out .= $var . ':' . ffbooking_get_setting( $key ) . ';';
 		}
 
 		return '.ffb{' . $out . '}';
@@ -319,20 +343,20 @@ class FFB_Shortcode {
 				'quelle' => '',
 			),
 			$atts,
-			'ff_booking'
+			'ffbooking'
 		);
 
 		self::enqueue();
 
 		// Storno-Ansicht, wenn der Mail-Link aufgerufen wurde.
-		$cancel_token = isset( $_GET['ffb_cancel'] ) ? sanitize_text_field( wp_unslash( $_GET['ffb_cancel'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		$cancel_token = self::cancel_token();
 		if ( $cancel_token ) {
 			return self::render_cancel( $cancel_token );
 		}
 
 		$slug = sanitize_title( $atts['event'] );
 		if ( ! $slug ) {
-			$active = FFB_Event_Types::all( true );
+			$active = FFBooking_Event_Types::all( true );
 			if ( empty( $active ) ) {
 				return '<div class="ffb ffb-note">' . esc_html__( 'No appointment type can be booked right now.', 'fines-finest-booking' ) . '</div>';
 			}
@@ -343,7 +367,7 @@ class FFB_Shortcode {
 			}
 		}
 
-		$event = FFB_Event_Types::get_by_slug( $slug );
+		$event = FFBooking_Event_Types::get_by_slug( $slug );
 		if ( ! $event || ! $event['active'] ) {
 			return '<div class="ffb ffb-note">' . esc_html__( 'This appointment type cannot be booked right now.', 'fines-finest-booking' ) . '</div>';
 		}
@@ -416,7 +440,7 @@ class FFB_Shortcode {
 	 * @return string
 	 */
 	protected static function render_widget( $event, $days, $quelle = '' ) {
-		$notify = (string) ffb_get_setting( 'notify_email' );
+		$notify = (string) ffbooking_get_setting( 'notify_email' );
 		$link   = '<a href="mailto:' . esc_attr( $notify ) . '">' . esc_html( $notify ) . '</a>';
 
 		ob_start();
@@ -451,15 +475,15 @@ class FFB_Shortcode {
 	 * @return string
 	 */
 	public static function render_cancel( $token ) {
-		$booking = FFB_Bookings::get_by_token( $token );
+		$booking = FFBooking_Bookings::get_by_token( $token );
 
 		if ( ! $booking ) {
 			return '<div class="ffb ffb-note">' . esc_html__( 'There is no appointment for this link. Maybe it has already been deleted.', 'fines-finest-booking' ) . '</div>';
 		}
 
-		$event = FFB_Event_Types::get( $booking['event_type_id'] );
+		$event = FFBooking_Event_Types::get( $booking['event_type_id'] );
 		$title = $event ? $event['title'] : __( 'Appointment', 'fines-finest-booking' );
-		$when  = FFB_Mailer::format_datetime( $booking['start_utc'] );
+		$when  = FFBooking_Mailer::format_datetime( $booking['start_utc'] );
 		$past  = strtotime( $booking['start_utc'] . ' UTC' ) < time();
 
 		ob_start();

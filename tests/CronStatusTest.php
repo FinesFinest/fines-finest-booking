@@ -13,8 +13,8 @@ class CronStatusTest extends TestCase {
 	 * Ohne geplanten Lauf fehlt die Aufgabe.
 	 */
 	public function test_nicht_eingeplant() {
-		$this->assertSame( 'missing', FFB_Cron::evaluate( 0, 1800000000 ) );
-		$this->assertSame( 'missing', FFB_Cron::evaluate( false, 1800000000 ) );
+		$this->assertSame( 'missing', FFBooking_Cron::evaluate( 0, 1800000000 ) );
+		$this->assertSame( 'missing', FFBooking_Cron::evaluate( false, 1800000000 ) );
 	}
 
 	/**
@@ -23,9 +23,9 @@ class CronStatusTest extends TestCase {
 	public function test_in_ordnung_bis_eine_stunde_verzug() {
 		$now = 1800000000;
 
-		$this->assertSame( 'ok', FFB_Cron::evaluate( $now + 600, $now ), 'Naechster Lauf in zehn Minuten.' );
-		$this->assertSame( 'ok', FFB_Cron::evaluate( $now, $now ), 'Genau jetzt faellig.' );
-		$this->assertSame( 'ok', FFB_Cron::evaluate( $now - 3600, $now ), 'Eine Stunde Verzug ist bei WP-Cron normal.' );
+		$this->assertSame( 'ok', FFBooking_Cron::evaluate( $now + 600, $now ), 'Naechster Lauf in zehn Minuten.' );
+		$this->assertSame( 'ok', FFBooking_Cron::evaluate( $now, $now ), 'Genau jetzt faellig.' );
+		$this->assertSame( 'ok', FFBooking_Cron::evaluate( $now - 3600, $now ), 'Eine Stunde Verzug ist bei WP-Cron normal.' );
 	}
 
 	/**
@@ -34,7 +34,7 @@ class CronStatusTest extends TestCase {
 	public function test_ueberfaellig_ab_einer_stunde_und_einer_sekunde() {
 		$now = 1800000000;
 
-		$this->assertSame( 'overdue', FFB_Cron::evaluate( $now - 3601, $now ) );
-		$this->assertSame( 'overdue', FFB_Cron::evaluate( $now - 86400, $now ) );
+		$this->assertSame( 'overdue', FFBooking_Cron::evaluate( $now - 3601, $now ) );
+		$this->assertSame( 'overdue', FFBooking_Cron::evaluate( $now - 86400, $now ) );
 	}
 }

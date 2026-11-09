@@ -12,9 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Oeffentliche Schnittstelle des Buchungsformulars.
  */
-class FFB_Rest {
+class FFBooking_Rest {
 
-	const NS = 'ffb/v1';
+	const NS = 'ffbooking/v1';
 
 	/**
 	 * Hooks registrieren.
@@ -122,19 +122,19 @@ class FFB_Rest {
 		$trap   = (string) $request->get_param( 'website_url' );
 
 		if ( '' !== trim( $trap ) ) {
-			return new WP_Error( 'ffb_bot', __( 'Invalid request.', 'fines-finest-booking' ), array( 'status' => 400 ) );
+			return new WP_Error( 'ffbooking_bot', __( 'Invalid request.', 'fines-finest-booking' ), array( 'status' => 400 ) );
 		}
 
 		if ( ! $issued || ! $token || ! hash_equals( self::make_token( $issued ), $token ) ) {
-			return new WP_Error( 'ffb_token', __( 'Your session has expired. Please reload the page.', 'fines-finest-booking' ), array( 'status' => 403 ) );
+			return new WP_Error( 'ffbooking_token', __( 'Your session has expired. Please reload the page.', 'fines-finest-booking' ), array( 'status' => 403 ) );
 		}
 
 		$age = time() - $issued;
 		if ( $min_age > 0 && $age < $min_age ) {
-			return new WP_Error( 'ffb_too_fast', __( 'That was too fast. Please try again.', 'fines-finest-booking' ), array( 'status' => 400 ) );
+			return new WP_Error( 'ffbooking_too_fast', __( 'That was too fast. Please try again.', 'fines-finest-booking' ), array( 'status' => 400 ) );
 		}
 		if ( $age > 7200 ) {
-			return new WP_Error( 'ffb_expired', __( 'Your session has expired. Please reload the page.', 'fines-finest-booking' ), array( 'status' => 403 ) );
+			return new WP_Error( 'ffbooking_expired', __( 'Your session has expired. Please reload the page.', 'fines-finest-booking' ), array( 'status' => 403 ) );
 		}
 
 		return true;
@@ -146,17 +146,17 @@ class FFB_Rest {
 	 * @return true|WP_Error
 	 */
 	protected static function check_rate_limit() {
-		$limit = (int) ffb_get_setting( 'rate_limit', 5 );
+		$limit = (int) ffbooking_get_setting( 'rate_limit', 5 );
 		if ( $limit <= 0 ) {
 			return true;
 		}
 
 		$ip  = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-		$key = 'ffb_rl_' . md5( $ip . wp_salt() );
+		$key = 'ffbooking_rl_' . md5( $ip . wp_salt() );
 
 		$count = (int) get_transient( $key );
 		if ( $count >= $limit ) {
-			return new WP_Error( 'ffb_rate', __( 'Too many booking attempts. Please try again in an hour or send me an email.', 'fines-finest-booking' ), array( 'status' => 429 ) );
+			return new WP_Error( 'ffbooking_rate', __( 'Too many booking attempts. Please try again in an hour or send me an email.', 'fines-finest-booking' ), array( 'status' => 429 ) );
 		}
 
 		set_transient( $key, $count + 1, HOUR_IN_SECONDS );
@@ -170,7 +170,7 @@ class FFB_Rest {
 	 * @return WP_Error
 	 */
 	protected static function busy_unavailable_error() {
-		return new WP_Error( 'ffb_busy_unavailable', __( 'Available times cannot be loaded right now. Please try again in a few minutes.', 'fines-finest-booking' ), array( 'status' => 503 ) );
+		return new WP_Error( 'ffbooking_busy_unavailable', __( 'Available times cannot be loaded right now. Please try again in a few minutes.', 'fines-finest-booking' ), array( 'status' => 503 ) );
 	}
 
 	/**
@@ -180,10 +180,10 @@ class FFB_Rest {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public static function slots( $request ) {
-		$event = FFB_Event_Types::get_by_slug( (string) $request->get_param( 'event' ) );
+		$event = FFBooking_Event_Types::get_by_slug( (string) $request->get_param( 'event' ) );
 
 		if ( ! $event || ! $event['active'] ) {
-			return new WP_Error( 'ffb_unknown_event', __( 'This appointment type does not exist.', 'fines-finest-booking' ), array( 'status' => 404 ) );
+			return new WP_Error( 'ffbooking_unknown_event', __( 'This appointment type does not exist.', 'fines-finest-booking' ), array( 'status' => 404 ) );
 		}
 
 		$from = (string) $request->get_param( 'from' );
@@ -196,7 +196,7 @@ class FFB_Rest {
 			$days = 14;
 		}
 
-		$data = FFB_Availability::get_slots( $event, $from, $days );
+		$data = FFBooking_Availability::get_slots( $event, $from, $days );
 		if ( is_wp_error( $data ) ) {
 			return self::busy_unavailable_error();
 		}
@@ -230,9 +230,9 @@ class FFB_Rest {
 			return $limit;
 		}
 
-		$event = FFB_Event_Types::get_by_slug( (string) $request->get_param( 'event' ) );
+		$event = FFBooking_Event_Types::get_by_slug( (string) $request->get_param( 'event' ) );
 		if ( ! $event || ! $event['active'] ) {
-			return new WP_Error( 'ffb_unknown_event', __( 'This appointment type does not exist.', 'fines-finest-booking' ), array( 'status' => 404 ) );
+			return new WP_Error( 'ffbooking_unknown_event', __( 'This appointment type does not exist.', 'fines-finest-booking' ), array( 'status' => 404 ) );
 		}
 
 		$name   = sanitize_text_field( (string) $request->get_param( 'name' ) );
@@ -241,13 +241,13 @@ class FFB_Rest {
 		$source = mb_substr( sanitize_text_field( (string) $request->get_param( 'source' ) ), 0, 150 );
 
 		if ( mb_strlen( $name ) < 2 ) {
-			return new WP_Error( 'ffb_name', __( 'Please enter your name.', 'fines-finest-booking' ), array( 'status' => 400 ) );
+			return new WP_Error( 'ffbooking_name', __( 'Please enter your name.', 'fines-finest-booking' ), array( 'status' => 400 ) );
 		}
 		if ( ! is_email( $email ) ) {
-			return new WP_Error( 'ffb_email', __( 'This email address does not look right.', 'fines-finest-booking' ), array( 'status' => 400 ) );
+			return new WP_Error( 'ffbooking_email', __( 'This email address does not look right.', 'fines-finest-booking' ), array( 'status' => 400 ) );
 		}
 		if ( ! $request->get_param( 'consent' ) ) {
-			return new WP_Error( 'ffb_consent', __( 'Without your consent to data processing I cannot set up the appointment.', 'fines-finest-booking' ), array( 'status' => 400 ) );
+			return new WP_Error( 'ffbooking_consent', __( 'Without your consent to data processing I cannot set up the appointment.', 'fines-finest-booking' ), array( 'status' => 400 ) );
 		}
 
 		$answers = array();
@@ -259,7 +259,7 @@ class FFB_Rest {
 
 			if ( $question['required'] && '' === trim( $value ) ) {
 				return new WP_Error(
-					'ffb_required',
+					'ffbooking_required',
 					sprintf(
 						/* translators: %s: label of the form field */
 						__( 'Please fill in the field "%s".', 'fines-finest-booking' ),
@@ -279,12 +279,12 @@ class FFB_Rest {
 			$start = $start->setTimezone( new DateTimeZone( 'UTC' ) );
 			$start = $start->setTime( (int) $start->format( 'H' ), (int) $start->format( 'i' ), 0 );
 		} catch ( Exception $e ) {
-			return new WP_Error( 'ffb_start', __( 'The selected time is invalid.', 'fines-finest-booking' ), array( 'status' => 400 ) );
+			return new WP_Error( 'ffbooking_start', __( 'The selected time is invalid.', 'fines-finest-booking' ), array( 'status' => 400 ) );
 		}
 
-		$valid = FFB_Availability::validate_slot( $event, $start );
+		$valid = FFBooking_Availability::validate_slot( $event, $start );
 		if ( is_wp_error( $valid ) ) {
-			if ( 'ffb_slot_gone' === $valid->get_error_code() ) {
+			if ( 'ffbooking_slot_gone' === $valid->get_error_code() ) {
 				return new WP_Error( $valid->get_error_code(), $valid->get_error_message(), array( 'status' => 409 ) );
 			}
 
@@ -292,7 +292,7 @@ class FFB_Rest {
 			return self::busy_unavailable_error();
 		}
 
-		$booking_id = FFB_Bookings::create(
+		$booking_id = FFBooking_Bookings::create(
 			$event,
 			$start,
 			array(
@@ -308,8 +308,8 @@ class FFB_Rest {
 			return new WP_Error( $booking_id->get_error_code(), $booking_id->get_error_message(), array( 'status' => 409 ) );
 		}
 
-		$booking = FFB_Bookings::get( $booking_id );
-		$tz      = ffb_timezone();
+		$booking = FFBooking_Bookings::get( $booking_id );
+		$tz      = ffbooking_timezone();
 		$local_s = ( new DateTimeImmutable( $booking['start_utc'], new DateTimeZone( 'UTC' ) ) )->setTimezone( $tz );
 		$local_e = ( new DateTimeImmutable( $booking['end_utc'], new DateTimeZone( 'UTC' ) ) )->setTimezone( $tz );
 
@@ -330,8 +330,8 @@ class FFB_Rest {
 		);
 
 		$google_error = '';
-		if ( FFB_Google::is_connected() ) {
-			$google = FFB_Google::create_event( $payload, $event );
+		if ( FFBooking_Google::is_connected() ) {
+			$google = FFBooking_Google::create_event( $payload, $event );
 			if ( is_wp_error( $google ) ) {
 				$google_error = $google->get_error_message();
 			} else {
@@ -339,25 +339,25 @@ class FFB_Rest {
 
 				// Sperrzeiten nur, wenn der Termin selbst im Kalender steht. Scheitert eine, bleibt die Buchung gueltig.
 				$buffers = ! empty( $event['calendar_buffers'] )
-					? FFB_Google::create_buffer_events( $payload, $event )
+					? FFBooking_Google::create_buffer_events( $payload, $event )
 					: array(
 						'before_id' => '',
 						'after_id'  => '',
 					);
 
-				FFB_Bookings::set_google( $booking_id, $google['id'], $google['meet_url'], $buffers['before_id'], $buffers['after_id'] );
+				FFBooking_Bookings::set_google( $booking_id, $google['id'], $google['meet_url'], $buffers['before_id'], $buffers['after_id'] );
 			}
 		}
 
-		FFB_Mailer::send_confirmation( $payload, $event );
-		FFB_Mailer::send_notification( $payload, $event );
+		FFBooking_Mailer::send_confirmation( $payload, $event );
+		FFBooking_Mailer::send_notification( $payload, $event );
 
-		if ( FFB_Brevo::is_configured() ) {
-			FFB_Brevo::upsert_contact( $payload, $event );
+		if ( FFBooking_Brevo::is_configured() ) {
+			FFBooking_Brevo::upsert_contact( $payload, $event );
 		}
 
 		if ( $google_error ) {
-			FFB_Google::log(
+			FFBooking_Google::log(
 				sprintf(
 					/* translators: 1: booking ID, 2: error message from Google */
 					__( 'Booking #%1$d saved without a calendar entry: %2$s', 'fines-finest-booking' ),
@@ -373,12 +373,12 @@ class FFB_Rest {
 		 * @param array $payload Buchungsdaten.
 		 * @param array $event   Termintyp.
 		 */
-		do_action( 'ffb_booking_created', $payload, $event );
+		do_action( 'ffbooking_booking_created', $payload, $event );
 
 		return new WP_REST_Response(
 			array(
 				'ok'       => true,
-				'when'     => FFB_Mailer::format_datetime( $booking['start_utc'] ),
+				'when'     => FFBooking_Mailer::format_datetime( $booking['start_utc'] ),
 				'meet_url' => $payload['meet_url'],
 				'email'    => $email,
 				'location' => $event['location'],
@@ -399,10 +399,10 @@ class FFB_Rest {
 			return $guard;
 		}
 
-		$booking = FFB_Bookings::get_by_token( (string) $request->get_param( 'cancel_token' ) );
+		$booking = FFBooking_Bookings::get_by_token( (string) $request->get_param( 'cancel_token' ) );
 
 		if ( ! $booking ) {
-			return new WP_Error( 'ffb_not_found', __( 'There is no appointment for this link.', 'fines-finest-booking' ), array( 'status' => 404 ) );
+			return new WP_Error( 'ffbooking_not_found', __( 'There is no appointment for this link.', 'fines-finest-booking' ), array( 'status' => 404 ) );
 		}
 		if ( 'cancelled' === $booking['status'] ) {
 			return new WP_REST_Response(
@@ -414,7 +414,7 @@ class FFB_Rest {
 			);
 		}
 
-		FFB_Bookings::cancel( (int) $booking['id'], true );
+		FFBooking_Bookings::cancel( (int) $booking['id'], true );
 
 		return new WP_REST_Response(
 			array(

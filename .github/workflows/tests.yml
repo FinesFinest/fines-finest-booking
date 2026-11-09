@@ -53,6 +53,8 @@ jobs:
           rm -rf build/wporg && mkdir -p build/wporg
           git archive --format=tar --prefix=fines-finest-booking/ HEAD | tar -x -C build/wporg
           rm build/wporg/fines-finest-booking/includes/class-ffb-updater.php
+          # Keine Sprachdateien im Verzeichnis-Paket: Dort liefert translate.wordpress.org die Sprachpakete.
+          rm -rf build/wporg/fines-finest-booking/languages
           sed -i '/^ \* Update URI:/d' build/wporg/fines-finest-booking/fines-finest-booking.php
       - uses: wordpress/plugin-check-action@v1
         with:

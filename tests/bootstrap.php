@@ -21,19 +21,19 @@ define( 'DAY_IN_SECONDS', 86400 );
  *
  * @var string
  */
-$GLOBALS['ffb_test_locale'] = 'de_DE';
+$GLOBALS['ffbooking_test_locale'] = 'de_DE';
 
 /**
  * Zeitzone der Website in den Tests.
  *
  * @return DateTimeZone
  */
-function ffb_timezone() {
+function ffbooking_timezone() {
 	return new DateTimeZone( 'Europe/Berlin' );
 }
 
 function get_locale() {
-	return $GLOBALS['ffb_test_locale'];
+	return $GLOBALS['ffbooking_test_locale'];
 }
 
 function apply_filters( $hook, $value ) {
@@ -65,7 +65,14 @@ function sanitize_key( $key ) {
 }
 
 function sanitize_text_field( $text ) {
+	if ( is_array( $text ) || is_object( $text ) ) {
+		return ''; // Wie WordPress: kein Text, kein Ergebnis.
+	}
 	return trim( strip_tags( (string) $text ) );
+}
+
+function wp_unslash( $value ) {
+	return is_array( $value ) ? array_map( 'wp_unslash', $value ) : stripslashes( (string) $value );
 }
 
 function sanitize_title( $title ) {
