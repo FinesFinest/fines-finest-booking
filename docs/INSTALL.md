@@ -171,6 +171,8 @@ Arbeite die Liste durch. Jeder Punkt hat schon mal jemandem den Launch versaut.
 
 **Mails kommen nicht an.** Erst den Testmail-Knopf benutzen, dann ein SMTP-Plugin einrichten. Siehe Schritt 4.
 
+**Die Testmail landet im Spam.** Das entscheidet der Spamfilter des Empfangspostfachs. Prüf bei deinem Mailanbieter, zum Beispiel Brevo, ob deine Domain mit SPF, DKIM und DMARC eingetragen ist. Nimm eine Absenderadresse auf deiner eigenen Domain. Buch dann einmal mit der Adresse von mail-tester.com und sieh dir die Bewertung der echten Bestätigungsmail an. Das Plugin hängt an jede Mail eine Textfassung. Seit 1.3.1 kommt sie auch bei Fluent SMTP mit Brevo an.
+
 **Zeiten verschieben sich um eine Stunde.** Dann steht die Zeitzone der Website auf einem festen Versatz statt auf einer Stadt. Unter Einstellungen, Allgemein eine Stadt wählen. Der Kasten oben auf der Plugin-Seite warnt davor.
 
 **Erinnerungen kommen nicht.** WP-Cron läuft nur, wenn die Seite Besuch bekommt. Bei wenig Traffic richtest du beim Hoster einen echten Cronjob ein, der stündlich `wp-cron.php` aufruft. Der Einrichtungsstand oben auf der Einstellungsseite zeigt, wann die Erinnerungsaufgabe zuletzt lief und wann sie als Nächstes dran ist; „Jetzt ausführen“ stößt sie von Hand an.

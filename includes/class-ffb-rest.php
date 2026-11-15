@@ -100,13 +100,40 @@ class FFBooking_Rest {
 	}
 
 	/**
+	 * Geheimnis dieses Plugins fuer Formular-Token und IP-Hash.
+	 *
+	 * Wird beim ersten Gebrauch zufaellig erzeugt und in der Datenbank abgelegt. Es hat nichts mit den
+	 * Schluesseln und Salzen von WordPress zu tun, die der Anmeldung vorbehalten bleiben.
+	 *
+	 * @return string
+	 */
+	protected static function secret() {
+		$secret = get_option( 'ffbooking_secret' );
+		if ( is_string( $secret ) && strlen( $secret ) >= 32 ) {
+			return $secret;
+		}
+
+		$secret = wp_generate_password( 64, true, true );
+
+		// Waren zwei Aufrufe gleichzeitig dran, gilt der Wert, der zuerst gespeichert wurde.
+		if ( ! add_option( 'ffbooking_secret', $secret, '', false ) ) {
+			$stored = get_option( 'ffbooking_secret' );
+			if ( is_string( $stored ) && strlen( $stored ) >= 32 ) {
+				$secret = $stored;
+			}
+		}
+
+		return $secret;
+	}
+
+	/**
 	 * Erzeugt ein HMAC-Token.
 	 *
 	 * @param int $issued Zeitstempel.
 	 * @return string
 	 */
 	protected static function make_token( $issued ) {
-		return hash_hmac( 'sha256', 'ffb|' . $issued, wp_salt( 'nonce' ) );
+		return hash_hmac( 'sha256', 'ffb|' . $issued, self::secret() );
 	}
 
 	/**
@@ -152,7 +179,7 @@ class FFBooking_Rest {
 		}
 
 		$ip  = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-		$key = 'ffbooking_rl_' . md5( $ip . wp_salt() );
+		$key = 'ffbooking_rl_' . hash_hmac( 'sha256', $ip, self::secret() );
 
 		$count = (int) get_transient( $key );
 		if ( $count >= $limit ) {

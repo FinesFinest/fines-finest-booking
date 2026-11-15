@@ -5,7 +5,7 @@ Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,10 @@ In two tables of your own WordPress database. Nothing is stored with the plugin 
 
 The booking is marked as cancelled, the slot is free again, the Google Calendar event is deleted and a cancellation email goes out.
 
+= The test email landed in my spam folder. What can I do? =
+
+The spam filter of the receiving mailbox decides, not the plugin. Send through a mail service that signs your domain (SPF, DKIM, DMARC) and use a sender address on your own domain. Then book once with an address from a testing service such as mail-tester.com to see how a real confirmation email scores. The plugin adds a plain-text version to every email it sends, which most filters expect.
+
 = Why do cancellation links still work after I renamed the booking page? =
 
 The plugin answers every link with the cancellation parameter itself. If the booking page is missing, renamed or password protected, it shows its own lean cancellation page.
@@ -79,6 +83,15 @@ The plugin answers every link with the cancellation parameter itself. If the boo
 7. Settings with the setup status: every open step links to the next action.
 
 == Changelog ==
+
+= 1.3.1 =
+* The plain-text version of the plugin's emails now reaches the recipient with mail plugins that talk to the provider directly, for example Fluent SMTP with Brevo. Before, those emails went out as HTML only, which spam filters score higher.
+* Only emails sent by this plugin get the plain-text version. Emails from other plugins are left alone.
+* Links appear with their address in the plain-text version, so the cancellation link is no longer missing there.
+* The test email uses the same layout as the real emails and shows the sender address, so the spam check says more about real bookings.
+* The plugin uses its own random secret for the form token and for the hashed IP address in the rate limit. It no longer reads the keys and salts of WordPress.
+* Fonts and colours from the settings are checked before they reach a stylesheet or an email. A font list keeps only font names.
+* Emails and the cancellation page pass their HTML through wp_kses() before it is output.
 
 = 1.3.0 =
 * Every name the plugin registers in WordPress now starts with ffbooking, as the plugin directory requires: database tables, options, hooks, REST namespace, shortcode, admin pages and asset handles. The update renames the tables and options by itself. Bookings, appointment types, settings and the Google connection stay as they are.

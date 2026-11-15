@@ -28,7 +28,7 @@ $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ffbooking_event_types" ); // 
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ffb_bookings" ); // phpcs:ignore WordPress.DB
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ffb_event_types" ); // phpcs:ignore WordPress.DB
 
-$ffbooking_options = array( 'settings', 'google_tokens', 'google_log', 'db_version', 'mail_tested', 'busy_cache_version', 'consent_text_refreshed', 'reminders_last_run', 'auto_update_enabled' );
+$ffbooking_options = array( 'settings', 'google_tokens', 'google_log', 'db_version', 'mail_tested', 'busy_cache_version', 'consent_text_refreshed', 'reminders_last_run', 'auto_update_enabled', 'secret' );
 foreach ( $ffbooking_options as $ffbooking_option ) {
 	delete_option( 'ffbooking_' . $ffbooking_option );
 	delete_option( 'ffb_' . $ffbooking_option );

@@ -3,7 +3,7 @@
  * Plugin Name:       Fines Finest Booking
  * Plugin URI:        https://github.com/FinesFinest/fines-finest-booking
  * Description:       Appointment booking in your own design, with Google Calendar sync, Google Meet, confirmation emails and Brevo. All data stays in your own WordPress database.
- * Version:           1.3.0
+ * Version:           1.3.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Fines Finest
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FFBOOKING_VERSION', '1.3.0' );
+define( 'FFBOOKING_VERSION', '1.3.1' );
 define( 'FFBOOKING_FILE', __FILE__ );
 define( 'FFBOOKING_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FFBOOKING_URL', plugin_dir_url( __FILE__ ) );
@@ -42,6 +42,7 @@ require_once FFBOOKING_DIR . 'includes/class-ffb-shortcode.php';
 require_once FFBOOKING_DIR . 'includes/class-ffb-cron.php';
 require_once FFBOOKING_DIR . 'includes/class-ffb-privacy.php';
 require_once FFBOOKING_DIR . 'includes/class-ffb-admin.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-css.php';
 
 // Der Updater der selbst gehosteten Fassung fehlt in der Fassung fuer das WordPress-Verzeichnis,
 // dort liefert wordpress.org die Updates. Seine Oberflaeche bringt er ueber die ffbooking_-Hooks selbst mit.
@@ -66,7 +67,7 @@ function ffbooking_init() {
 		FFBooking_Updater::init();
 	}
 
-	add_action( 'phpmailer_init', array( 'FFBooking_Mailer', 'add_plain_text' ) );
+	add_action( 'phpmailer_init', array( 'FFBooking_Mailer', 'add_plain_text' ), 99 );
 
 	if ( is_admin() ) {
 		FFBooking_Admin::init();
@@ -197,6 +198,33 @@ function ffbooking_get_setting( $key, $default = null ) {
 		return $default;
 	}
 	return isset( $defaults[ $key ] ) ? $defaults[ $key ] : '';
+}
+
+/**
+ * Farbe aus den Einstellungen als geprueften Hex-Wert.
+ *
+ * @param string $key Schluessel, etwa color_accent.
+ * @return string
+ */
+function ffbooking_get_color( $key ) {
+	$color = sanitize_hex_color( (string) ffbooking_get_setting( $key ) );
+	if ( $color ) {
+		return $color;
+	}
+
+	$defaults = ffbooking_default_settings();
+
+	return isset( $defaults[ $key ] ) && sanitize_hex_color( $defaults[ $key ] ) ? $defaults[ $key ] : '#000000';
+}
+
+/**
+ * Schrift aus den Einstellungen als geprueften Wert fuer font-family.
+ *
+ * @param string $key Schluessel, etwa font_display.
+ * @return string
+ */
+function ffbooking_get_font( $key ) {
+	return FFBooking_Css::font( ffbooking_get_setting( $key ) );
 }
 
 /**

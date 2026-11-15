@@ -15,6 +15,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 class FFBooking_Mailer {
 
 	/**
+	 * Ist gerade eine Mail dieses Plugins im Versand? Nur dann fasst add_plain_text() sie an.
+	 *
+	 * @var bool
+	 */
+	protected static $own_mail = false;
+
+	/**
 	 * Standard-Header.
 	 *
 	 * @return array
@@ -29,16 +36,21 @@ class FFBooking_Mailer {
 	}
 
 	/**
-	 * Haengt an jede HTML-Mail eine Nur-Text-Fassung.
+	 * Haengt an jede eigene HTML-Mail eine Nur-Text-Fassung.
 	 *
-	 * Reines HTML ohne Textteil kostet bei Spamfiltern Punkte. Greift nur, wenn
-	 * WordPress tatsaechlich ueber PHPMailer verschickt; ersetzt ein Mail-Plugin
-	 * den Versand komplett, bleibt der Hook wirkungslos.
+	 * Reines HTML ohne Textteil kostet bei Spamfiltern Punkte. Der Hook fasst nur
+	 * Mails an, die dieses Plugin selbst verschickt (siehe dispatch()), nie die
+	 * anderer Plugins.
+	 *
+	 * Mit der Textfassung stellt er auch den Typ auf multipart/alternative. PHPMailer
+	 * tut das beim Senden selbst. Mail-Plugins mit eigener Schnittstelle zum Anbieter
+	 * lesen den Typ aber vorher: Fluent SMTP schickt bei Brevo die Textfassung nur
+	 * mit, wenn dort multipart/alternative steht. Bis Version 1.3.0 liess es sie still weg.
 	 *
 	 * @param PHPMailer $mailer Mailer-Objekt.
 	 */
 	public static function add_plain_text( $mailer ) {
-		if ( ! is_object( $mailer ) || empty( $mailer->Body ) ) {
+		if ( ! self::$own_mail || ! is_object( $mailer ) || empty( $mailer->Body ) ) {
 			return;
 		}
 		if ( ! empty( $mailer->AltBody ) ) {
@@ -48,14 +60,117 @@ class FFBooking_Mailer {
 			return;
 		}
 
-		$text = preg_replace( '#<(style|script)[^>]*>.*?</\1>#is', '', $mailer->Body );
-		$text = preg_replace( '#<(br|/p|/tr|/h[1-6])[^>]*>#i', "\n", $text );
+		$text = self::html_to_text( $mailer->Body );
+		if ( '' === $text ) {
+			return;
+		}
+
+		$mailer->AltBody     = $text;
+		$mailer->ContentType = 'multipart/alternative';
+	}
+
+	/**
+	 * Macht aus dem HTML einer Mail eine lesbare Nur-Text-Fassung.
+	 *
+	 * Links erscheinen mit ihrer Adresse, sonst fehlt in der Textfassung zum Beispiel der
+	 * Absage-Link. Die Zellen einer Tabellenzeile stehen mit Doppelpunkt hintereinander,
+	 * jede Zeile und jeder Absatz beginnt neu.
+	 *
+	 * @param string $html HTML der Mail.
+	 * @return string
+	 */
+	public static function html_to_text( $html ) {
+		$text = (string) $html;
+
+		// Kopfbereich, Stile und Skripte tragen keinen Text.
+		$text = preg_replace( '#<(head|style|script)[^>]*>.*?</\1>#is', '', $text );
+
+		// Links: Beschriftung und Adresse, bei gleichem Text nur die Adresse.
+		$text = preg_replace_callback( '#<a\s[^>]*?href\s*=\s*(["\'])(.*?)\1[^>]*>(.*?)</a>#is', array( __CLASS__, 'text_link' ), $text );
+
+		// Beschriftung und Wert einer Zeile mit Doppelpunkt trennen.
+		$text = preg_replace( '#</td>\s*<td[^>]*>#i', ': ', $text );
+
+		// Absaetze und Ueberschriften enden mit einer Leerzeile, Tabellenzeilen und Listenpunkte mit einem Umbruch.
+		$text = preg_replace( '#</(p|div|h[1-6])\s*>#i', "\n\n", $text );
+		$text = preg_replace( '#<br\s*/?>|</(tr|li)\s*>#i', "\n", $text );
+
 		$text = wp_strip_all_tags( $text );
 		$text = html_entity_decode( $text, ENT_QUOTES, 'UTF-8' );
 		$text = preg_replace( "/[ \t]+/", ' ', $text );
+		$text = preg_replace( "/ *\n */", "\n", $text );
 		$text = preg_replace( "/\n{3,}/", "\n\n", $text );
 
-		$mailer->AltBody = trim( $text );
+		return trim( $text );
+	}
+
+	/**
+	 * Ein Link fuer die Textfassung: "Beschriftung (Adresse)".
+	 *
+	 * @param array $match Treffer aus html_to_text().
+	 * @return string
+	 */
+	protected static function text_link( $match ) {
+		$url   = trim( html_entity_decode( $match[2], ENT_QUOTES, 'UTF-8' ) );
+		$label = html_entity_decode( wp_strip_all_tags( $match[3] ), ENT_QUOTES, 'UTF-8' );
+		$label = trim( preg_replace( '/\s+/', ' ', $label ) );
+
+		if ( 0 === stripos( $url, 'mailto:' ) ) {
+			$url = substr( $url, 7 );
+		}
+		if ( '' === $label || $label === $url ) {
+			return $url;
+		}
+
+		return $label . ' (' . $url . ')';
+	}
+
+	/**
+	 * Verschickt eine eigene HTML-Mail ueber wp_mail().
+	 *
+	 * Die Markierung sorgt dafuer, dass add_plain_text() nur Mails dieses Plugins anfasst.
+	 *
+	 * @param string     $to          Empfaenger.
+	 * @param string     $subject     Betreff.
+	 * @param string     $html        HTML der Mail.
+	 * @param array      $attachments Anhaenge.
+	 * @param array|null $headers     Header, ohne Angabe die Standard-Header.
+	 * @return bool Ob wp_mail() den Versand angenommen hat.
+	 */
+	public static function dispatch( $to, $subject, $html, $attachments = array(), $headers = null ) {
+		self::$own_mail = true;
+
+		try {
+			return (bool) wp_mail( $to, $subject, $html, null === $headers ? self::headers() : $headers, $attachments );
+		} finally {
+			self::$own_mail = false;
+		}
+	}
+
+	/**
+	 * Testmail aus den Einstellungen.
+	 *
+	 * Gleicher Rahmen wie bei den echten Mails, damit der Spam-Test etwas ueber sie sagt.
+	 * Die Absenderadresse steht drin, weil an ihr die meisten Zustellprobleme haengen.
+	 *
+	 * @param string $to Empfaenger.
+	 * @return bool Ob wp_mail() den Versand angenommen hat.
+	 */
+	public static function send_test( $to ) {
+		$content  = '<p>' . esc_html__( 'This email comes from the booking plugin. If you can read it, sending works.', 'fines-finest-booking' ) . '</p>';
+		$content .= '<p>' . esc_html__( 'Please also check whether it landed in your spam folder.', 'fines-finest-booking' ) . '</p>';
+		$content .= self::detail_block(
+			array(
+				__( 'Sender address', 'fines-finest-booking' ) => ffbooking_from_email(),
+				__( 'Sent at', 'fines-finest-booking' )        => self::format_datetime( gmdate( 'Y-m-d H:i:s' ) ) . ' (' . ffbooking_timezone()->getName() . ')',
+			)
+		);
+
+		return self::dispatch(
+			$to,
+			__( 'Test email from Fines Finest Booking', 'fines-finest-booking' ),
+			self::wrap( __( 'Test email', 'fines-finest-booking' ), $content )
+		);
 	}
 
 	/**
@@ -92,12 +207,15 @@ class FFBooking_Mailer {
 	 * @return string
 	 */
 	protected static function wrap( $title, $content ) {
-		$accent  = ffbooking_get_setting( 'color_accent' );
-		$bg      = ffbooking_get_setting( 'color_bg_deep' );
-		$surface = ffbooking_get_setting( 'color_bg' );
-		$text    = ffbooking_get_setting( 'color_text' );
-		$muted   = ffbooking_get_setting( 'color_muted' );
+		$accent  = ffbooking_get_color( 'color_accent' );
+		$bg      = ffbooking_get_color( 'color_bg_deep' );
+		$surface = ffbooking_get_color( 'color_bg' );
+		$text    = ffbooking_get_color( 'color_text' );
+		$muted   = ffbooking_get_color( 'color_muted' );
 		$site    = get_bloginfo( 'name' );
+
+		// Die Stile der Mail duerfen durch wp_kses(), auch in aelteren WordPress-Versionen.
+		add_filter( 'safe_style_css', array( __CLASS__, 'safe_styles' ) );
 
 		ob_start();
 		?>
@@ -113,7 +231,7 @@ class FFBooking_Mailer {
 <h1 style="margin:0 0 16px;font-family:Helvetica,Arial,sans-serif;font-size:22px;line-height:1.3;color:<?php echo esc_attr( $text ); ?>;"><?php echo esc_html( $title ); ?></h1>
 </td></tr>
 <tr><td style="padding:0 32px 32px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:<?php echo esc_attr( $muted ); ?>;">
-<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput ?>
+<?php echo wp_kses( $content, self::allowed_html(), array( 'http', 'https', 'mailto' ) ); ?>
 </td></tr>
 <tr><td style="padding:16px 32px 24px;border-top:1px solid rgba(255,255,255,0.08);font-family:Helvetica,Arial,sans-serif;font-size:12px;color:<?php echo esc_attr( $muted ); ?>;">
 <?php echo esc_html( $site ); ?> &middot; <a href="<?php echo esc_url( home_url() ); ?>" style="color:<?php echo esc_attr( $accent ); ?>;text-decoration:none;"><?php echo esc_html( wp_parse_url( home_url(), PHP_URL_HOST ) ); ?></a>
@@ -124,7 +242,58 @@ class FFBooking_Mailer {
 </body>
 </html>
 		<?php
-		return (string) ob_get_clean();
+		$html = (string) ob_get_clean();
+
+		remove_filter( 'safe_style_css', array( __CLASS__, 'safe_styles' ) );
+
+		return $html;
+	}
+
+	/**
+	 * Erlaubtes HTML im Inhalt der Mails, fuer wp_kses().
+	 *
+	 * @return array
+	 */
+	protected static function allowed_html() {
+		return array(
+			'p'      => array( 'style' => true ),
+			'a'      => array(
+				'href'  => true,
+				'style' => true,
+			),
+			'br'     => array(),
+			'strong' => array(),
+			'em'     => array(),
+			'span'   => array( 'style' => true ),
+			'table'  => array(
+				'role'        => true,
+				'width'       => true,
+				'cellpadding' => true,
+				'cellspacing' => true,
+				'style'       => true,
+			),
+			'tbody'  => array(),
+			'tr'     => array(),
+			'td'     => array(
+				'style'  => true,
+				'align'  => true,
+				'width'  => true,
+				'valign' => true,
+			),
+		);
+	}
+
+	/**
+	 * Stil-Eigenschaften, die der Rahmen der Mails braucht. Haengt wrap() kurz an safe_style_css.
+	 *
+	 * @param array $styles Bisher erlaubte Eigenschaften.
+	 * @return array
+	 */
+	public static function safe_styles( $styles ) {
+		return array_merge(
+			(array) $styles,
+			array( 'display', 'letter-spacing', 'text-transform', 'vertical-align', 'border-radius', 'font-family', 'font-size', 'font-weight', 'line-height', 'text-decoration', 'margin', 'padding', 'width', 'height', 'color', 'background', 'background-color' )
+		);
 	}
 
 	/**
@@ -134,8 +303,8 @@ class FFBooking_Mailer {
 	 * @return string
 	 */
 	protected static function detail_block( $rows ) {
-		$text  = ffbooking_get_setting( 'color_text' );
-		$muted = ffbooking_get_setting( 'color_muted' );
+		$text  = ffbooking_get_color( 'color_text' );
+		$muted = ffbooking_get_color( 'color_muted' );
 		$out   = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 24px;">';
 
 		foreach ( $rows as $label => $value ) {
@@ -157,7 +326,7 @@ class FFBooking_Mailer {
 	 * @return string
 	 */
 	protected static function button( $url, $label ) {
-		$accent = ffbooking_get_setting( 'color_accent' );
+		$accent = ffbooking_get_color( 'color_accent' );
 
 		return '<p style="margin:0 0 20px;"><a href="' . esc_url( $url ) . '" style="display:inline-block;padding:14px 26px;background:' . esc_attr( $accent ) . ';color:#ffffff;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;border-radius:4px;">' . esc_html( $label ) . '</a></p>';
 	}
@@ -170,7 +339,7 @@ class FFBooking_Mailer {
 	 * @return string
 	 */
 	protected static function link( $url, $label ) {
-		return '<a href="' . esc_url( $url ) . '" style="color:' . esc_attr( ffbooking_get_setting( 'color_secondary' ) ) . ';">' . esc_html( $label ) . '</a>';
+		return '<a href="' . esc_url( $url ) . '" style="color:' . esc_attr( ffbooking_get_color( 'color_secondary' ) ) . ';">' . esc_html( $label ) . '</a>';
 	}
 
 	/**
@@ -330,12 +499,11 @@ class FFBooking_Mailer {
 
 		$ics = self::build_ics( $booking, $event, 'REQUEST' );
 
-		$sent = wp_mail(
+		$sent = self::dispatch(
 			$booking['email'],
 			/* translators: 1: appointment type, 2: date and time */
 			sprintf( __( 'Appointment confirmed: %1$s on %2$s', 'fines-finest-booking' ), $event['title'], $when ),
 			self::wrap( __( 'Appointment confirmed', 'fines-finest-booking' ), $content ),
-			self::headers(),
 			$ics ? array( $ics ) : array()
 		);
 
@@ -379,12 +547,11 @@ class FFBooking_Mailer {
 		$content .= self::detail_block( $rows );
 		$content .= self::button( admin_url( 'admin.php?page=ffbooking-bookings' ), __( 'View bookings', 'fines-finest-booking' ) );
 
-		wp_mail(
+		self::dispatch(
 			$to,
 			/* translators: 1: name of the person who booked, 2: date and time */
 			sprintf( __( 'New booking: %1$s on %2$s', 'fines-finest-booking' ), $booking['name'], $when ),
-			self::wrap( __( 'New booking', 'fines-finest-booking' ), $content ),
-			self::headers()
+			self::wrap( __( 'New booking', 'fines-finest-booking' ), $content )
 		);
 	}
 
@@ -436,7 +603,7 @@ class FFBooking_Mailer {
 			self::link( self::cancel_url( $booking ), __( 'Cancel here', 'fines-finest-booking' ) )
 		) . '</p>';
 
-		wp_mail( $booking['email'], $subject, self::wrap( $title, $content ), self::headers() );
+		self::dispatch( $booking['email'], $subject, self::wrap( $title, $content ) );
 	}
 
 	/**
@@ -482,17 +649,16 @@ class FFBooking_Mailer {
 			$content .= self::button( $page, __( 'Book a new appointment', 'fines-finest-booking' ) );
 		}
 
-		wp_mail(
+		self::dispatch(
 			$booking['email'],
 			/* translators: %s: appointment type */
 			sprintf( __( 'Appointment cancelled: %s', 'fines-finest-booking' ), $title ),
-			self::wrap( __( 'Appointment cancelled', 'fines-finest-booking' ), $content ),
-			self::headers()
+			self::wrap( __( 'Appointment cancelled', 'fines-finest-booking' ), $content )
 		);
 
 		$to = ffbooking_get_setting( 'notify_email', get_option( 'admin_email' ) );
 		if ( is_email( $to ) ) {
-			wp_mail(
+			self::dispatch(
 				$to,
 				/* translators: 1: name of the person who booked, 2: date and time */
 				sprintf( __( 'Cancellation: %1$s on %2$s', 'fines-finest-booking' ), $booking['name'], $when ),
@@ -507,8 +673,7 @@ class FFBooking_Mailer {
 							$when
 						)
 					) . '</p>'
-				),
-				self::headers()
+				)
 			);
 		}
 	}

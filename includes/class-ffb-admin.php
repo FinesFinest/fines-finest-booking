@@ -242,12 +242,7 @@ class FFBooking_Admin {
 				check_admin_referer( 'ffbooking_test_mail' );
 
 				$an       = ffbooking_get_setting( 'notify_email', get_option( 'admin_email' ) );
-				$gesendet = wp_mail(
-					$an,
-					__( 'Test email from Fines Finest Booking', 'fines-finest-booking' ),
-					'<p>' . esc_html__( 'This email comes from the booking plugin. If you can read it, sending works.', 'fines-finest-booking' ) . '</p><p>' . esc_html__( 'Please also check whether it landed in your spam folder.', 'fines-finest-booking' ) . '</p>',
-					array( 'Content-Type: text/html; charset=UTF-8', sprintf( 'From: %s <%s>', ffbooking_get_setting( 'from_name', get_bloginfo( 'name' ) ), ffbooking_from_email() ) )
-				);
+				$gesendet = FFBooking_Mailer::send_test( $an );
 
 				if ( $gesendet ) {
 					update_option( 'ffbooking_mail_tested', time(), false );
@@ -382,7 +377,9 @@ class FFBooking_Admin {
 			} elseif ( in_array( $key, array( 'privacy_url', 'booking_page_url' ), true ) ) {
 				$clean[ $key ] = esc_url_raw( $value );
 			} elseif ( 0 === strpos( $key, 'color_' ) ) {
-				$clean[ $key ] = sanitize_hex_color( $value ) ? sanitize_hex_color( $value ) : $defaults[ $key ];
+				$clean[ $key ] = FFBooking_Css::color( $value, $defaults[ $key ] );
+			} elseif ( in_array( $key, array( 'font_display', 'font_body' ), true ) ) {
+				$clean[ $key ] = FFBooking_Css::font( $value );
 			} else {
 				$clean[ $key ] = sanitize_text_field( $value );
 			}

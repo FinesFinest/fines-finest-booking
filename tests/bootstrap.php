@@ -85,6 +85,75 @@ function wp_kses_post( $text ) {
 	return $text;
 }
 
+function wp_strip_all_tags( $text, $remove_breaks = false ) {
+	$text = preg_replace( '@<(script|style)[^>]*?>.*?</\\1>@si', '', (string) $text );
+	$text = strip_tags( $text );
+	if ( $remove_breaks ) {
+		$text = preg_replace( '/[\\r\\n\\t ]+/', ' ', $text );
+	}
+
+	return trim( $text );
+}
+
+/**
+ * Optionen der Tests, als Feld statt Datenbank. Wer einen gleichzeitigen Aufruf nachstellen will,
+ * legt unter $GLOBALS['ffbooking_test_race'][ Name ] den Wert ab, den der "andere" Aufruf schon gespeichert hat.
+ */
+$GLOBALS['ffbooking_test_options'] = array();
+$GLOBALS['ffbooking_test_race']    = array();
+
+function get_option( $name, $default = false ) {
+	return array_key_exists( $name, $GLOBALS['ffbooking_test_options'] ) ? $GLOBALS['ffbooking_test_options'][ $name ] : $default;
+}
+
+function add_option( $name, $value = '', $deprecated = '', $autoload = 'yes' ) {
+	if ( isset( $GLOBALS['ffbooking_test_race'][ $name ] ) ) {
+		$GLOBALS['ffbooking_test_options'][ $name ] = $GLOBALS['ffbooking_test_race'][ $name ];
+		return false;
+	}
+	if ( array_key_exists( $name, $GLOBALS['ffbooking_test_options'] ) ) {
+		return false;
+	}
+	$GLOBALS['ffbooking_test_options'][ $name ] = $value;
+	return true;
+}
+
+function wp_generate_password( $length = 12, $special_chars = true, $extra_special_chars = false ) {
+	$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+	$out   = '';
+	for ( $i = 0; $i < $length; $i++ ) {
+		$out .= $chars[ random_int( 0, strlen( $chars ) - 1 ) ];
+	}
+	return $out;
+}
+
+function sanitize_hex_color( $color ) {
+	if ( '' === $color ) {
+		return '';
+	}
+	if ( preg_match( '|^#([A-Fa-f0-9]{3}){1,2}$|', (string) $color ) ) {
+		return $color;
+	}
+	return null;
+}
+
+/**
+ * wp_mail() der Tests: nimmt die Mail an, laesst den Hook phpmailer_init laufen (hier nur die Textfassung)
+ * und legt das Ergebnis in $GLOBALS['ffbooking_test_mail'] ab.
+ */
+function wp_mail( $to, $subject, $message, $headers = '', $attachments = array() ) {
+	$mailer              = new stdClass();
+	$mailer->Body        = $message;
+	$mailer->AltBody     = '';
+	$mailer->ContentType = 'text/html';
+
+	FFBooking_Mailer::add_plain_text( $mailer );
+
+	$GLOBALS['ffbooking_test_mail'] = $mailer;
+
+	return true;
+}
+
 function wp_parse_url( $url, $component = -1 ) {
 	return parse_url( $url, $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url
 }
@@ -127,3 +196,5 @@ require_once ABSPATH . 'includes/class-ffb-cron.php';
 require_once ABSPATH . 'includes/class-ffb-mailer.php';
 require_once ABSPATH . 'includes/class-ffb-brevo.php';
 require_once ABSPATH . 'includes/class-ffb-shortcode.php';
+require_once ABSPATH . 'includes/class-ffb-css.php';
+require_once ABSPATH . 'includes/class-ffb-rest.php';

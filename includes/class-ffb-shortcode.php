@@ -162,13 +162,12 @@ class FFBooking_Shortcode {
 	// Stylesheet und Skript laufen ueber die WordPress-Warteschlange, wie auf der Buchungsseite.
 	self::enqueue();
 	// Die zwei Regeln fuer diese Seite haengen am Stylesheet, wie die Farben auch. Kein eigenes style-Element.
-	$background = sanitize_hex_color( (string) ffbooking_get_setting( 'color_bg_deep' ) );
-	wp_add_inline_style( 'ffbooking-frontend', 'body{margin:0;padding:3rem 1.25rem;background:' . ( $background ? $background : '#f6f7f8' ) . ';}.ffb{max-width:560px;}' );
+	wp_add_inline_style( 'ffbooking-frontend', 'body{margin:0;padding:3rem 1.25rem;background:' . ffbooking_get_color( 'color_bg_deep' ) . ';}.ffb{max-width:560px;}' );
 	wp_print_styles( array( 'ffbooking-frontend' ) );
 	?>
 </head>
 <body>
-	<?php echo self::render_cancel( $token ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+	<?php echo wp_kses( self::render_cancel( $token ), self::cancel_html() ); ?>
 	<?php wp_print_scripts( array( 'ffbooking-frontend' ) ); ?>
 </body>
 </html>
@@ -323,10 +322,11 @@ class FFBooking_Shortcode {
 
 		$out = '';
 		foreach ( $map as $var => $key ) {
-			$out .= $var . ':' . ffbooking_get_setting( $key ) . ';';
+			$value = 0 === strpos( $key, 'font_' ) ? ffbooking_get_font( $key ) : ffbooking_get_color( $key );
+			$out  .= $var . ':' . $value . ';';
 		}
 
-		return '.ffb{' . $out . '}';
+		return '.ffb{' . wp_strip_all_tags( $out ) . '}';
 	}
 
 	/**
@@ -466,6 +466,30 @@ class FFBooking_Shortcode {
 		</div>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Erlaubtes HTML der Absage-Ansicht, fuer wp_kses().
+	 *
+	 * @return array
+	 */
+	protected static function cancel_html() {
+		return array(
+			'div'    => array(
+				'class'  => true,
+				'hidden' => true,
+				'data-*' => true,
+			),
+			'h2'     => array( 'class' => true ),
+			'p'      => array( 'class' => true ),
+			'strong' => array(),
+			'br'     => array(),
+			'button' => array(
+				'type'   => true,
+				'class'  => true,
+				'data-*' => true,
+			),
+		);
 	}
 
 	/**
