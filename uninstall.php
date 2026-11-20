@@ -34,6 +34,7 @@ foreach ( $ffbooking_options as $ffbooking_option ) {
 	delete_option( 'ffb_' . $ffbooking_option );
 }
 delete_option( 'ffbooking_migration_error' );
+delete_option( 'ffbooking_install_error' );
 delete_option( 'ffbooking_notice_redirect_uri' );
 
 foreach ( array( 'ffbooking_send_reminders', 'ffbooking_cleanup', 'ffb_send_reminders', 'ffb_cleanup' ) as $ffbooking_hook ) {

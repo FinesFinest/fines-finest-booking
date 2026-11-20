@@ -108,7 +108,7 @@ class FFBooking_Admin {
 
 			if ( 'save_settings' === $action ) {
 				self::save_settings();
-			} elseif ( 'save_event_type' === $action ) {
+			} elseif ( 'save_event_type' === $action && FFBooking_Install::ready() ) {
 				self::save_event_type();
 			}
 		}
@@ -128,6 +128,11 @@ class FFBooking_Admin {
 				delete_option( FFBooking_Install::REDIRECT_NOTICE_OPTION );
 				wp_safe_redirect( admin_url( 'admin.php?page=ffbooking-settings' ) );
 				exit;
+			}
+
+			// Alles Weitere arbeitet mit den Tabellen des Plugins.
+			if ( ! FFBooking_Install::ready() ) {
+				return;
 			}
 
 			if ( 'cancel_booking' === $do ) {
@@ -756,7 +761,7 @@ class FFBooking_Admin {
 	public static function setup_state() {
 		global $wpdb;
 
-		$typen = FFBooking_Event_Types::all( true );
+		$typen = FFBooking_Install::ready() ? FFBooking_Event_Types::all( true ) : array();
 
 		$shortcode = get_transient( 'ffbooking_shortcode_found' );
 		if ( false === $shortcode ) {
@@ -983,9 +988,26 @@ class FFBooking_Admin {
 	}
 
 	/**
+	 * Fehlen die Tabellen, zeigt die Seite nur ihre Ueberschrift. Den Grund nennt der Hinweis darueber.
+	 *
+	 * @param string $title Ueberschrift der Seite.
+	 * @return bool Ob die Tabellen fehlen.
+	 */
+	protected static function tables_missing( $title ) {
+		if ( FFBooking_Install::ready() ) {
+			return false;
+		}
+		echo '<div class="wrap ffb-admin"><h1>' . esc_html( $title ) . '</h1></div>';
+		return true;
+	}
+
+	/**
 	 * Seite: Buchungen.
 	 */
 	public static function page_bookings() {
+		if ( self::tables_missing( __( 'Bookings', 'fines-finest-booking' ) ) ) {
+			return;
+		}
 		$scope = isset( $_GET['scope'] ) ? sanitize_key( wp_unslash( $_GET['scope'] ) ) : 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification
 		$page  = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
 		$data  = FFBooking_Bookings::query( $scope, 30, $page );
@@ -1086,6 +1108,9 @@ class FFBooking_Admin {
 	 * Seite: Termintypen.
 	 */
 	public static function page_event_types() {
+		if ( self::tables_missing( __( 'Appointment types', 'fines-finest-booking' ) ) ) {
+			return;
+		}
 		$edit_id = isset( $_GET['edit'] ) ? (int) $_GET['edit'] : 0; // phpcs:ignore WordPress.Security.NonceVerification
 		$is_new  = isset( $_GET['new'] ); // phpcs:ignore WordPress.Security.NonceVerification
 

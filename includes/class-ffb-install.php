@@ -31,6 +31,18 @@ class FFBooking_Install {
 	const REDIRECT_NOTICE_OPTION = 'ffbooking_notice_redirect_uri';
 
 	/**
+	 * Option mit dem Grund, wenn die Tabellen nicht angelegt werden konnten.
+	 */
+	const INSTALL_ERROR_OPTION = 'ffbooking_install_error';
+
+	/**
+	 * Ergebnis von maybe_upgrade() in diesem Aufruf. Null heisst: noch nicht gelaufen.
+	 *
+	 * @var bool|null
+	 */
+	protected static $ready = null;
+
+	/**
 	 * Tabellenname der Termintypen.
 	 *
 	 * @return string
@@ -55,23 +67,23 @@ class FFBooking_Install {
 	 */
 	public static function activate() {
 		// Eine Installation bis 1.2.6 erst umstellen. Sonst entstuenden leere neue Tabellen neben den alten.
-		self::maybe_upgrade();
-		if ( self::migration_error() ) {
-			return; // Der Grund steht im Backend. Der naechste Aufruf versucht es erneut.
-		}
+		// maybe_upgrade() legt danach die Tabellen an, prueft sie und speichert erst dann die Schemaversion.
+		$ready = self::maybe_upgrade( true );
 
-		self::create_tables();
-		self::seed_defaults();
-
+		// Einstellungen und Cron haengen nicht an den Tabellen. Sie stehen auch dann, wenn das Anlegen scheitert.
 		$settings = get_option( 'ffbooking_settings' );
 		if ( ! is_array( $settings ) ) {
 			add_option( 'ffbooking_settings', ffbooking_default_settings(), '', false );
 		}
-
-		set_transient( 'ffbooking_just_activated', 1, 60 );
 		FFBooking_Cron::schedule();
-		update_option( 'ffbooking_db_version', FFBOOKING_DB_VERSION, true );
 		flush_rewrite_rules();
+
+		if ( ! $ready ) {
+			return; // Der Grund steht im Backend. Der naechste Aufruf versucht es erneut.
+		}
+
+		self::seed_defaults();
+		set_transient( 'ffbooking_just_activated', 1, 60 );
 	}
 
 	/**
@@ -84,23 +96,71 @@ class FFBooking_Install {
 
 	/**
 	 * Schema-Upgrade bei Versionssprung. Laeuft auf plugins_loaded, vor jeder Abfrage.
+	 *
+	 * Die Schemaversion wird erst gespeichert, wenn beide Tabellen wirklich da sind. Fehlt eine,
+	 * landet der Grund in einer Option, erscheint im Backend, und der naechste Aufruf versucht es erneut.
+	 *
+	 * @param bool $force Auch dann neu pruefen, wenn in diesem Aufruf schon ein Ergebnis vorliegt.
+	 * @return bool Ob Tabellen und Schema stehen.
 	 */
-	public static function maybe_upgrade() {
+	public static function maybe_upgrade( $force = false ) {
+		if ( null === self::$ready || $force ) {
+			self::$ready = self::upgrade();
+		}
+		return self::$ready;
+	}
+
+	/**
+	 * Stehen Tabellen und Schema? Nur dann greift das Plugin auf seine Tabellen zu.
+	 *
+	 * @return bool
+	 */
+	public static function ready() {
+		return self::maybe_upgrade();
+	}
+
+	/**
+	 * Fuehrt Umstellung und Schema-Upgrade aus.
+	 *
+	 * @return bool Ob Tabellen und Schema stehen.
+	 */
+	protected static function upgrade() {
 		$installed = (int) get_option( 'ffbooking_db_version', 0 );
 
 		if ( 0 === $installed && (int) get_option( self::LEGACY_DB_VERSION_OPTION, 0 ) > 0 ) {
 			// Installation bis 1.2.6: Tabellen und Optionen tragen noch das Praefix ffb.
 			if ( ! self::migrate_legacy_names() ) {
-				return;
+				return false;
 			}
 			$installed = (int) get_option( 'ffbooking_db_version', 0 );
 		}
 
 		if ( $installed === FFBOOKING_DB_VERSION ) {
-			return;
+			return true;
 		}
-		self::create_tables();
+
+		$result = self::create_tables();
+		if ( is_wp_error( $result ) ) {
+			self::remember_error( self::INSTALL_ERROR_OPTION, $result );
+			return false;
+		}
+
+		if ( false !== get_option( self::INSTALL_ERROR_OPTION ) ) {
+			delete_option( self::INSTALL_ERROR_OPTION );
+		}
 		update_option( 'ffbooking_db_version', FFBOOKING_DB_VERSION, true );
+
+		if ( 0 === $installed ) {
+			// Erste Einrichtung, auch nach einer zuvor gescheiterten Aktivierung. Der Beispiel-Termintyp
+			// braucht Uebersetzungen, darum nicht vor init.
+			if ( did_action( 'init' ) ) {
+				self::seed_defaults();
+			} else {
+				add_action( 'init', array( __CLASS__, 'seed_defaults' ), 20 );
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -161,7 +221,7 @@ class FFBooking_Install {
 		foreach ( array( 'event_types', 'bookings' ) as $name ) {
 			$result = self::move_table( $wpdb->prefix . 'ffb_' . $name, $wpdb->prefix . 'ffbooking_' . $name );
 			if ( is_wp_error( $result ) ) {
-				self::remember_migration_error( $result );
+				self::remember_error( self::MIGRATION_ERROR_OPTION, $result );
 				return false;
 			}
 		}
@@ -251,18 +311,29 @@ class FFBooking_Install {
 	}
 
 	/**
-	 * Merkt sich, woran die Umstellung gescheitert ist, fuer den Hinweis im Backend.
+	 * Merkt sich, woran Umstellung oder Anlegen gescheitert ist, fuer den Hinweis im Backend.
 	 *
-	 * @param WP_Error $error Fehler aus move_table().
+	 * @param string   $option Name der Option.
+	 * @param WP_Error $error  Fehler aus move_table() oder create_tables().
 	 */
-	protected static function remember_migration_error( $error ) {
+	protected static function remember_error( $option, $error ) {
 		$stored = array(
 			'code' => $error->get_error_code(),
 			'data' => (array) $error->get_error_data(),
 		);
-		if ( get_option( self::MIGRATION_ERROR_OPTION ) !== $stored ) {
-			update_option( self::MIGRATION_ERROR_OPTION, $stored, true );
+		if ( get_option( $option ) !== $stored ) {
+			update_option( $option, $stored, true );
 		}
+	}
+
+	/**
+	 * Gescheitertes Anlegen der Tabellen, falls eines ansteht.
+	 *
+	 * @return array|null code und data, sonst null.
+	 */
+	public static function install_error() {
+		$error = get_option( self::INSTALL_ERROR_OPTION );
+		return is_array( $error ) && ! empty( $error['code'] ) ? $error : null;
 	}
 
 	/**
@@ -298,6 +369,26 @@ class FFBooking_Install {
 				)
 			);
 			echo '</p></div>';
+		}
+
+		$install_error = self::install_error();
+		if ( $install_error ) {
+			$data    = array_merge(
+				array(
+					'missing' => array(),
+					'error'   => '',
+				),
+				$install_error['data']
+			);
+			$missing = implode( ', ', array_map( 'strval', (array) $data['missing'] ) );
+			echo '<div class="notice notice-error"><p><strong>' . esc_html__( 'Fines Finest Booking: the database tables could not be created.', 'fines-finest-booking' ) . '</strong><br>';
+			/* translators: %s: comma-separated table names */
+			echo esc_html( sprintf( __( 'Missing: %s.', 'fines-finest-booking' ), $missing ) );
+			if ( '' !== (string) $data['error'] ) {
+				/* translators: %s: error message of the database */
+				echo ' ' . esc_html( sprintf( __( 'The database says: %s', 'fines-finest-booking' ), (string) $data['error'] ) );
+			}
+			echo '</p><p>' . esc_html__( 'The plugin tries again on every page load. Until it succeeds, bookings are not available. Please check that the database user of this website may create tables, or ask your host.', 'fines-finest-booking' ) . '</p></div>';
 		}
 
 		if ( get_option( self::REDIRECT_NOTICE_OPTION ) ) {
@@ -355,7 +446,13 @@ class FFBooking_Install {
 	}
 
 	/**
-	 * Legt die Tabellen an bzw. aktualisiert sie.
+	 * Legt die Tabellen an bzw. aktualisiert sie und prueft danach, ob beide da sind.
+	 *
+	 * Datenbankfehler werden hier nicht ausgegeben, auch nicht mit WP_DEBUG. Eine Ausgabe
+	 * waehrend der Aktivierung meldet WordPress als unerwartete Ausgabe. Der Fehler steht
+	 * stattdessen im Rueckgabewert.
+	 *
+	 * @return true|WP_Error Fehler mit Code tables_missing und den Daten missing und error.
 	 */
 	public static function create_tables() {
 		global $wpdb;
@@ -420,8 +517,37 @@ class FFBooking_Install {
 			KEY event_type_id (event_type_id)
 		) {$charset};";
 
-		dbDelta( $sql_types );
-		dbDelta( $sql_books );
+		$suppress = $wpdb->suppress_errors();
+		$db_error = '';
+		$missing  = array();
+
+		foreach ( array( $types => $sql_types, $books => $sql_books ) as $table => $sql ) {
+			$wpdb->last_error = '';
+			dbDelta( $sql );
+			// Die Meldung der Datenbank jetzt festhalten, die naechste Abfrage leert sie.
+			$last_error = (string) $wpdb->last_error;
+			if ( ! self::table_exists( $table ) ) {
+				$missing[] = $table;
+				if ( '' === $db_error ) {
+					$db_error = $last_error;
+				}
+			}
+		}
+
+		$wpdb->suppress_errors( $suppress );
+
+		if ( $missing ) {
+			return new WP_Error(
+				'tables_missing',
+				'',
+				array(
+					'missing' => $missing,
+					'error'   => $db_error,
+				)
+			);
+		}
+
+		return true;
 	}
 
 	/**
@@ -429,6 +555,10 @@ class FFBooking_Install {
 	 */
 	public static function seed_defaults() {
 		global $wpdb;
+
+		if ( ! self::table_exists( self::table_event_types() ) ) {
+			return;
+		}
 
 		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}ffbooking_event_types" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- eigene Tabelle, laeuft nur bei der Aktivierung.
 

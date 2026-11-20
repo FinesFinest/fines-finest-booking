@@ -3,7 +3,7 @@
  * Plugin Name:       Fines Finest Booking
  * Plugin URI:        https://github.com/FinesFinest/fines-finest-booking
  * Description:       Appointment booking in your own design, with Google Calendar sync, Google Meet, confirmation emails and Brevo. All data stays in your own WordPress database.
- * Version:           1.3.1
+ * Version:           1.3.2
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Fines Finest
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FFBOOKING_VERSION', '1.3.1' );
+define( 'FFBOOKING_VERSION', '1.3.2' );
 define( 'FFBOOKING_FILE', __FILE__ );
 define( 'FFBOOKING_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FFBOOKING_URL', plugin_dir_url( __FILE__ ) );
@@ -57,11 +57,14 @@ register_deactivation_hook( __FILE__, array( 'FFBooking_Install', 'deactivate' )
  * Startet das Plugin.
  */
 function ffbooking_init() {
-	FFBooking_Install::maybe_upgrade();
-	FFBooking_Rest::init();
+	// Ohne Tabellen keine Abfragen: REST, Cron und Datenschutz-Werkzeuge starten erst, wenn das Schema steht.
+	// Der Shortcode bleibt angemeldet und zeigt dann einen Hinweis, das Backend nennt den Grund.
+	if ( FFBooking_Install::maybe_upgrade() ) {
+		FFBooking_Rest::init();
+		FFBooking_Cron::init();
+		FFBooking_Privacy::init();
+	}
 	FFBooking_Shortcode::init();
-	FFBooking_Cron::init();
-	FFBooking_Privacy::init();
 
 	if ( class_exists( 'FFBooking_Updater' ) ) {
 		FFBooking_Updater::init();

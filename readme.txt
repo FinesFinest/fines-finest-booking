@@ -5,7 +5,7 @@ Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -83,6 +83,12 @@ The plugin answers every link with the cancellation parameter itself. If the boo
 7. Settings with the setup status: every open step links to the next action.
 
 == Changelog ==
+
+= 1.3.2 =
+* The plugin checks that its two database tables exist after creating them. Only then it stores the schema version.
+* If a table is missing, the backend shows a notice with the table name and the message of the database. The plugin tries again on every page load and finishes the setup once the tables exist.
+* Creating the tables prints nothing, also with WP_DEBUG, so activation never shows "unexpected output".
+* Without its tables the plugin runs no queries: the booking form shows a short note, the REST routes and the reminder cron stay off.
 
 = 1.3.1 =
 * The plain-text version of the plugin's emails now reaches the recipient with mail plugins that talk to the provider directly, for example Fluent SMTP with Brevo. Before, those emails went out as HTML only, which spam filters score higher.

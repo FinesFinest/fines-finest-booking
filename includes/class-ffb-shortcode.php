@@ -45,7 +45,7 @@ class FFBooking_Shortcode {
 	 * aus verschickten Mails laufen so nie ins Leere.
 	 */
 	public static function maybe_standalone_cancel() {
-		if ( is_admin() ) {
+		if ( is_admin() || ! FFBooking_Install::ready() ) {
 			return;
 		}
 
@@ -194,6 +194,9 @@ class FFBooking_Shortcode {
 	 * In Oxygen-Codebloecken greift stattdessen der Aufruf beim Rendern.
 	 */
 	public static function enqueue_for_content() {
+		if ( ! FFBooking_Install::ready() ) {
+			return;
+		}
 		$post = get_post();
 		if ( $post && ( has_shortcode( (string) $post->post_content, 'ffbooking' ) || has_shortcode( (string) $post->post_content, 'ff_booking' ) ) ) {
 			self::enqueue();
@@ -345,6 +348,11 @@ class FFBooking_Shortcode {
 			$atts,
 			'ffbooking'
 		);
+
+		// Fehlen die Tabellen, gibt es nichts zu buchen. Den Grund nennt das Backend.
+		if ( ! FFBooking_Install::ready() ) {
+			return '<div class="ffb ffb-note">' . esc_html__( 'No appointment type can be booked right now.', 'fines-finest-booking' ) . '</div>';
+		}
 
 		self::enqueue();
 
