@@ -5,7 +5,8 @@ name: Bei wordpress.org veroeffentlichen
 # Schiebt die Fassung ohne GitHub-Updater in das SVN-Repository von wordpress.org:
 # trunk, tags/<Version> und die Bilder aus .wordpress-org als assets.
 #
-# Solange die Secrets SVN_USERNAME und SVN_PASSWORD fehlen, tut der Lauf nichts und sagt das.
+# Solange die Secrets SVN_USERNAME und SVN_PASSWORD fehlen, tut der Lauf nichts und sagt das:
+# Nach einem Tag ueberspringt er sich mit einer Warnung, von Hand gestartet wird er rot.
 # Beide traegt Fine erst nach der Freigabe durch das Plugin-Team ein: Settings, Secrets and
 # variables, Actions. SVN_PASSWORD ist das eigene SVN-Passwort aus dem wordpress.org-Profil,
 # nicht das Konto-Passwort.
@@ -34,9 +35,17 @@ jobs:
       - name: Secrets vorhanden?
         id: secrets
         run: |
-          if [ -z "$SVN_USERNAME" ] || [ -z "$SVN_PASSWORD" ]; then
-            echo "SVN_USERNAME oder SVN_PASSWORD fehlt. Veroeffentlichung bei wordpress.org uebersprungen."
+          FEHLT=""
+          [ -z "$SVN_USERNAME" ] && FEHLT="$FEHLT SVN_USERNAME"
+          [ -z "$SVN_PASSWORD" ] && FEHLT="$FEHLT SVN_PASSWORD"
+          if [ -n "$FEHLT" ]; then
             echo "vorhanden=nein" >> "$GITHUB_OUTPUT"
+            # Von Hand gestartet heisst: Jemand will veroeffentlichen. Dann ist ein fehlendes Secret ein Fehler.
+            if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+              echo "::error::Nichts veroeffentlicht. Es fehlt als Repository-Secret:$FEHLT (Settings, Secrets and variables, Actions, Reiter Secrets)."
+              exit 1
+            fi
+            echo "::warning::Veroeffentlichung bei wordpress.org uebersprungen. Es fehlt als Repository-Secret:$FEHLT"
           else
             echo "vorhanden=ja" >> "$GITHUB_OUTPUT"
           fi
