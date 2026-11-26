@@ -1,0 +1,62 @@
+name: Readme bei wordpress.org aktualisieren
+
+# Nur von Hand (Actions, "Readme bei wordpress.org aktualisieren", "Run workflow").
+# Schiebt readme.txt aus main und die Bilder aus .wordpress-org ins SVN von wordpress.org:
+# nach trunk und in den Ordner der aktuellen Version (tags/<Stable tag>). Der Code im SVN bleibt,
+# es entsteht keine neue Plugin-Version und kein Update fuer die Nutzer*innen.
+# Gedacht fuer "Tested up to" nach einer neuen WordPress-Version.
+#
+# Sicherung: Die readme in main darf sich von der readme der veroeffentlichten Version nur in der
+# Zeile "Tested up to" unterscheiden. Sonst bricht der Lauf ab, damit kein Changelog einer
+# noch nicht veroeffentlichten Version im Verzeichnis landet.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readme:
+    runs-on: ubuntu-latest
+    env:
+      SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+      SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+    steps:
+      - name: Secrets vorhanden?
+        run: |
+          FEHLT=""
+          [ -z "$SVN_USERNAME" ] && FEHLT="$FEHLT SVN_USERNAME"
+          [ -z "$SVN_PASSWORD" ] && FEHLT="$FEHLT SVN_PASSWORD"
+          if [ -n "$FEHLT" ]; then
+            echo "::error::Nichts uebertragen. Es fehlt als Repository-Secret:$FEHLT"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: readme gegen die veroeffentlichte Version pruefen
+        run: |
+          STABLE=$(grep -m1 -E '^Stable tag:' readme.txt | awk '{print $3}')
+          echo "Stable tag: $STABLE, Tested up to: $(grep -m1 -E '^Tested up to:' readme.txt | cut -d: -f2)"
+          if ! git rev-parse -q --verify "refs/tags/v$STABLE" >/dev/null; then
+            echo "::error::Zum Stable tag $STABLE gibt es keinen Tag v$STABLE. Abbruch."
+            exit 1
+          fi
+          git show "v$STABLE:readme.txt" | grep -v -E '^Tested up to:' > /tmp/readme-tag.txt
+          grep -v -E '^Tested up to:' readme.txt > /tmp/readme-main.txt
+          if ! diff -u /tmp/readme-tag.txt /tmp/readme-main.txt; then
+            echo "::error::readme.txt in main weicht von v$STABLE nicht nur bei Tested up to ab. Dafuer braucht es eine neue Version. Abbruch."
+            exit 1
+          fi
+
+      - name: readme und Bilder ins SVN uebertragen
+        uses: 10up/action-wordpress-plugin-asset-update@stable
+        env:
+          SLUG: fines-finest-booking
+          ASSETS_DIR: .wordpress-org
+          README_NAME: readme.txt
+          # Nur readme und Bilder, der Code im SVN bleibt unberuehrt.
+          IGNORE_OTHER_FILES: true
