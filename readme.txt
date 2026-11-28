@@ -5,7 +5,7 @@ Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
 Tested up to: 7.2
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ The plugin answers every link with the cancellation parameter itself. If the boo
 7. Settings with the setup status: every open step links to the next action.
 
 == Changelog ==
+
+= 1.4.1 =
+* New in the plugin list: links to the setup guide and to the support forum, and a donate link next to the settings.
+* Self-hosted edition only: "Check for updates" in the plugin list. The edition in the WordPress plugin directory updates through wordpress.org.
 
 = 1.4.0 =
 * New: a step-by-step Google setup assistant on the settings page. It links to the right pages of the Google Cloud Console and has copy buttons for the values you need to enter.

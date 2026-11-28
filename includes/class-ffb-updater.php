@@ -41,6 +41,27 @@ class FFBooking_Updater {
 		add_action( 'ffbooking_status_box_extra', array( __CLASS__, 'render_status_line' ) );
 		add_filter( 'ffbooking_admin_notices', array( __CLASS__, 'add_notices' ) );
 		add_filter( 'ffbooking_admin_notice_link', array( __CLASS__, 'notice_link' ), 10, 2 );
+		// Nach den Links des Plugins selbst (Prioritaet 10), damit die Reihenfolge stimmt.
+		add_filter( 'plugin_row_meta', array( __CLASS__, 'row_meta' ), 20, 2 );
+	}
+
+	/**
+	 * Link "Auf Aktualisierungen pruefen" in der Pluginliste. Er loest dieselbe Pruefung aus
+	 * wie der Knopf in den Einstellungen und fuehrt mit dem Ergebnis dorthin.
+	 *
+	 * @param array  $links Bisherige Links.
+	 * @param string $file  Plugin, zu dem die Zeile gehoert.
+	 * @return array
+	 */
+	public static function row_meta( $links, $file ) {
+		if ( self::basename() !== $file || ! current_user_can( 'update_plugins' ) ) {
+			return $links;
+		}
+
+		$links   = (array) $links;
+		$links[] = '<a href="' . esc_url( wp_nonce_url( admin_url( 'admin.php?page=ffbooking-settings&ffbooking_do=check_updates' ), 'ffbooking_check_updates' ) ) . '">' . esc_html__( 'Check for updates', 'fines-finest-booking' ) . '</a>';
+
+		return $links;
 	}
 
 	/**

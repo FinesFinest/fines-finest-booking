@@ -41,20 +41,77 @@ class FFBooking_Admin {
 		add_action( 'admin_notices', array( __CLASS__, 'activation_notice' ) );
 		add_action( 'admin_notices', array( 'FFBooking_Install', 'admin_notices' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( FFBOOKING_FILE ), array( __CLASS__, 'plugin_links' ) );
+		add_filter( 'plugin_row_meta', array( __CLASS__, 'plugin_row_meta' ), 10, 2 );
 	}
 
 	/**
-	 * Links "Einstellungen" und "Termintypen" in der Pluginliste.
+	 * Links "Einstellungen", "Termintypen" und "Spende" in der Pluginliste.
 	 *
 	 * @param array $links Bisherige Links.
 	 * @return array
 	 */
 	public static function plugin_links( $links ) {
-		array_unshift(
-			$links,
+		$own = array(
 			'<a href="' . esc_url( admin_url( 'admin.php?page=ffbooking-settings' ) ) . '">' . esc_html__( 'Settings', 'fines-finest-booking' ) . '</a>',
-			'<a href="' . esc_url( admin_url( 'admin.php?page=ffbooking-event-types' ) ) . '">' . esc_html__( 'Appointment types', 'fines-finest-booking' ) . '</a>'
+			'<a href="' . esc_url( admin_url( 'admin.php?page=ffbooking-event-types' ) ) . '">' . esc_html__( 'Appointment types', 'fines-finest-booking' ) . '</a>',
 		);
+
+		// Kaffeekasse, nur mit hinterlegter Adresse.
+		if ( FFBOOKING_DONATE_URL ) {
+			$own[] = '<a href="' . esc_url( FFBOOKING_DONATE_URL ) . '" target="_blank" rel="noopener"><strong>' . esc_html__( 'Donate', 'fines-finest-booking' ) . '</strong></a>';
+		}
+
+		return array_merge( $own, (array) $links );
+	}
+
+	/**
+	 * Adresse der Anleitung. Auf deutschen Websites die ausfuehrliche deutsche Anleitung,
+	 * sonst der Abschnitt "Installation" im WordPress-Verzeichnis.
+	 *
+	 * @return string
+	 */
+	public static function guide_url() {
+		$url = 0 === strpos( (string) get_user_locale(), 'de' )
+			? 'https://github.com/FinesFinest/fines-finest-booking/blob/main/docs/INSTALL.md'
+			: 'https://wordpress.org/plugins/fines-finest-booking/#installation';
+
+		/**
+		 * Adresse hinter dem Link "Anleitung" in der Pluginliste.
+		 *
+		 * @param string $url Adresse.
+		 */
+		return (string) apply_filters( 'ffbooking_guide_url', $url );
+	}
+
+	/**
+	 * Adresse fuer Fragen zum Plugin: das Support-Forum im WordPress-Verzeichnis.
+	 *
+	 * @return string
+	 */
+	public static function support_url() {
+		/**
+		 * Adresse hinter dem Link "Support" in der Pluginliste.
+		 *
+		 * @param string $url Adresse.
+		 */
+		return (string) apply_filters( 'ffbooking_support_url', 'https://wordpress.org/support/plugin/fines-finest-booking/' );
+	}
+
+	/**
+	 * Links "Anleitung" und "Support" in der Zeile mit Version und Autorin.
+	 *
+	 * @param array  $links Bisherige Links.
+	 * @param string $file  Plugin, zu dem die Zeile gehoert.
+	 * @return array
+	 */
+	public static function plugin_row_meta( $links, $file ) {
+		if ( plugin_basename( FFBOOKING_FILE ) !== $file ) {
+			return $links;
+		}
+
+		$links   = (array) $links;
+		$links[] = '<a href="' . esc_url( self::guide_url() ) . '" target="_blank" rel="noopener">' . esc_html__( 'Setup guide', 'fines-finest-booking' ) . '</a>';
+		$links[] = '<a href="' . esc_url( self::support_url() ) . '" target="_blank" rel="noopener">' . esc_html__( 'Support', 'fines-finest-booking' ) . '</a>';
 
 		return $links;
 	}
