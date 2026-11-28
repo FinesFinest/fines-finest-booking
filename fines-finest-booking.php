@@ -3,7 +3,7 @@
  * Plugin Name:       Fines Finest Booking
  * Plugin URI:        https://github.com/FinesFinest/fines-finest-booking
  * Description:       Appointment booking in your own design, with Google Calendar sync, Google Meet, confirmation emails and Brevo. All data stays in your own WordPress database.
- * Version:           1.3.2
+ * Version:           1.4.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Fines Finest
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FFBOOKING_VERSION', '1.3.2' );
+define( 'FFBOOKING_VERSION', '1.4.0' );
 define( 'FFBOOKING_FILE', __FILE__ );
 define( 'FFBOOKING_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FFBOOKING_URL', plugin_dir_url( __FILE__ ) );
@@ -35,6 +35,8 @@ require_once FFBOOKING_DIR . 'includes/class-ffb-event-types.php';
 require_once FFBOOKING_DIR . 'includes/class-ffb-bookings.php';
 require_once FFBOOKING_DIR . 'includes/class-ffb-availability.php';
 require_once FFBOOKING_DIR . 'includes/class-ffb-google.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-google-check.php';
+require_once FFBOOKING_DIR . 'includes/class-ffb-google-wizard.php';
 require_once FFBOOKING_DIR . 'includes/class-ffb-brevo.php';
 require_once FFBOOKING_DIR . 'includes/class-ffb-mailer.php';
 require_once FFBOOKING_DIR . 'includes/class-ffb-rest.php';

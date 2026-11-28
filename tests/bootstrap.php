@@ -106,6 +106,16 @@ function get_option( $name, $default = false ) {
 	return array_key_exists( $name, $GLOBALS['ffbooking_test_options'] ) ? $GLOBALS['ffbooking_test_options'][ $name ] : $default;
 }
 
+function update_option( $name, $value, $autoload = null ) {
+	$GLOBALS['ffbooking_test_options'][ $name ] = $value;
+	return true;
+}
+
+function delete_option( $name ) {
+	unset( $GLOBALS['ffbooking_test_options'][ $name ] );
+	return true;
+}
+
 function add_option( $name, $value = '', $deprecated = '', $autoload = 'yes' ) {
 	if ( isset( $GLOBALS['ffbooking_test_race'][ $name ] ) ) {
 		$GLOBALS['ffbooking_test_options'][ $name ] = $GLOBALS['ffbooking_test_race'][ $name ];
@@ -185,6 +195,21 @@ class WP_Error {
 	}
 }
 
+/**
+ * Antworten von wp_remote_*() sind hier einfache Arrays: response.code, body und headers.
+ */
+function wp_remote_retrieve_response_code( $response ) {
+	return isset( $response['response']['code'] ) ? $response['response']['code'] : '';
+}
+
+function wp_remote_retrieve_body( $response ) {
+	return isset( $response['body'] ) ? $response['body'] : '';
+}
+
+function wp_remote_retrieve_header( $response, $header ) {
+	return isset( $response['headers'][ $header ] ) ? $response['headers'][ $header ] : '';
+}
+
 function is_wp_error( $thing ) {
 	return $thing instanceof WP_Error;
 }
@@ -192,6 +217,7 @@ function is_wp_error( $thing ) {
 require_once ABSPATH . 'includes/class-ffb-event-types.php';
 require_once ABSPATH . 'includes/class-ffb-availability.php';
 require_once ABSPATH . 'includes/class-ffb-google.php';
+require_once ABSPATH . 'includes/class-ffb-google-check.php';
 require_once ABSPATH . 'includes/class-ffb-cron.php';
 require_once ABSPATH . 'includes/class-ffb-mailer.php';
 require_once ABSPATH . 'includes/class-ffb-brevo.php';

@@ -2,7 +2,7 @@
 
 Diese Anleitung führt dich einmal komplett durch die Einrichtung. Wo `deine-domain.de` steht, setzt du deine eigene Adresse ein.
 
-Rechne mit 30 bis 45 Minuten. Der Google-Teil ist der einzige fummelige Schritt, und den machst du genau einmal.
+Rechne mit 30 bis 45 Minuten. Der Google-Teil ist der einzige fummelige Schritt. Du machst ihn genau einmal, und der Assistent im Plugin führt dich Schritt für Schritt hindurch.
 
 ---
 
@@ -20,36 +20,38 @@ Im Menü links steht ab jetzt **Buchungen**.
 
 ## 2. Google-Cloud-Projekt anlegen
 
-Das brauchst du, damit dein WordPress mit deinem Kalender reden darf. Kostenlos.
+Das brauchst du, damit dein WordPress mit deinem Kalender reden darf. Es kostet nichts, du machst es einmal, und es dauert etwa zehn Minuten. Über die Server der Plugin-Autorin läuft dabei nichts. Das Projekt gehört dir.
 
-**2.1** Geh auf [console.cloud.google.com](https://console.cloud.google.com), melde dich mit dem Google-Konto an, in dessen Kalender die Termine landen sollen.
+Du musst dir die Schritte nicht merken. Unter **Buchungen → Einstellungen** steht im Abschnitt Google-Kalender der **Google-Einrichtungsassistent**. Er öffnet die richtigen Seiten der Google Cloud Console und hält die Werte zum Kopieren bereit. Hier dieselben Schritte zum Nachlesen:
 
-**2.2** Oben links auf die Projektauswahl, **Neues Projekt**. Name zum Beispiel `fines-finest-booking`. Anlegen und auswählen.
+**2.1 Projekt anlegen.** Auf [console.cloud.google.com/projectcreate](https://console.cloud.google.com/projectcreate) mit dem Google-Konto anmelden, in dessen Kalender die Termine landen sollen. Name zum Beispiel `Buchung`, **Erstellen**.
 
-**2.3** Links **APIs und Dienste → Bibliothek**. Such nach *Google Calendar API*, öffnen, **Aktivieren**.
+**2.2 Kalender-Schnittstelle einschalten.** Auf [Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com) prüfen, dass oben dein neues Projekt ausgewählt ist, dann **Aktivieren**.
 
-**2.4** Links **APIs und Dienste → OAuth-Zustimmungsbildschirm**.
+**2.3 Zustimmungsseite einrichten.** Auf der [Google Auth Platform](https://console.cloud.google.com/auth/overview) auf **Erste Schritte** klicken. App-Name frei wählbar, zum Beispiel der Name deiner Website. Als E-Mail für Support und Kontakt deine Adresse. Als Zielgruppe **Extern**.
 
-- Nutzertyp: **Extern**
-- App-Name: frei wählbar, zum Beispiel `Terminbuchung`
-- Support-E-Mail und Entwickler-Kontakt: deine Adresse
-- Speichern und weiter, bis der Bildschirm angelegt ist
+**2.4 Client erstellen.** Auf [Clients erstellen](https://console.cloud.google.com/auth/clients/create) den Typ **Webanwendung** wählen. Die **autorisierten JavaScript-Quellen** bleiben leer. Unter **Autorisierte Weiterleitungs-URIs** trägst du genau die Adresse ein, die im Plugin bei „Weiterleitungs-URI" steht. Kopier sie dort mit dem Knopf, tipp sie nicht ab. Seit Version 1.3.0 endet sie auf `admin.php?page=ffbooking-settings`. Hast du Google mit einer älteren Version verbunden, trag die neue Adresse zusätzlich ein, bevor du neu verbindest. Die bestehende Verbindung läuft auch ohne das weiter.
 
-Bei **Zielgruppe** oder **Testnutzer** trägst du die Google-Adresse ein, deren Kalender benutzt werden soll. Solange die App im Testmodus läuft, musst du die Verbindung alle sieben Tage erneuern. Willst du das nicht, klick auf **App veröffentlichen** und bestätige. Eine Google-Überprüfung brauchst du nicht, solange nur dein eigenes Konto zugreift.
+Nach **Erstellen** zeigt Google **Client-ID** und **Client-Secret**. Kopier beide.
 
-**2.5** Links **APIs und Dienste → Anmeldedaten → Anmeldedaten erstellen → OAuth-Client-ID**.
-
-- Anwendungstyp: **Webanwendung**
-- Name: beliebig
-- Unter **Autorisierte Weiterleitungs-URIs** trägst du genau die Adresse ein, die im Plugin unter **Buchungen → Einstellungen** bei „Weiterleitungs-URI" steht. Kopier sie von dort, tipp sie nicht ab. Seit Version 1.3.0 endet die Adresse auf `admin.php?page=ffbooking-settings`. Hast du Google mit einer älteren Version verbunden, trag die neue Adresse zusätzlich ein, bevor du neu verbindest. Die bestehende Verbindung läuft auch ohne das weiter.
-
-Erstellen. Du bekommst **Client-ID** und **Client-Schlüssel** angezeigt.
+**2.5 App veröffentlichen.** Auf [Zielgruppe](https://console.cloud.google.com/auth/audience) auf **App veröffentlichen** klicken und bestätigen. Sonst beendet Google die Verbindung nach sieben Tagen. Eine Überprüfung durch Google brauchst du nicht, solange nur dein eigenes Konto zugreift.
 
 ---
 
-## 3. Google verbinden
+## 3. Eintragen, prüfen, verbinden
 
-**Buchungen → Einstellungen**. Client-ID und Client-Secret eintragen, **Speichern**. Danach erscheint der Button **Mit Google verbinden**. Klicken, Konto wählen, Zugriff erlauben. Du landest zurück im Backend und siehst einen grünen Punkt.
+**Buchungen → Einstellungen**. Client-ID und Client-Secret eintragen, **Speichern**. Das Plugin schneidet Leerzeichen und Zeilenumbrüche am Rand weg, die beim Kopieren oft mitkommen. Schon beim Tippen warnt es, wenn die beiden Felder vertauscht sind oder die Client-ID nicht auf `.apps.googleusercontent.com` endet.
+
+Danach im Assistenten auf **Bei Google prüfen** klicken. Dafür muss sich niemand anmelden. Das Plugin fragt bei Google nach und sagt dir, was nicht stimmt:
+
+- **Google kennt diese Client-ID nicht.** Die ID ist falsch oder der Client wurde gelöscht. Kopier sie noch einmal aus der Cloud Console.
+- **Google lehnt das Client-Secret ab.** Das Secret noch einmal kopieren.
+- **Die Weiterleitungs-URI fehlt.** Im Google-Client die Adresse aus Schritt 2.4 eintragen und speichern. Google braucht manchmal ein paar Minuten, bis es gilt.
+- **Unklar.** Die Prüfung konnte die Antwort von Google nicht lesen. Das ist kein Fehler. Du kannst trotzdem verbinden, dabei zeigt sich, ob alles passt.
+
+Wenn die Prüfung grün ist, erscheint **Mit Google verbinden**. Klicken, Konto wählen. Google zeigt einmal eine Warnung, dass die App nicht überprüft ist: **Erweitert**, dann weiter. Lass auf der nächsten Seite **alle Haken für den Kalender gesetzt**. Fehlt einer, lehnt das Plugin die Verbindung mit einer klaren Meldung ab. Du landest zurück im Backend und siehst einen grünen Punkt.
+
+Später prüft **Verbindung prüfen** im Assistenten, ob der Zugriff noch funktioniert: Token, Kalender-Schnittstelle und Zielkalender. Dabei ändert das Plugin nichts. Beendet Google die Verbindung von sich aus, zeigt die Einstellungsseite oben einen Hinweis mit der Ursache.
 
 **Zielkalender**: Hier landen die gebuchten Termine. Nach dem Verbinden ist das ein Auswahlfeld, angeboten werden nur Kalender, in die du schreiben darfst.
 
@@ -163,9 +165,13 @@ Arbeite die Liste durch. Jeder Punkt hat schon mal jemandem den Launch versaut.
 
 **Keine Slots, obwohl Zeiten gepflegt sind.** Prüf die Vorlaufzeit und ob im Google-Kalender ganztägige Termine liegen.
 
-**Google-Verbindung bricht nach sieben Tagen ab.** Die App steht im Testmodus. In der Cloud-Konsole auf **App veröffentlichen**.
+**Google-Verbindung bricht nach sieben Tagen ab.** Die App steht im Testmodus. In der Cloud-Konsole auf **App veröffentlichen**, dann neu verbinden. Seit Version 1.4.0 zeigt die Einstellungsseite dafür einen Hinweis mit Link.
 
 **Fehler beim Verbinden.** Weiterleitungs-URI vergleichen, Zeichen für Zeichen. Ein fehlendes `www` reicht.
+
+**Meldung „Die Google Calendar API ist abgeschaltet“.** In Schritt 2.2 wurde die Schnittstelle nicht aktiviert, oder in einem anderen Projekt. **Verbindung prüfen** zeigt den Link zum richtigen Projekt. Aktivieren, eine Minute warten, noch einmal prüfen.
+
+**Meldung „Google hat dem Plugin keinen Zugriff auf den Kalender gegeben“.** Auf Googles Zustimmungsseite war ein Haken für den Kalender abgewählt. Verbindung trennen und neu verbinden, alle Haken gesetzt lassen.
 
 **Termin gebucht, aber nicht im Kalender.** Unter **Einstellungen** ganz unten steht „Letzte Fehler" mit der Google-Antwort im Klartext.
 

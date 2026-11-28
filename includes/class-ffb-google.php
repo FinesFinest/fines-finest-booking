@@ -112,6 +112,22 @@ class FFBooking_Google {
 			return $body;
 		}
 
+		// Auf Googles Zustimmungsseite lassen sich einzelne Haken abwaehlen. Dann kommt ein Token ohne Kalenderzugriff.
+		$fehlend = FFBooking_Google_Check::missing_scopes( isset( $body['scope'] ) ? $body['scope'] : null );
+		if ( $fehlend ) {
+			if ( ! empty( $body['refresh_token'] ) ) {
+				wp_remote_post(
+					self::REVOKE_URL,
+					array(
+						'timeout' => 15,
+						'body'    => array( 'token' => $body['refresh_token'] ),
+					)
+				);
+			}
+
+			return new WP_Error( 'ffbooking_scope_missing', __( 'Google did not give the plugin access to the calendar. On the Google consent screen, tick every checkbox for the calendar, then connect again.', 'fines-finest-booking' ) );
+		}
+
 		if ( empty( $body['refresh_token'] ) ) {
 			return new WP_Error( 'ffbooking_no_refresh', __( 'Google did not send a refresh token. Remove the app at myaccount.google.com/permissions and connect it again.', 'fines-finest-booking' ) );
 		}
@@ -124,6 +140,7 @@ class FFBooking_Google {
 		);
 
 		update_option( self::OPTION, $tokens, false );
+		FFBooking_Google_Check::forget();
 
 		$profile = self::request( 'GET', '/calendars/primary' );
 		if ( ! is_wp_error( $profile ) && ! empty( $profile['id'] ) ) {
@@ -153,6 +170,7 @@ class FFBooking_Google {
 		}
 
 		delete_option( self::OPTION );
+		FFBooking_Google_Check::forget();
 		update_option( 'ffbooking_busy_cache_version', (int) get_option( 'ffbooking_busy_cache_version', 1 ) + 1, false );
 	}
 
@@ -187,6 +205,11 @@ class FFBooking_Google {
 
 		$body = self::parse( $response );
 		if ( is_wp_error( $body ) ) {
+			$info = $body->get_error_data();
+			if ( is_array( $info ) ) {
+				FFBooking_Google_Check::remember_problem( $info );
+			}
+
 			return $body;
 		}
 
@@ -197,6 +220,7 @@ class FFBooking_Google {
 		$tokens['access_token'] = $body['access_token'];
 		$tokens['expires_at']   = time() + (int) ( $body['expires_in'] ?? 3500 ) - 60;
 		update_option( self::OPTION, $tokens, false );
+		delete_option( FFBooking_Google_Check::PROBLEM_OPTION );
 
 		return $tokens['access_token'];
 	}
@@ -258,6 +282,19 @@ class FFBooking_Google {
 
 		$message = isset( $data['error']['message'] ) ? $data['error']['message'] : ( isset( $data['error_description'] ) ? $data['error_description'] : $raw );
 
+		// Die Angaben zum Fehler bleiben am WP_Error, damit die Einstellungsseite ihn in einfachen Worten erklaeren kann.
+		$info = array(
+			'status'  => $code,
+			'oauth'   => ( is_array( $data ) && isset( $data['error'] ) && is_string( $data['error'] ) ) ? $data['error'] : '',
+			'reason'  => '',
+			'message' => is_string( $message ) ? $message : '',
+		);
+		if ( isset( $data['error']['errors'][0]['reason'] ) ) {
+			$info['reason'] = (string) $data['error']['errors'][0]['reason'];
+		} elseif ( isset( $data['error']['details'][0]['reason'] ) ) {
+			$info['reason'] = (string) $data['error']['details'][0]['reason'];
+		}
+
 		return new WP_Error(
 			'ffbooking_google_http_' . $code,
 			sprintf(
@@ -265,7 +302,8 @@ class FFBooking_Google {
 				__( 'Google API (%1$d): %2$s', 'fines-finest-booking' ),
 				$code,
 				$message
-			)
+			),
+			$info
 		);
 	}
 

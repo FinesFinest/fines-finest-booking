@@ -74,7 +74,12 @@ class FFBooking_Admin {
 			'ffbooking-admin',
 			'FFBOOKING_ADMIN',
 			array(
-				'copied' => __( 'Copied', 'fines-finest-booking' ),
+				'copied'      => __( 'Copied', 'fines-finest-booking' ),
+				/* translators: %s: the ending of every Google client ID */
+				'idSuffix'    => sprintf( __( 'The client ID ends with %s. Copy it again in full.', 'fines-finest-booking' ), FFBooking_Google_Check::CLIENT_SUFFIX ),
+				'idSwapped'   => __( 'This looks like the client secret. Enter the client ID here and the secret in the field below.', 'fines-finest-booking' ),
+				'secretIsId'  => __( 'This looks like the client ID. Enter the client secret here, it usually starts with GOCSPX-.', 'fines-finest-booking' ),
+				'spaces'      => __( 'There is a space or line break in it. Copy the value again.', 'fines-finest-booking' ),
 			)
 		);
 	}
@@ -120,6 +125,17 @@ class FFBooking_Admin {
 				check_admin_referer( 'ffbooking_disconnect' );
 				FFBooking_Google::disconnect();
 				wp_safe_redirect( admin_url( 'admin.php?page=ffbooking-settings&ffbooking_notice=disconnected' ) );
+				exit;
+			}
+
+			if ( 'check_google' === $do ) {
+				check_admin_referer( 'ffbooking_check_google' );
+				if ( FFBooking_Google::is_connected() ) {
+					FFBooking_Google_Check::run_connection_check();
+				} else {
+					FFBooking_Google_Check::run_credentials_check();
+				}
+				wp_safe_redirect( admin_url( 'admin.php?page=ffbooking-settings&ffbooking_notice=check_done#ffb-wizard' ) );
 				exit;
 			}
 
@@ -385,6 +401,9 @@ class FFBooking_Admin {
 				$clean[ $key ] = FFBooking_Css::color( $value, $defaults[ $key ] );
 			} elseif ( in_array( $key, array( 'font_display', 'font_body' ), true ) ) {
 				$clean[ $key ] = FFBooking_Css::font( $value );
+			} elseif ( in_array( $key, array( 'google_client_id', 'google_client_secret' ), true ) ) {
+				// Beim Kopieren aus der Cloud-Konsole kommen oft Leerzeichen oder ein Zeilenumbruch mit.
+				$clean[ $key ] = FFBooking_Google_Check::clean( sanitize_text_field( $value ) );
 			} else {
 				$clean[ $key ] = sanitize_text_field( $value );
 			}
@@ -810,11 +829,11 @@ class FFBooking_Admin {
 
 		return array(
 			array(
-				'ok'       => FFBooking_Google::is_connected(),
+				'ok'       => FFBooking_Google::is_connected() && ! FFBooking_Google_Check::problem(),
 				'titel'    => __( 'Google Calendar connected', 'fines-finest-booking' ),
 				/* translators: %s: email address of the connected Google account */
 				'gut'      => sprintf( __( 'Connected as %s', 'fines-finest-booking' ), FFBooking_Google::connected_account() ),
-				'schlecht' => __( 'Without the connection, appointments are not added to your calendar and busy times are not checked.', 'fines-finest-booking' ),
+				'schlecht' => FFBooking_Google_Check::problem() ? FFBooking_Google_Check::problem()['text'] : __( 'Without the connection, appointments are not added to your calendar and busy times are not checked.', 'fines-finest-booking' ),
 				'link'     => '#ffb-google',
 				'aktion'   => __( 'Go to Google setup', 'fines-finest-booking' ),
 			),
@@ -961,6 +980,7 @@ class FFBooking_Admin {
 			'resend_error'       => array( 'error', __( 'The confirmation email could not be sent again.', 'fines-finest-booking' ) ),
 			'duplicated'         => array( 'success', __( 'Appointment type duplicated. It stays inactive until you tick "Bookable" and save.', 'fines-finest-booking' ) ),
 			'google_error'       => array( 'error', __( 'The Google connection did not work.', 'fines-finest-booking' ) ),
+			'check_done'         => array( 'info', __( 'The check is finished. The result is in the Google setup assistant below.', 'fines-finest-booking' ) ),
 			'brevo_error'        => array( 'error', __( 'Brevo rejected the request.', 'fines-finest-booking' ) ),
 			'error'              => array( 'error', __( 'That did not work.', 'fines-finest-booking' ) ),
 		);
@@ -1338,37 +1358,6 @@ class FFBooking_Admin {
 	}
 
 	/**
-	 * Hilfetext zur Einrichtung des Google-Projekts.
-	 *
-	 * @return string HTML.
-	 */
-	protected static function google_hint_text() {
-		$steps = array(
-			sprintf(
-				/* translators: %s: link to console.cloud.google.com */
-				__( 'Sign in at %s with the Google account whose calendar should receive the appointments.', 'fines-finest-booking' ),
-				'<a href="https://console.cloud.google.com" target="_blank" rel="noopener">console.cloud.google.com</a>'
-			),
-			__( 'Create a new project at the top left, the name is up to you.', 'fines-finest-booking' ),
-			__( 'On the left under <em>APIs and services, Library</em>, search for <em>Google Calendar API</em> and click <em>Enable</em>.', 'fines-finest-booking' ),
-			__( 'On the left under <em>Google Auth Platform</em>, start the configuration: app name, support email, user type <em>External</em>, contact address.', 'fines-finest-booking' ),
-			__( 'Under <em>Clients</em>, create a new client of type <em>Web application</em>. Under authorised redirect URIs, enter exactly the address shown below.', 'fines-finest-booking' ),
-			__( 'Enter the client ID and client secret below and save. The connect button then appears.', 'fines-finest-booking' ),
-			__( 'Under <em>Audience</em>, click <em>Publish app</em>. Otherwise the connection expires after seven days.', 'fines-finest-booking' ),
-		);
-
-		$html  = '<p><strong>' . esc_html__( 'Why this is needed:', 'fines-finest-booking' ) . '</strong> ' . esc_html__( 'The plugin talks to your Google Calendar through an interface. For Google to know that your website is allowed to ask, you need a free project in the Google Cloud Console, once. It takes about fifteen minutes and is done after that.', 'fines-finest-booking' ) . '</p>';
-		$html .= '<ol>';
-		foreach ( $steps as $step ) {
-			$html .= '<li>' . $step . '</li>';
-		}
-		$html .= '</ol>';
-		$html .= '<p>' . esc_html__( 'When connecting, Google shows a warning once that the app is not verified. That is normal for an app only you use: click "Advanced" and continue.', 'fines-finest-booking' ) . '</p>';
-
-		return $html;
-	}
-
-	/**
 	 * Seite: Einstellungen.
 	 */
 	public static function page_settings() {
@@ -1381,9 +1370,9 @@ class FFBooking_Admin {
 			<?php self::notices(); ?>
 			<?php self::render_status_box(); ?>
 
-			<h2 id="ffb-google"><?php esc_html_e( 'Google Calendar', 'fines-finest-booking' ); ?>
-				<?php self::hint( self::google_hint_text(), __( 'Instructions for the Google project', 'fines-finest-booking' ) ); ?>
-			</h2>
+			<h2 id="ffb-google"><?php esc_html_e( 'Google Calendar', 'fines-finest-booking' ); ?></h2>
+			<?php FFBooking_Google_Wizard::render_problem(); ?>
+			<?php FFBooking_Google_Wizard::render( $connected ); ?>
 			<table class="form-table" role="presentation">
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Status', 'fines-finest-booking' ); ?></th>

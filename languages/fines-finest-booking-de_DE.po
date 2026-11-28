@@ -8,7 +8,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "POT-Creation-Date: 2026-11-02T09:04:53+00:00\n"
-"PO-Revision-Date: 2026-11-20T11:13:07+00:00\n"
+"PO-Revision-Date: 2026-11-27T01:06:25+00:00\n"
 "Language: de_DE\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Domain: fines-finest-booking\n"
@@ -719,55 +719,9 @@ msgctxt "abort editing"
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#. translators: %s: link to console.cloud.google.com
-#: includes/class-ffb-admin.php:1349
-#, php-format
-msgid "Sign in at %s with the Google account whose calendar should receive the appointments."
-msgstr "Auf %s mit dem Google-Konto anmelden, in dessen Kalender die Termine landen sollen."
-
-#: includes/class-ffb-admin.php:1352
-msgid "Create a new project at the top left, the name is up to you."
-msgstr "Oben links ein neues Projekt anlegen, Name frei wählbar."
-
-#: includes/class-ffb-admin.php:1353
-msgid "On the left under <em>APIs and services, Library</em>, search for <em>Google Calendar API</em> and click <em>Enable</em>."
-msgstr "Links unter <em>APIs und Dienste, Bibliothek</em> nach <em>Google Calendar API</em> suchen und auf <em>Aktivieren</em> klicken."
-
-#: includes/class-ffb-admin.php:1354
-msgid "On the left under <em>Google Auth Platform</em>, start the configuration: app name, support email, user type <em>External</em>, contact address."
-msgstr "Links unter <em>Google Auth Platform</em> die Konfiguration starten: App-Name, Support-Mail, Nutzertyp <em>Extern</em>, Kontaktadresse."
-
-#: includes/class-ffb-admin.php:1355
-msgid "Under <em>Clients</em>, create a new client of type <em>Web application</em>. Under authorised redirect URIs, enter exactly the address shown below."
-msgstr "Unter <em>Clients</em> einen neuen Client vom Typ <em>Webanwendung</em> anlegen. Bei den autorisierten Weiterleitungs-URIs genau die Adresse eintragen, die unten steht."
-
-#: includes/class-ffb-admin.php:1356
-msgid "Enter the client ID and client secret below and save. The connect button then appears."
-msgstr "Client-ID und Client-Secret unten eintragen und speichern. Danach erscheint der Verbinden-Knopf."
-
-#: includes/class-ffb-admin.php:1357
-msgid "Under <em>Audience</em>, click <em>Publish app</em>. Otherwise the connection expires after seven days."
-msgstr "Unter <em>Zielgruppe</em> auf <em>App veröffentlichen</em> klicken. Sonst läuft die Verbindung nach sieben Tagen ab."
-
-#: includes/class-ffb-admin.php:1360
-msgid "Why this is needed:"
-msgstr "Warum das nötig ist:"
-
-#: includes/class-ffb-admin.php:1360
-msgid "The plugin talks to your Google Calendar through an interface. For Google to know that your website is allowed to ask, you need a free project in the Google Cloud Console, once. It takes about fifteen minutes and is done after that."
-msgstr "Das Plugin spricht mit deinem Google-Kalender über eine Schnittstelle. Damit Google weiß, dass ausgerechnet deine Website fragen darf, brauchst du einmalig ein kostenloses Projekt in der Google-Cloud-Konsole. Das dauert etwa fünfzehn Minuten und ist danach erledigt."
-
-#: includes/class-ffb-admin.php:1366
-msgid "When connecting, Google shows a warning once that the app is not verified. That is normal for an app only you use: click \"Advanced\" and continue."
-msgstr "Beim Verbinden zeigt Google einmal die Warnung, die App sei nicht überprüft. Das ist bei einer App normal, die nur du selbst nutzt: auf „Erweitert“ klicken und fortfahren."
-
 #: includes/class-ffb-admin.php:1384
 msgid "Google Calendar"
 msgstr "Google-Kalender"
-
-#: includes/class-ffb-admin.php:1385
-msgid "Instructions for the Google project"
-msgstr "Anleitung für das Google-Projekt"
 
 #: includes/class-ffb-admin.php:1404
 msgid "Connected"
@@ -1836,3 +1790,304 @@ msgstr "Die Datenbank meldet: %s"
 #: includes/class-ffb-install.php:391
 msgid "The plugin tries again on every page load. Until it succeeds, bookings are not available. Please check that the database user of this website may create tables, or ask your host."
 msgstr "Das Plugin versucht es bei jedem Seitenaufruf erneut. Bis es klappt, sind keine Buchungen möglich. Prüf bitte, ob der Datenbank-Nutzer dieser Website Tabellen anlegen darf, oder frag deinen Hoster."
+
+#. translators: %s: the ending of every Google client ID
+#: includes/class-ffb-admin.php
+msgid "The client ID ends with %s. Copy it again in full."
+msgstr "Die Client-ID endet auf %s. Kopier sie noch einmal vollständig."
+
+#: includes/class-ffb-admin.php
+msgid "This looks like the client secret. Enter the client ID here and the secret in the field below."
+msgstr "Das sieht nach dem Client-Secret aus. Trag hier die Client-ID ein und das Secret im Feld darunter."
+
+#: includes/class-ffb-admin.php
+msgid "This looks like the client ID. Enter the client secret here, it usually starts with GOCSPX-."
+msgstr "Das sieht nach der Client-ID aus. Trag hier das Client-Secret ein. Es beginnt meist mit GOCSPX-."
+
+#: includes/class-ffb-admin.php
+msgid "There is a space or line break in it. Copy the value again."
+msgstr "Darin steckt ein Leerzeichen oder ein Zeilenumbruch. Kopier den Wert noch einmal."
+
+#: includes/class-ffb-admin.php
+msgid "The check is finished. The result is in the Google setup assistant below."
+msgstr "Die Prüfung ist fertig. Das Ergebnis steht unten im Google-Einrichtungsassistenten."
+
+#: includes/class-ffb-google-check.php
+msgid "The client ID is missing."
+msgstr "Die Client-ID fehlt."
+
+#. translators: %s: the ending of every Google client ID
+#: includes/class-ffb-google-check.php
+msgid "Client ID and client secret look swapped. The client ID ends with %s, the secret starts with GOCSPX-."
+msgstr "Client-ID und Client-Secret sehen vertauscht aus. Die Client-ID endet auf %s, das Secret beginnt mit GOCSPX-."
+
+#. translators: %s: the ending of every Google client ID
+#: includes/class-ffb-google-check.php
+msgid "The client ID does not end with %s. Copy it again in full from the Google Cloud Console."
+msgstr "Die Client-ID endet nicht auf %s. Kopier sie noch einmal vollständig aus der Google Cloud Console."
+
+#: includes/class-ffb-google-check.php
+msgid "The client ID contains a space or line break. Copy it again."
+msgstr "Die Client-ID enthält ein Leerzeichen oder einen Zeilenumbruch. Kopier sie noch einmal."
+
+#: includes/class-ffb-google-check.php
+msgid "The client secret is missing."
+msgstr "Das Client-Secret fehlt."
+
+#: includes/class-ffb-google-check.php
+msgid "The client secret contains a space or line break. Copy it again."
+msgstr "Das Client-Secret enthält ein Leerzeichen oder einen Zeilenumbruch. Kopier es noch einmal."
+
+#: includes/class-ffb-google-check.php
+msgid "Google ended the connection. The most common cause is an app that is still in testing mode, because Google then ends the connection after seven days. It also happens when you removed access in your Google account. Publish the app, then connect again."
+msgstr "Google hat die Verbindung beendet. Meist steht die App noch im Testmodus. Dann beendet Google die Verbindung nach sieben Tagen. Es passiert auch, wenn du den Zugriff in deinem Google-Konto entfernt hast. Veröffentliche die App und verbinde dann neu."
+
+#: includes/class-ffb-google-check.php
+msgid "Open Audience in Google Cloud"
+msgstr "Zielgruppe in Google Cloud öffnen"
+
+#: includes/class-ffb-google-check.php
+msgid "Google no longer accepts the client ID and client secret. The client was deleted or the secret was replaced. Enter the current values from the Google Cloud Console and connect again."
+msgstr "Google akzeptiert Client-ID und Client-Secret nicht mehr. Der Client wurde gelöscht oder das Secret ersetzt. Trag die aktuellen Werte aus der Google Cloud Console ein und verbinde neu."
+
+#: includes/class-ffb-google-check.php
+msgid "The Google Calendar API is switched off in your Google project. Click Enable there, wait a minute, then check again."
+msgstr "Die Google Calendar API ist in deinem Google-Projekt abgeschaltet. Klick dort auf Aktivieren, warte eine Minute und prüfe dann noch einmal."
+
+#: includes/class-ffb-google-check.php
+msgid "Open Calendar API in Google Cloud"
+msgstr "Calendar API in Google Cloud öffnen"
+
+#: includes/class-ffb-google-check.php
+msgid "Google did not give the plugin access to the calendar. On the Google consent screen, tick every checkbox for the calendar. Disconnect, then connect again."
+msgstr "Google hat dem Plugin keinen Zugriff auf den Kalender gegeben. Lass auf der Zustimmungsseite von Google alle Haken für den Kalender gesetzt. Trenne die Verbindung und verbinde dann neu."
+
+#: includes/class-ffb-google-check.php
+msgid "Google rejected the access. Disconnect, then connect again."
+msgstr "Google hat den Zugriff abgelehnt. Trenne die Verbindung und verbinde dann neu."
+
+#: includes/class-ffb-google-check.php
+msgid "Enter the client ID and the client secret first and save."
+msgstr "Trag zuerst Client-ID und Client-Secret ein und speichere."
+
+#: includes/class-ffb-google-check.php
+#, php-format
+msgid "Google could not be reached: %s"
+msgstr "Google war nicht erreichbar: %s"
+
+#: includes/class-ffb-google-check.php
+msgid "Google does not know this client ID. It is wrong or the client was deleted. Check it in the Google Cloud Console under Clients."
+msgstr "Google kennt diese Client-ID nicht. Sie ist falsch oder der Client wurde gelöscht. Prüf sie in der Google Cloud Console unter Clients."
+
+#: includes/class-ffb-google-check.php
+msgid "The client ID is known, but Google rejects the client secret. Copy the secret again from the Google Cloud Console."
+msgstr "Die Client-ID ist bekannt, aber Google lehnt das Client-Secret ab. Kopier das Secret noch einmal aus der Google Cloud Console."
+
+#: includes/class-ffb-google-check.php
+msgid "Google accepts the client ID and the client secret."
+msgstr "Google akzeptiert Client-ID und Client-Secret."
+
+#: includes/class-ffb-google-check.php
+msgid "Google gave an answer the plugin cannot read. The check is inconclusive. You can still try to connect."
+msgstr "Google hat geantwortet, aber das Plugin kann die Antwort nicht lesen. Die Prüfung ist nicht eindeutig. Du kannst trotzdem versuchen zu verbinden."
+
+#: includes/class-ffb-google-check.php
+msgid "Google accepts the redirect URI."
+msgstr "Google akzeptiert die Weiterleitungs-URI."
+
+#: includes/class-ffb-google-check.php
+msgid "The redirect URI is missing in your Google client. Open the client, add the address from step 4 under authorised redirect URIs exactly as shown, save and check again. Google can take a few minutes to apply it."
+msgstr "In deinem Google-Client fehlt die Weiterleitungs-URI. Öffne den Client, trag die Adresse aus Schritt 4 unter autorisierte Weiterleitungs-URIs genau so ein, speichere und prüfe noch einmal. Google braucht manchmal ein paar Minuten, bis die Änderung gilt."
+
+#: includes/class-ffb-google-check.php
+msgid "Open Clients in Google Cloud"
+msgstr "Clients in Google Cloud öffnen"
+
+#: includes/class-ffb-google-check.php
+#, php-format
+msgid "Google rejects the sign-in and reports: %s. Check the settings of the client in the Google Cloud Console."
+msgstr "Google lehnt die Anmeldung ab und meldet: %s. Prüf die Einstellungen des Clients in der Google Cloud Console."
+
+#: includes/class-ffb-google-check.php
+msgid "The redirect URI could not be checked from here. Connecting shows whether it fits."
+msgstr "Die Weiterleitungs-URI ließ sich von hier aus nicht prüfen. Beim Verbinden zeigt sich, ob sie passt."
+
+#: includes/class-ffb-google-check.php
+#, php-format
+msgid "The connection works. Google lists %d calendar."
+msgid_plural "The connection works. Google lists %d calendars."
+msgstr[0] "Die Verbindung funktioniert. Google listet %d Kalender."
+msgstr[1] "Die Verbindung funktioniert. Google listet %d Kalender."
+
+#: includes/class-ffb-google-check.php
+msgid "The target calendar accepts new appointments."
+msgstr "Der Zielkalender nimmt neue Termine an."
+
+#: includes/class-ffb-google-check.php
+msgid "The plugin cannot write to the target calendar. Choose a calendar of your own under Target calendar and save."
+msgstr "Das Plugin kann nicht in den Zielkalender schreiben. Wähl unter Zielkalender einen eigenen Kalender und speichere."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Google Calendar needs your attention."
+msgstr "Der Google-Kalender braucht deine Aufmerksamkeit."
+
+#: includes/class-ffb-google-wizard.php
+msgid "OK"
+msgstr "OK"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Problem"
+msgstr "Problem"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Unclear"
+msgstr "Unklar"
+
+#: includes/class-ffb-google-wizard.php
+#, php-format
+msgid "Checked on %s."
+msgstr "Geprüft am %s."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Google setup assistant and connection check"
+msgstr "Google-Einrichtungsassistent und Verbindungsprüfung"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Google setup assistant"
+msgstr "Google-Einrichtungsassistent"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Check connection"
+msgstr "Verbindung prüfen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Tests the access to your calendar without changing anything."
+msgstr "Testet den Zugriff auf deinen Kalender, ohne etwas zu ändern."
+
+#: includes/class-ffb-google-wizard.php
+msgid "The plugin talks to your Google Calendar through your own free Google project. You set it up once, it takes about ten minutes, and nothing runs through the servers of the plugin author. Work through the steps from top to bottom."
+msgstr "Das Plugin spricht mit deinem Google-Kalender über dein eigenes kostenloses Google-Projekt. Du richtest es einmal ein. Das dauert etwa zehn Minuten. Nichts läuft über die Server der Plugin-Autorin. Geh die Schritte von oben nach unten durch."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Create a Google project"
+msgstr "Google-Projekt anlegen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Sign in with the Google account whose calendar should receive the appointments. Give the project a name such as \"Booking\" and click Create."
+msgstr "Melde dich mit dem Google-Konto an, in dessen Kalender die Termine landen sollen. Gib dem Projekt einen Namen wie „Buchung“ und klick auf Erstellen."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Create project"
+msgstr "Projekt anlegen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Switch on the Calendar API"
+msgstr "Kalender-Schnittstelle einschalten"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Make sure your new project is selected at the top, then click Enable."
+msgstr "Achte darauf, dass oben dein neues Projekt ausgewählt ist. Klick dann auf Aktivieren."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Open Google Calendar API"
+msgstr "Google Calendar API öffnen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Set up the consent screen"
+msgstr "Zustimmungsseite einrichten"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Open the Google Auth Platform and click Get started. Choose External as the audience and enter these values."
+msgstr "Öffne die Google Auth Platform und klick auf Erste Schritte. Wähl Extern als Zielgruppe und trag diese Werte ein."
+
+#: includes/class-ffb-google-wizard.php
+msgid "App name"
+msgstr "App-Name"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Support and contact email"
+msgstr "E-Mail für Support und Kontakt"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Open Google Auth Platform"
+msgstr "Google Auth Platform öffnen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Create the client"
+msgstr "Client erstellen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Create a client of the type Web application. Leave the authorised JavaScript origins empty. Under authorised redirect URIs, add this address exactly as shown:"
+msgstr "Erstelle einen Client vom Typ Webanwendung. Lass die autorisierten JavaScript-Quellen leer. Trag unter autorisierte Weiterleitungs-URIs genau diese Adresse ein:"
+
+#: includes/class-ffb-google-wizard.php
+msgid "After you click Create, Google shows the client ID and the client secret. Copy both."
+msgstr "Nach dem Klick auf Erstellen zeigt Google die Client-ID und das Client-Secret. Kopier beide."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Create client"
+msgstr "Client erstellen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Enter client ID and client secret"
+msgstr "Client-ID und Client-Secret eintragen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Both values are entered and have the right shape."
+msgstr "Beide Werte sind eingetragen und haben die richtige Form."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Enter the client ID and the client secret in the two fields below and click Save."
+msgstr "Trag Client-ID und Client-Secret in die beiden Felder unten ein und klick auf Speichern."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Go to the fields"
+msgstr "Zu den Feldern"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Let the plugin check your entries"
+msgstr "Das Plugin deine Eingaben prüfen lassen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "The plugin asks Google whether it accepts your entries and the redirect URI. Nobody has to sign in for that."
+msgstr "Das Plugin fragt bei Google nach, ob es deine Eingaben und die Weiterleitungs-URI akzeptiert. Dafür muss sich niemand anmelden."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Check with Google"
+msgstr "Bei Google prüfen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Available as soon as step 5 is done."
+msgstr "Verfügbar, sobald Schritt 5 erledigt ist."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Publish the app"
+msgstr "App veröffentlichen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Under Audience, click Publish app and confirm. Otherwise Google ends the connection after seven days. Google needs no review as long as only your own account uses the app."
+msgstr "Klick unter Zielgruppe auf App veröffentlichen und bestätige. Sonst beendet Google die Verbindung nach sieben Tagen. Eine Prüfung durch Google ist nicht nötig, solange nur dein eigenes Konto die App nutzt."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Open Audience"
+msgstr "Zielgruppe öffnen"
+
+#: includes/class-ffb-google-wizard.php
+msgid "The plugin cannot see this step. If Google ends the connection later, it tells you here."
+msgstr "Das Plugin kann diesen Schritt nicht sehen. Beendet Google die Verbindung später, sagt es dir hier Bescheid."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Connect"
+msgstr "Verbinden"
+
+#: includes/class-ffb-google-wizard.php
+msgid "Google shows a warning that the app is not verified. Click Advanced, then continue. On the next screen, leave every checkbox for the calendar ticked."
+msgstr "Google zeigt eine Warnung, dass die App nicht überprüft ist. Klick auf Erweitert und dann auf Weiter. Lass auf der nächsten Seite alle Haken für den Kalender gesetzt."
+
+#: includes/class-ffb-google-wizard.php
+msgid "Connected."
+msgstr "Verbunden."
+
+#: includes/class-ffb-google.php
+msgid "Google did not give the plugin access to the calendar. On the Google consent screen, tick every checkbox for the calendar, then connect again."
+msgstr "Google hat dem Plugin keinen Zugriff auf den Kalender gegeben. Lass auf der Zustimmungsseite von Google alle Haken für den Kalender gesetzt und verbinde dann neu."

@@ -5,7 +5,7 @@ Tags: booking, appointments, google calendar, google meet, gdpr
 Requires at least: 6.0
 Tested up to: 7.2
 Requires PHP: 7.4
-Stable tag: 1.3.2
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,7 @@ All booking data lives in your own WordPress database. No third-party widget in 
 * Cancellation link in every email, the slot is released at once
 * Brevo: every booking becomes a contact in a list of your choice
 * GDPR: consent with timestamp, automatic deletion period, integration with the WordPress privacy tools
+* Guided Google setup: a step-by-step assistant, checks for your entries before anyone signs in, and plain-language messages when Google refuses something
 
 = Shortcodes =
 
@@ -38,7 +39,7 @@ All booking data lives in your own WordPress database. No third-party widget in 
 
 The plugin can talk to two external services. Nothing is sent until you connect them in the settings.
 
-* **Google Calendar API** (Google LLC): reads busy times from the calendars you select, creates and deletes calendar events for bookings and creates Google Meet links. Sent per booking: date and time, the client's name and email address, the appointment type and the answers to extra questions as the event description. [Terms](https://developers.google.com/terms), [Privacy](https://policies.google.com/privacy).
+* **Google Calendar API** (Google LLC): reads busy times from the calendars you select, creates and deletes calendar events for bookings and creates Google Meet links. Sent per booking: date and time, the client's name and email address, the appointment type and the answers to extra questions as the event description. When you click "Check with Google" or "Check connection" in the setup assistant, the plugin also sends your own client ID and client secret to Google's sign-in service (oauth2.googleapis.com, accounts.google.com) to see whether Google accepts them. Nobody is signed in and no booking data is sent. [Terms](https://developers.google.com/terms), [Privacy](https://policies.google.com/privacy).
 * **Brevo API** (Brevo SAS): used only if you enter an API key. After each booking the client's name, email address and, if given, phone number are added to the list you select. [Terms](https://www.brevo.com/legal/termsofuse/), [Privacy](https://www.brevo.com/legal/privacypolicy/).
 
 == Installation ==
@@ -51,6 +52,10 @@ The plugin can talk to two external services. Nothing is sent until you connect 
 A detailed setup guide in German, including the Google Cloud project, ships in the file docs/INSTALL.md. The same steps are shown in the help sections of the settings page.
 
 == Frequently Asked Questions ==
+
+= Why do I need my own Google project? =
+
+Google only lets a website read and write a calendar after the website owner has registered the connection in a Google project. Using your own project keeps everything between your website and your Google account: no booking data, tokens or keys pass through the plugin author. It is free and takes about ten minutes. A step-by-step assistant on the settings page guides you through it and checks your entries before you connect.
 
 = Does the plugin work without Google? =
 
@@ -83,6 +88,15 @@ The plugin answers every link with the cancellation parameter itself. If the boo
 7. Settings with the setup status: every open step links to the next action.
 
 == Changelog ==
+
+= 1.4.0 =
+* New: a step-by-step Google setup assistant on the settings page. It links to the right pages of the Google Cloud Console and has copy buttons for the values you need to enter.
+* New: "Check with Google" tests the client ID, the client secret and the redirect URI before anyone signs in, and says what is wrong in plain words.
+* New: "Check connection" tests the token, the Calendar API and the target calendar without changing anything.
+* New: the client ID and secret are trimmed on saving, and the fields warn while you type when they are swapped or incomplete.
+* New: if Google ends the connection, for example because the app is still in testing mode, or the client is deleted, the settings page and the setup status show the cause and the way out.
+* If you untick the calendar permission on Google's consent screen, the plugin refuses the connection with a clear message instead of failing later.
+* German translation updated.
 
 = 1.3.2 =
 * The plugin checks that its two database tables exist after creating them. Only then it stores the schema version.

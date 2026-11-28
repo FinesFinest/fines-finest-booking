@@ -56,4 +56,54 @@
 		} catch ( e ) {}
 		document.body.removeChild( feld );
 	} );
+
+	// Client-ID und Client-Secret schon beim Tippen auf typische Fehler pruefen.
+	var SUFFIX = '.apps.googleusercontent.com';
+
+	function meldung( feld ) {
+		var hinweis = feld.parentNode.querySelector( '.ffb-livecheck' );
+		if ( ! hinweis ) {
+			hinweis = document.createElement( 'p' );
+			hinweis.className = 'description ffb-livecheck';
+			hinweis.setAttribute( 'role', 'status' );
+			feld.parentNode.appendChild( hinweis );
+		}
+		return hinweis;
+	}
+
+	function pruefen( feld, art ) {
+		var wert = feld.value.trim();
+		var text = '';
+
+		if ( wert ) {
+			var endetAufId = wert.slice( -SUFFIX.length ) === SUFFIX;
+			var istSecret = wert.indexOf( 'GOCSPX-' ) === 0;
+
+			if ( /\s/.test( wert ) ) {
+				text = texte.spaces;
+			} else if ( 'id' === art && istSecret ) {
+				text = texte.idSwapped;
+			} else if ( 'id' === art && ! endetAufId ) {
+				text = texte.idSuffix;
+			} else if ( 'secret' === art && endetAufId ) {
+				text = texte.secretIsId;
+			}
+		}
+
+		var hinweis = meldung( feld );
+		hinweis.textContent = text;
+		hinweis.hidden = ! text;
+		feld.setAttribute( 'aria-invalid', text ? 'true' : 'false' );
+	}
+
+	[ [ 'ffb-cid', 'id' ], [ 'ffb-cs', 'secret' ] ].forEach( function ( paar ) {
+		var feld = document.getElementById( paar[ 0 ] );
+		if ( ! feld ) {
+			return;
+		}
+		feld.addEventListener( 'input', function () {
+			pruefen( feld, paar[ 1 ] );
+		} );
+		pruefen( feld, paar[ 1 ] );
+	} );
 }() );
