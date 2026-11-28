@@ -1427,6 +1427,27 @@ class FFBooking_Admin {
 			<?php self::notices(); ?>
 			<?php self::render_status_box(); ?>
 
+			<?php
+			// Reiter. Ohne JavaScript bleibt die Leiste verborgen und alle Abschnitte stehen untereinander.
+			$ffbooking_tabs = array(
+				'google'  => __( 'Google Calendar', 'fines-finest-booking' ),
+				'limits'  => __( 'Times and limits', 'fines-finest-booking' ),
+				'mails'   => __( 'Emails', 'fines-finest-booking' ),
+				'brevo'   => 'Brevo',
+				'privacy' => __( 'Privacy', 'fines-finest-booking' ),
+				'design'  => __( 'Design', 'fines-finest-booking' ),
+			);
+			if ( ! empty( $log ) ) {
+				$ffbooking_tabs['log'] = __( 'Recent errors', 'fines-finest-booking' );
+			}
+			?>
+			<nav class="nav-tab-wrapper ffb-tabs" aria-label="<?php esc_attr_e( 'Settings sections', 'fines-finest-booking' ); ?>" hidden>
+				<?php foreach ( $ffbooking_tabs as $ffbooking_key => $ffbooking_label ) : ?>
+					<a class="nav-tab" href="#ffb-tab-<?php echo esc_attr( $ffbooking_key ); ?>" data-ffb-tab="<?php echo esc_attr( $ffbooking_key ); ?>"><?php echo esc_html( $ffbooking_label ); ?></a>
+				<?php endforeach; ?>
+			</nav>
+
+			<div class="ffb-panel" data-ffb-panel="google">
 			<h2 id="ffb-google"><?php esc_html_e( 'Google Calendar', 'fines-finest-booking' ); ?></h2>
 			<?php FFBooking_Google_Wizard::render_problem(); ?>
 			<?php FFBooking_Google_Wizard::render( $connected ); ?>
@@ -1480,10 +1501,13 @@ class FFBooking_Admin {
 					</td>
 				</tr>
 			</table>
+			</div>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=ffbooking-settings' ) ); ?>">
 				<?php wp_nonce_field( 'ffbooking_save_settings' ); ?>
 				<input type="hidden" name="ffbooking_action" value="save_settings">
+
+				<div class="ffb-panel" data-ffb-panel="google">
 
 				<table class="form-table" role="presentation">
 					<tr>
@@ -1603,7 +1627,9 @@ class FFBooking_Admin {
 						</td>
 					</tr>
 				</table>
+				</div>
 
+				<div class="ffb-panel" data-ffb-panel="limits">
 				<h2><?php esc_html_e( 'Limits for all appointment types', 'fines-finest-booking' ); ?></h2>
 				<p class="description" style="max-width:46em;"><?php esc_html_e( 'These values apply in addition to the settings of the individual appointment types and can only restrict further, never extend. No appointment type can override them.', 'fines-finest-booking' ); ?></p>
 				<table class="form-table" role="presentation">
@@ -1651,7 +1677,9 @@ class FFBooking_Admin {
 						</td>
 					</tr>
 				</table>
+				</div>
 
+				<div class="ffb-panel" data-ffb-panel="mails">
 				<h2 id="ffb-mails"><?php esc_html_e( 'Emails', 'fines-finest-booking' ); ?>
 					<?php
 					self::hint(
@@ -1695,7 +1723,9 @@ class FFBooking_Admin {
 						</td>
 					</tr>
 				</table>
+				</div>
 
+				<div class="ffb-panel" data-ffb-panel="brevo">
 				<h2>Brevo</h2>
 				<table class="form-table" role="presentation">
 					<tr>
@@ -1751,7 +1781,9 @@ class FFBooking_Admin {
 						</td>
 					</tr>
 				</table>
+				</div>
 
+				<div class="ffb-panel" data-ffb-panel="privacy">
 				<h2><?php esc_html_e( 'Privacy', 'fines-finest-booking' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
@@ -1781,7 +1813,9 @@ class FFBooking_Admin {
 						<td><label><input type="checkbox" name="ffb[delete_on_uninstall]" value="1" <?php checked( (int) ffbooking_get_setting( 'delete_on_uninstall' ), 1 ); ?>> <?php esc_html_e( 'Also delete tables and settings', 'fines-finest-booking' ); ?></label></td>
 					</tr>
 				</table>
+				</div>
 
+				<div class="ffb-panel" data-ffb-panel="design">
 				<h2><?php esc_html_e( 'Design', 'fines-finest-booking' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<?php
@@ -1812,11 +1846,13 @@ class FFBooking_Admin {
 						<td><input id="ffb-fb" name="ffb[font_body]" type="text" class="regular-text" value="<?php echo esc_attr( ffbooking_get_setting( 'font_body' ) ); ?>"></td>
 					</tr>
 				</table>
+				</div>
 
 				<?php submit_button( __( 'Save', 'fines-finest-booking' ) ); ?>
 			</form>
 
 			<?php if ( ! empty( $log ) ) : ?>
+				<div class="ffb-panel" data-ffb-panel="log">
 				<h2><?php esc_html_e( 'Recent errors', 'fines-finest-booking' ); ?></h2>
 				<table class="wp-list-table widefat striped">
 					<thead><tr><th style="width:170px;"><?php esc_html_e( 'Time', 'fines-finest-booking' ); ?></th><th><?php esc_html_e( 'Message', 'fines-finest-booking' ); ?></th></tr></thead>
@@ -1826,6 +1862,7 @@ class FFBooking_Admin {
 					<?php endforeach; ?>
 					</tbody>
 				</table>
+				</div>
 			<?php endif; ?>
 
 			<?php if ( FFBOOKING_DONATE_URL ) : // Kaffeekasse, nur mit hinterlegter Adresse. ?>

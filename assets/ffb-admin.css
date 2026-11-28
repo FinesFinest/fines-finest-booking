@@ -212,3 +212,27 @@
 
 .ffb-admin .ffb-livecheck { color: #b32d2e; }
 .ffb-admin .ffb-problem { max-width: 900px; }
+
+/* ---------- Reiter der Einstellungsseite ---------- */
+.ffb-admin .ffb-tabs {
+	margin: 1.5em 0 0;
+}
+
+.ffb-admin.ffb-has-tabs .ffb-panel {
+	display: none;
+}
+
+.ffb-admin.ffb-has-tabs .ffb-panel.is-active {
+	display: block;
+}
+
+/* Die Ueberschrift des Abschnitts steht schon im Reiter. */
+.ffb-admin.ffb-has-tabs .ffb-panel > h2:first-child {
+	margin-top: 1.5em;
+}
+
+@media (max-width: 782px) {
+	.ffb-admin .ffb-tabs .nav-tab {
+		margin-bottom: 4px;
+	}
+}

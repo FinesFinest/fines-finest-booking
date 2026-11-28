@@ -106,4 +106,113 @@
 		} );
 		pruefen( feld, paar[ 1 ] );
 	} );
+
+	// Reiter auf der Einstellungsseite. Alle Felder bleiben in einem Formular, die Reiter blenden nur aus.
+	( function () {
+		var wrap = document.querySelector( '.ffb-admin' );
+		var nav = wrap ? wrap.querySelector( '.ffb-tabs' ) : null;
+		if ( ! nav ) {
+			return;
+		}
+
+		var tabs = Array.prototype.slice.call( nav.querySelectorAll( '[data-ffb-tab]' ) );
+		var panels = Array.prototype.slice.call( wrap.querySelectorAll( '[data-ffb-panel]' ) );
+		var submit = wrap.querySelector( 'form p.submit' );
+		var KEY = 'ffbookingSettingsTab';
+
+		function exists( key ) {
+			return tabs.some( function ( tab ) {
+				return tab.getAttribute( 'data-ffb-tab' ) === key;
+			} );
+		}
+
+		function remember( key ) {
+			try {
+				window.localStorage.setItem( KEY, key );
+			} catch ( e ) {}
+		}
+
+		function remembered() {
+			try {
+				return window.localStorage.getItem( KEY ) || '';
+			} catch ( e ) {
+				return '';
+			}
+		}
+
+		function show( key ) {
+			if ( ! exists( key ) ) {
+				key = tabs[ 0 ].getAttribute( 'data-ffb-tab' );
+			}
+			tabs.forEach( function ( tab ) {
+				var aktiv = tab.getAttribute( 'data-ffb-tab' ) === key;
+				tab.classList.toggle( 'nav-tab-active', aktiv );
+				if ( aktiv ) {
+					tab.setAttribute( 'aria-current', 'page' );
+				} else {
+					tab.removeAttribute( 'aria-current' );
+				}
+			} );
+			panels.forEach( function ( panel ) {
+				panel.classList.toggle( 'is-active', panel.getAttribute( 'data-ffb-panel' ) === key );
+			} );
+			// Im Fehlerprotokoll gibt es nichts zu speichern.
+			if ( submit ) {
+				submit.hidden = 'log' === key;
+			}
+			remember( key );
+		}
+
+		// Reiter zu einem Element, etwa einem Sprungziel aus dem Einrichtungsstand.
+		function tabOf( node ) {
+			var panel = node && node.closest ? node.closest( '[data-ffb-panel]' ) : null;
+			return panel ? panel.getAttribute( 'data-ffb-panel' ) : '';
+		}
+
+		function fromHash() {
+			var hash = window.location.hash.replace( /^#/, '' );
+			if ( ! hash ) {
+				return '';
+			}
+			if ( 0 === hash.indexOf( 'ffb-tab-' ) ) {
+				return hash.substring( 8 );
+			}
+			var ziel = document.getElementById( hash );
+			var key = tabOf( ziel );
+			if ( key ) {
+				show( key );
+				ziel.scrollIntoView();
+			}
+			return key;
+		}
+
+		nav.hidden = false;
+		wrap.classList.add( 'ffb-has-tabs' );
+		show( fromHash() || remembered() );
+
+		nav.addEventListener( 'click', function ( event ) {
+			var tab = event.target.closest( '[data-ffb-tab]' );
+			if ( ! tab ) {
+				return;
+			}
+			event.preventDefault();
+			show( tab.getAttribute( 'data-ffb-tab' ) );
+			// Den Reiter in die Adresse schreiben. Ein altes Sprungziel dort wuerde sonst
+			// nach dem Speichern wieder den alten Reiter oeffnen.
+			if ( window.history && window.history.replaceState ) {
+				window.history.replaceState( null, '', '#ffb-tab-' + tab.getAttribute( 'data-ffb-tab' ) );
+			}
+		} );
+
+		window.addEventListener( 'hashchange', fromHash );
+
+		// Lehnt der Browser beim Speichern ein Feld in einem verborgenen Reiter ab, diesen Reiter zeigen.
+		// Sonst passiert beim Klick auf Speichern scheinbar nichts.
+		wrap.addEventListener( 'invalid', function ( event ) {
+			var key = tabOf( event.target );
+			if ( key ) {
+				show( key );
+			}
+		}, true );
+	}() );
 }() );

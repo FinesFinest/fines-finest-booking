@@ -128,7 +128,7 @@ msgid "hours"
 msgstr "Stunden"
 
 #: includes/class-ffb-admin.php:667
-#: includes/class-ffb-admin.php:1771
+#: includes/class-ffb-admin.php:1803
 msgid "days"
 msgstr "Tage"
 
@@ -197,7 +197,7 @@ msgstr "Google-Kalender verbunden"
 
 #. translators: %s: email address of the connected Google account
 #: includes/class-ffb-admin.php:892
-#: includes/class-ffb-admin.php:1444
+#: includes/class-ffb-admin.php:1465
 #, php-format
 msgid "Connected as %s"
 msgstr "Verbunden als %s"
@@ -261,7 +261,7 @@ msgid "Untested. Many hosts send emails unreliably, and you would only notice wh
 msgstr "Ungetestet. Viele Hostings verschicken Mails unzuverlässig, das fällt sonst erst auf, wenn jemand nicht zum Termin erscheint."
 
 #: includes/class-ffb-admin.php:925
-#: includes/class-ffb-admin.php:1675
+#: includes/class-ffb-admin.php:1703
 msgid "Send test email"
 msgstr "Testmail senden"
 
@@ -420,7 +420,7 @@ msgid "Cancelled"
 msgstr "Abgesagt"
 
 #: includes/class-ffb-admin.php:1116
-#: includes/class-ffb-admin.php:1693
+#: includes/class-ffb-admin.php:1721
 #: includes/class-ffb-mailer.php:466
 #: includes/class-ffb-mailer.php:530
 #: includes/class-ffb-mailer.php:591
@@ -503,13 +503,13 @@ msgstr "Dauer"
 
 #: includes/class-ffb-admin.php:1204
 #: includes/class-ffb-admin.php:1399
-#: includes/class-ffb-admin.php:1435
+#: includes/class-ffb-admin.php:1456
 #: includes/class-ffb-privacy.php:95
 msgid "Status"
 msgstr "Status"
 
 #: includes/class-ffb-admin.php:1209
-#: includes/class-ffb-admin.php:1467
+#: includes/class-ffb-admin.php:1488
 #: includes/class-ffb-google-wizard.php:61
 msgid "Copy"
 msgstr "Kopieren"
@@ -617,7 +617,7 @@ msgid "Limits"
 msgstr "Grenzen"
 
 #: includes/class-ffb-admin.php:1329
-#: includes/class-ffb-admin.php:1638
+#: includes/class-ffb-admin.php:1664
 msgid "Minimum notice"
 msgstr "Vorlaufzeit"
 
@@ -648,7 +648,7 @@ msgid "This is the title of the entry in your Google Calendar. Placeholders: %1$
 msgstr "So heißt der Eintrag in deinem Google-Kalender. Platzhalter: %1$s. Leer lassen ergibt %2$s."
 
 #: includes/class-ffb-admin.php:1355
-#: includes/class-ffb-admin.php:1647
+#: includes/class-ffb-admin.php:1673
 msgid "Blocked days"
 msgstr "Sperrtage"
 
@@ -711,7 +711,7 @@ msgid "Order"
 msgstr "Reihenfolge"
 
 #: includes/class-ffb-admin.php:1409
-#: includes/class-ffb-admin.php:1816
+#: includes/class-ffb-admin.php:1851
 msgid "Save"
 msgstr "Speichern"
 
@@ -720,332 +720,337 @@ msgctxt "abort editing"
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: includes/class-ffb-admin.php:1430
+#: includes/class-ffb-admin.php:1433
+#: includes/class-ffb-admin.php:1451
 msgid "Google Calendar"
 msgstr "Google-Kalender"
 
-#: includes/class-ffb-admin.php:1450
+#: includes/class-ffb-admin.php:1471
 msgid "Connected"
 msgstr "Verbunden"
 
-#: includes/class-ffb-admin.php:1454
+#: includes/class-ffb-admin.php:1475
 msgid "Disconnect"
 msgstr "Verbindung trennen"
 
-#: includes/class-ffb-admin.php:1456
+#: includes/class-ffb-admin.php:1477
 msgid "Not connected"
 msgstr "Nicht verbunden"
 
-#: includes/class-ffb-admin.php:1457
+#: includes/class-ffb-admin.php:1478
 #: includes/class-ffb-google-wizard.php:267
 msgid "Connect with Google"
 msgstr "Mit Google verbinden"
 
-#: includes/class-ffb-admin.php:1459
+#: includes/class-ffb-admin.php:1480
 msgid "Enter the client ID and client secret first and save."
 msgstr "Trag zuerst Client-ID und Client-Secret ein und speichere."
 
-#: includes/class-ffb-admin.php:1464
+#: includes/class-ffb-admin.php:1485
 #: includes/class-ffb-google-wizard.php:222
 msgid "Redirect URI"
 msgstr "Weiterleitungs-URI"
 
 #. translators: %s: "www" in code formatting
-#: includes/class-ffb-admin.php:1473
+#: includes/class-ffb-admin.php:1494
 #, php-format
 msgid "Exactly this address must be entered in the Google Cloud Console as an authorised redirect URI. A missing %s is enough to break it."
 msgstr "Genau diese Adresse muss in der Google-Cloud-Konsole als autorisierter Redirect-URI eingetragen sein. Ein fehlendes %s reicht, damit es nicht funktioniert."
 
-#: includes/class-ffb-admin.php:1490
+#: includes/class-ffb-admin.php:1514
 msgid "Client ID"
 msgstr "Client-ID"
 
-#: includes/class-ffb-admin.php:1494
+#: includes/class-ffb-admin.php:1518
 msgid "Client secret"
 msgstr "Client-Secret"
 
-#: includes/class-ffb-admin.php:1503
+#: includes/class-ffb-admin.php:1527
 msgid "Target calendar"
 msgstr "Zielkalender"
 
-#: includes/class-ffb-admin.php:1507
+#: includes/class-ffb-admin.php:1531
 msgid "Primary calendar"
 msgstr "Hauptkalender"
 
-#: includes/class-ffb-admin.php:1517
+#: includes/class-ffb-admin.php:1541
 msgid "Booked appointments go here. Only calendars you can write to are offered."
 msgstr "Hier landen die gebuchten Termine. Es werden nur Kalender angeboten, in die du schreiben darfst."
 
 #. translators: %s: the word "primary" in code formatting
-#: includes/class-ffb-admin.php:1525
+#: includes/class-ffb-admin.php:1549
 #, php-format
 msgid "%s is your primary calendar. After connecting you can choose here."
 msgstr "%s ist dein Hauptkalender. Nach dem Verbinden kannst du hier auswählen."
 
-#: includes/class-ffb-admin.php:1536
+#: includes/class-ffb-admin.php:1560
 msgid "Also check these calendars"
 msgstr "Weitere Kalender prüfen"
 
-#: includes/class-ffb-admin.php:1554
+#: includes/class-ffb-admin.php:1578
 msgid "These calendars additionally block slots, nothing is written to them. The target calendar is always checked."
 msgstr "Diese Kalender blocken zusätzlich Slots, es wird aber nichts hineingeschrieben. Der Zielkalender wird immer geprüft."
 
 #. translators: %s: calendar IDs, comma separated
-#: includes/class-ffb-admin.php:1564
+#: includes/class-ffb-admin.php:1588
 #, php-format
 msgid "Configured but not visible to this Google account: %s"
 msgstr "Eingetragen, aber für dieses Google-Konto nicht sichtbar: %s"
 
 #. translators: 1: the word "nothing" in bold, 2: email address of the connected Google account
-#: includes/class-ffb-admin.php:1573
+#: includes/class-ffb-admin.php:1597
 #, php-format
 msgid "These calendars block %1$s. To make them count, share them in the other Google account with %2$s, at least with \"See only free/busy\". They then appear in this list."
 msgstr "Diese Kalender blocken %1$s. Damit sie greifen, musst du sie im anderen Google-Konto für %2$s freigeben, mindestens mit „Nur Verfügbarkeit“. Danach erscheinen sie hier in der Liste."
 
-#: includes/class-ffb-admin.php:1574
+#: includes/class-ffb-admin.php:1598
 msgid "nothing"
 msgstr "nichts"
 
 #. translators: %s: error message
-#: includes/class-ffb-admin.php:1592
+#: includes/class-ffb-admin.php:1616
 #, php-format
 msgid "The calendar list could not be loaded: %s"
 msgstr "Die Kalenderliste ließ sich nicht laden: %s"
 
-#: includes/class-ffb-admin.php:1601
+#: includes/class-ffb-admin.php:1625
 msgid "After connecting you can tick the calendars here."
 msgstr "Nach dem Verbinden kannst du die Kalender hier ankreuzen."
 
-#: includes/class-ffb-admin.php:1607
+#: includes/class-ffb-admin.php:1633
 msgid "Limits for all appointment types"
 msgstr "Grenzen für alle Termintypen"
 
-#: includes/class-ffb-admin.php:1608
+#: includes/class-ffb-admin.php:1634
 msgid "These values apply in addition to the settings of the individual appointment types and can only restrict further, never extend. No appointment type can override them."
 msgstr "Diese Werte gelten zusätzlich zu den Einstellungen der einzelnen Termintypen und können nur weiter einschränken, nie erweitern. Ein Termintyp kann sie also nicht aushebeln."
 
-#: includes/class-ffb-admin.php:1611
+#: includes/class-ffb-admin.php:1637
 msgid "Business hours"
 msgstr "Geschäftszeiten"
 
-#: includes/class-ffb-admin.php:1613
+#: includes/class-ffb-admin.php:1639
 msgid "Enforce business hours"
 msgstr "Geschäftszeiten erzwingen"
 
-#: includes/class-ffb-admin.php:1614
+#: includes/class-ffb-admin.php:1640
 msgid "If unticked, only the time windows of the individual appointment types apply."
 msgstr "Ist der Haken aus, gelten nur die Zeiten der einzelnen Termintypen."
 
 #. translators: %s: the sentence "Both fields set to — blocks the whole weekday" in bold
-#: includes/class-ffb-admin.php:1628
+#: includes/class-ffb-admin.php:1654
 #, php-format
 msgid "Two windows per day are possible, for example morning and afternoon. %s as soon as the box above is ticked. Incomplete or reversed pairs are discarded."
 msgstr "Zwei Fenster pro Tag möglich, zum Beispiel vormittags und nachmittags. %s, sobald der Haken oben gesetzt ist. Unvollständige oder verdrehte Paare werden verworfen."
 
-#: includes/class-ffb-admin.php:1629
+#: includes/class-ffb-admin.php:1655
 msgid "Both fields set to \"—\" block the whole weekday"
 msgstr "Beide Felder auf „—“ sperren den Wochentag komplett"
 
-#: includes/class-ffb-admin.php:1643
+#: includes/class-ffb-admin.php:1669
 msgid "Lower limit for all appointment types. If an appointment type has a longer notice period, the longer one applies. 0 means no additional limit. Example: 2 days prevents bookings for the next 48 hours."
 msgstr "Untergrenze für alle Termintypen. Hat ein Termintyp eine längere Vorlaufzeit, gilt die längere. 0 heißt: keine zusätzliche Grenze. Beispiel: 2 Tage verhindert Buchungen für die nächsten 48 Stunden."
 
-#: includes/class-ffb-admin.php:1650
+#: includes/class-ffb-admin.php:1676
 msgid "Applies to all appointment types, format YYYY-MM-DD. For holidays an all-day event in your Google Calendar is enough, it blocks automatically."
 msgstr "Gilt für alle Termintypen, Format JJJJ-MM-TT. Für Urlaub reicht auch ein ganztägiger Eintrag im Google-Kalender, der blockt automatisch."
 
-#: includes/class-ffb-admin.php:1655
+#: includes/class-ffb-admin.php:1435
+#: includes/class-ffb-admin.php:1683
 msgid "Emails"
 msgstr "Mails"
 
 #. translators: %s: the function name wp_mail() in code formatting
-#: includes/class-ffb-admin.php:1661
+#: includes/class-ffb-admin.php:1689
 #, php-format
 msgid "WordPress sends emails through the %s function. Many hosts deliver them unreliably because the web server is not authorised as a sender for your domain. The result: confirmations land in spam or not at all."
 msgstr "WordPress verschickt Mails über die Funktion %s. Viele Hostings liefern die unzuverlässig aus, weil der Webserver nicht als Absender deiner Domain beglaubigt ist. Die Folge: Bestätigungen landen im Spam oder gar nicht."
 
-#: includes/class-ffb-admin.php:1665
+#: includes/class-ffb-admin.php:1693
 msgid "The solution is an SMTP plugin that routes sending through an email service, for example Brevo. Use the test button below before you make the booking widget public."
 msgstr "Die Lösung ist ein SMTP-Plugin, das den Versand über einen Maildienst leitet, zum Beispiel Brevo. Nutz den Testknopf unten, bevor du das Buchungsfeld öffentlich machst."
 
-#: includes/class-ffb-admin.php:1666
+#: includes/class-ffb-admin.php:1694
 msgid "Why emails often do not arrive"
 msgstr "Warum Mails oft nicht ankommen"
 
-#: includes/class-ffb-admin.php:1672
+#: includes/class-ffb-admin.php:1700
 msgid "Notification to"
 msgstr "Benachrichtigung an"
 
-#: includes/class-ffb-admin.php:1676
+#: includes/class-ffb-admin.php:1704
 msgid "Save first if you have just changed the address. The test email goes to the saved address."
 msgstr "Speichere erst, falls du die Adresse gerade geändert hast. Die Testmail geht an die gespeicherte Adresse."
 
-#: includes/class-ffb-admin.php:1680
+#: includes/class-ffb-admin.php:1708
 msgid "Sender name"
 msgstr "Absendername"
 
-#: includes/class-ffb-admin.php:1684
+#: includes/class-ffb-admin.php:1712
 #: includes/class-ffb-mailer.php:164
 msgid "Sender address"
 msgstr "Absenderadresse"
 
-#: includes/class-ffb-admin.php:1687
+#: includes/class-ffb-admin.php:1715
 msgid "Must match your domain, otherwise emails land in spam. With Brevo as SMTP relay you are on the safe side."
 msgstr "Muss zur Domain passen, sonst landen die Mails im Spam. Mit Brevo als SMTP-Relay bist du auf der sicheren Seite."
 
-#: includes/class-ffb-admin.php:1691
+#: includes/class-ffb-admin.php:1719
 msgid "Booking page"
 msgstr "Buchungsseite"
 
-#: includes/class-ffb-admin.php:1694
+#: includes/class-ffb-admin.php:1722
 msgid "The page with the shortcode. Cancellation links in the emails open it. Without it, or if the page disappears, they open a plain cancellation page instead."
 msgstr "Die Seite mit dem Shortcode. Absage-Links in den Mails öffnen sie. Fehlt sie oder verschwindet sie, öffnen die Links stattdessen eine schlichte Absage-Seite."
 
-#: includes/class-ffb-admin.php:1702
+#: includes/class-ffb-admin.php:1732
 msgid "API key"
 msgstr "API-Key"
 
-#: includes/class-ffb-admin.php:1705
+#: includes/class-ffb-admin.php:1735
 msgid "In Brevo: Settings, then SMTP & API, then API keys. Leave empty to switch the integration off."
 msgstr "In Brevo: Einstellungen, dann SMTP & API, dann API-Keys. Leer lassen schaltet die Anbindung ab."
 
-#: includes/class-ffb-admin.php:1709
+#: includes/class-ffb-admin.php:1739
 msgid "List"
 msgstr "Liste"
 
-#: includes/class-ffb-admin.php:1718
+#: includes/class-ffb-admin.php:1748
 msgid "— please choose —"
 msgstr "— bitte wählen —"
 
 #. translators: 1: list name, 2: list ID
-#: includes/class-ffb-admin.php:1723
+#: includes/class-ffb-admin.php:1753
 #, php-format
 msgid "%1$s (ID %2$d)"
 msgstr "%1$s (ID %2$d)"
 
-#: includes/class-ffb-admin.php:1728
+#: includes/class-ffb-admin.php:1758
 msgid "Test connection"
 msgstr "Verbindung testen"
 
-#: includes/class-ffb-admin.php:1730
+#: includes/class-ffb-admin.php:1760
 msgid "Without a selected list the plugin does not create contacts in Brevo."
 msgstr "Ohne gewählte Liste legt das Plugin keine Kontakte in Brevo an."
 
 #. translators: %s: error message
-#: includes/class-ffb-admin.php:1739
+#: includes/class-ffb-admin.php:1769
 #, php-format
 msgid "The lists could not be loaded: %s Check whether the API key has the \"Contacts\" permission. Until then you can enter the ID by hand."
 msgstr "Die Listen ließen sich nicht laden: %s Prüfe, ob der API-Key das Recht „Kontakte“ hat. So lange kannst du die ID von Hand eintragen."
 
-#: includes/class-ffb-admin.php:1748
+#: includes/class-ffb-admin.php:1778
 msgid "Enter the API key above and save. Then you can pick the list here."
 msgstr "Trag oben den API-Key ein und speichere. Danach kannst du die Liste hier direkt auswählen."
 
-#: includes/class-ffb-admin.php:1750
+#: includes/class-ffb-admin.php:1780
 msgid "Contacts go into this list. Note: booking an appointment is not consent to a newsletter. Use a separate list for this."
 msgstr "Kontakte landen in dieser Liste. Achtung: Eine Terminbuchung ist keine Newsletter-Einwilligung. Nutz eine eigene Liste dafür."
 
-#: includes/class-ffb-admin.php:1755
+#: includes/class-ffb-admin.php:1437
+#: includes/class-ffb-admin.php:1787
 msgid "Privacy"
 msgstr "Datenschutz"
 
-#: includes/class-ffb-admin.php:1758
+#: includes/class-ffb-admin.php:1790
 msgid "Consent text"
 msgstr "Einwilligungstext"
 
-#: includes/class-ffb-admin.php:1762
+#: includes/class-ffb-admin.php:1794
 msgid "Link to privacy policy"
 msgstr "Link zur Datenschutzerklärung"
 
-#: includes/class-ffb-admin.php:1765
+#: includes/class-ffb-admin.php:1797
 msgid "Leave empty to use the privacy policy page from Settings, Privacy."
 msgstr "Leer lassen, dann gilt die Datenschutzseite aus Einstellungen, Datenschutz."
 
-#: includes/class-ffb-admin.php:1769
+#: includes/class-ffb-admin.php:1801
 msgid "Retention"
 msgstr "Aufbewahrung"
 
-#: includes/class-ffb-admin.php:1772
+#: includes/class-ffb-admin.php:1804
 msgid "Older bookings are deleted automatically. 0 switches deletion off."
 msgstr "Buchungen, die älter sind, werden automatisch gelöscht. 0 schaltet das Löschen ab."
 
-#: includes/class-ffb-admin.php:1776
+#: includes/class-ffb-admin.php:1808
 msgid "Bookings per hour and IP address"
 msgstr "Buchungen pro Stunde und IP-Adresse"
 
-#: includes/class-ffb-admin.php:1780
+#: includes/class-ffb-admin.php:1812
 msgid "On uninstall"
 msgstr "Beim Deinstallieren"
 
-#: includes/class-ffb-admin.php:1781
+#: includes/class-ffb-admin.php:1813
 msgid "Also delete tables and settings"
 msgstr "Tabellen und Einstellungen mitlöschen"
 
-#: includes/class-ffb-admin.php:1785
+#: includes/class-ffb-admin.php:1438
+#: includes/class-ffb-admin.php:1819
 msgid "Design"
 msgstr "Design"
 
-#: includes/class-ffb-admin.php:1789
+#: includes/class-ffb-admin.php:1823
 msgid "Accent"
 msgstr "Akzent"
 
-#: includes/class-ffb-admin.php:1790
+#: includes/class-ffb-admin.php:1824
 msgid "Accent light"
 msgstr "Akzent hell"
 
-#: includes/class-ffb-admin.php:1791
+#: includes/class-ffb-admin.php:1825
 msgid "Secondary"
 msgstr "Zweitfarbe"
 
-#: includes/class-ffb-admin.php:1792
+#: includes/class-ffb-admin.php:1826
 msgid "Success"
 msgstr "Erfolg"
 
-#: includes/class-ffb-admin.php:1793
+#: includes/class-ffb-admin.php:1827
 msgid "Background"
 msgstr "Hintergrund"
 
-#: includes/class-ffb-admin.php:1794
+#: includes/class-ffb-admin.php:1828
 msgid "Background dark"
 msgstr "Hintergrund dunkel"
 
-#: includes/class-ffb-admin.php:1795
+#: includes/class-ffb-admin.php:1829
 msgid "Surface"
 msgstr "Fläche"
 
-#: includes/class-ffb-admin.php:1796
+#: includes/class-ffb-admin.php:1830
 msgid "Text"
 msgstr "Text"
 
-#: includes/class-ffb-admin.php:1797
+#: includes/class-ffb-admin.php:1831
 msgid "Text muted"
 msgstr "Text gedämpft"
 
-#: includes/class-ffb-admin.php:1807
+#: includes/class-ffb-admin.php:1841
 msgid "Display font"
 msgstr "Schrift Überschriften"
 
-#: includes/class-ffb-admin.php:1811
+#: includes/class-ffb-admin.php:1845
 msgid "Body font"
 msgstr "Schrift Fließtext"
 
-#: includes/class-ffb-admin.php:1820
+#: includes/class-ffb-admin.php:1441
+#: includes/class-ffb-admin.php:1856
 msgid "Recent errors"
 msgstr "Letzte Fehler"
 
-#: includes/class-ffb-admin.php:1822
+#: includes/class-ffb-admin.php:1858
 msgid "Time"
 msgstr "Zeit"
 
-#: includes/class-ffb-admin.php:1822
+#: includes/class-ffb-admin.php:1858
 msgid "Message"
 msgstr "Meldung"
 
-#: includes/class-ffb-admin.php:1833
+#: includes/class-ffb-admin.php:1870
 msgid "Fines Finest Booking is free. It is built and maintained by Fine, a one-woman business. If the plugin saves you time, you can say thank you with a coffee."
 msgstr "Fines Finest Booking ist kostenlos. Gebaut und gepflegt wird es von Fine, einem Ein-Frau-Betrieb. Wenn dir das Plugin Zeit spart, freut sie sich über einen Kaffee."
 
-#: includes/class-ffb-admin.php:1834
+#: includes/class-ffb-admin.php:1871
 msgid "Coffee fund via PayPal"
 msgstr "Kaffeekasse über PayPal"
 
@@ -2119,3 +2124,11 @@ msgstr "Support"
 #: includes/class-ffb-updater.php:62
 msgid "Check for updates"
 msgstr "Auf Aktualisierungen prüfen"
+
+#: includes/class-ffb-admin.php:1434
+msgid "Times and limits"
+msgstr "Zeiten und Grenzen"
+
+#: includes/class-ffb-admin.php:1444
+msgid "Settings sections"
+msgstr "Bereiche der Einstellungen"
